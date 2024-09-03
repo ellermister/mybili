@@ -39,9 +39,11 @@ class DownloadVideo extends Command
             $result = redis()->get($videoKey);
             $data   = json_decode($result, true);
             if ($data) {
-                $job = new DownloadVideoJob($data);
-                dispatch($job);
-                // $job->handle();
+                if(!video_has_invalid($data)){
+                    $job = new DownloadVideoJob($data);
+                    // $job->handle();
+                    dispatch($job);
+                }
             }
         }
     }

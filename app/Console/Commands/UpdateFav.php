@@ -38,6 +38,10 @@ class UpdateFav extends Command
 
         $saveDir = storage_path('app/public/images');
 
+        if(!is_dir($saveDir)){
+            mkdir($saveDir, 0644);
+        }
+
         $favList = $this->pullFav();
 
         $favList = array_map(function ($value) use ($saveDir) {
