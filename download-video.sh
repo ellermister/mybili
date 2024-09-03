@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 echo "down -> $1 > $2";
 echo $(pwd);
 yt-dlp_linux -f "bestvideo+bestaudio/best" \
