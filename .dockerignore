@@ -1,0 +1,11 @@
+.git
+.github
+.nuxt
+.yarn
+.vscode
+.output
+node_modules
+storage/app/public/*
+storage/app/cookie.txt
+storage/logs/*
+.fuse_*
