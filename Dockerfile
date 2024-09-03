@@ -59,7 +59,8 @@ https://github.com/yt-dlp/yt-dlp/releases/download/2024.08.06/yt-dlp_linux /usr/
 
 COPY  ./deploy/files/ /
 
-COPY --from=build /app/ /app/
+COPY . .
+COPY --from=build /app/vendor/ /app/vendor/
 COPY --from=build /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 
 RUN  chmod +x /usr/local/bin/php
