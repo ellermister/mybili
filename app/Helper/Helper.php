@@ -59,6 +59,11 @@ function match_cookie_main()
 }
 
 function parse_netscape_cookie_file($filename) {
+
+    if(!is_file($filename)){
+        throw new ErrorException("cookie.txt 不存在");
+    }
+
     $cookies = [];
     $lines = file($filename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 

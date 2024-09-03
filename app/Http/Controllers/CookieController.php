@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\UpdateFavListJob;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 
@@ -49,11 +50,22 @@ class CookieController extends Controller
         // dump($response->getStatusCode());
         // dd($body);
 
-        $data    = json_decode($body, true);
+        $data = json_decode($body, true);
+
+        $lastLoginState = intval(redis()->get('state:is_login') ?? false) ? true : false;
+
         $isLogin = false;
         if ($data['data']['isLogin'] === true) {
             $isLogin = true;
         }
+
+        redis()->set('state:is_login', $isLogin ? 1 : 0);
+
+        if (!$lastLoginState && $isLogin) {
+            $job = new UpdateFavListJob();
+            dispatch($job);
+        }
+
         return response()->json([
             'logged' => $isLogin,
         ]);
