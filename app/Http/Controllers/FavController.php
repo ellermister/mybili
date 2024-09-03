@@ -25,7 +25,7 @@ class FavController extends Controller
      */
     public function store(Request $request)
     {
-        
+
     }
 
     /**
@@ -35,7 +35,13 @@ class FavController extends Controller
     {
         $result = redis()->get(sprintf('fav_list:%d', $id));
         $data   = json_decode($result, true);
-        if ($data) {
+        if ($data && is_array($data)) {
+            usort($data, function ($a, $b) {
+                if ($a['fav_time'] == $b['fav_time']) {
+                    return 0;
+                }
+                return $a['fav_time'] > $b['fav_time'] ? -1 : 1;
+            });
             return response()->json($data);
         } else {
             return response()->json([]);
