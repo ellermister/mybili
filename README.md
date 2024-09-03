@@ -25,6 +25,7 @@
 ```bash
 mkdir /mnt/user/mybili/data -p
 mkdir /mnt/user/mybili/redis -p
+touch /mnt/user/mybili/cookie.txt
 ```
 
 
@@ -55,6 +56,7 @@ services:
         volumes:
             - "./data:/app/storage/app/public"
             - "./.env:/app/.env"
+            - "./cookie.txt:/app/storage/app/cookie.txt"
         command: redis redis-server --save 60 1 --loglevel warning
     redis:
         image: redis
