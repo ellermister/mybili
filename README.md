@@ -71,6 +71,6 @@ services:
 
 在你登录哔哩哔哩后，通过插件导出 cookie 文件。需要格式为：`Netscape`
 
-访问 `http://your-ip:5151/cookie`
+访问 `https://your-ip:5151/cookie`
 
 上传 cookie 文件，稍后将自动开始同步你的收藏夹了！🍡🍡🍡
