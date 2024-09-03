@@ -4,15 +4,13 @@ FROM node:${NODE_VERSION}-bullseye-slim as build
 
 WORKDIR /app
 
-ENV PHPRC=/etc/php.ini
-ENV PHP_BINARY=/usr/local/bin/php
+COPY . .
 
-ADD --chown=root:root --chmod=775 \
-    https://github.com/dunglas/frankenphp/releases/download/v1.2.5/frankenphp-linux-x86_64 /usr/local/bin/frankenphp
+RUN npm install -g pnpm
+RUN pnpm install
+RUN pnpm build
 
-ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer/composer:2-bin /composer /usr/bin/composer
-
+#ffmpeg
 ADD https://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-6.0.1-amd64-static.tar.xz /tmp
 
 RUN apt update \
@@ -23,49 +21,46 @@ RUN apt update \
     && cp /tmp/ffmpeg /usr/local/bin/ffmpeg \
     && chmod +x /usr/local/bin/ffmpeg
 
-COPY . .
 
-COPY  ./deploy/files/ /
+FROM phpswoole/swoole:php8.3-alpine
 
-RUN  chmod +x /usr/local/bin/php
+WORKDIR /app
+
+ENV PHPRC=/etc/php.ini
+
+ADD --chown=root:root --chmod=775 \
+https://github.com/yt-dlp/yt-dlp/releases/download/2024.08.06/yt-dlp_linux /usr/local/bin/yt-dlp_linux
+
+ADD --chown=root:root --chmod=775 \
+    https://github.com/dunglas/frankenphp/releases/download/v1.2.5/frankenphp-linux-x86_64 /usr/local/bin/frankenphp
+
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
+COPY --from=composer/composer:2-bin /composer /usr/bin/composer
+
+COPY --from=build /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 
 COPY --from=ochinchina/supervisord:latest /usr/local/bin/supervisord /usr/local/bin/supervisord
 
+RUN docker-php-ext-install pcntl
 
-RUN npm install -g pnpm
-RUN pnpm install
-RUN pnpm build
+COPY . .
+
+COPY  ./deploy/files/ /
+#COPY --from=build /app/vendor/ /app/vendor/
+
 
 RUN composer install \
     --ignore-platform-reqs \
     --classmap-authoritative \
     --no-interaction \
     --no-ansi \
-    --no-dev 
+    --no-dev \
+    && rm -rf /root/.composer
+    
 
-# Run
-FROM debian:12
-
-WORKDIR /app
-
-ENV PHPRC=/etc/php.ini
-ENV PHP_BINARY=/usr/local/bin/php
-
-ADD --chown=root:root --chmod=775 \
-    https://github.com/dunglas/frankenphp/releases/download/v1.2.5/frankenphp-linux-x86_64 /usr/local/bin/frankenphp
-
-ADD --chown=root:root --chmod=775 \
-https://github.com/yt-dlp/yt-dlp/releases/download/2024.08.06/yt-dlp_linux /usr/local/bin/yt-dlp_linux
-
-COPY --from=ochinchina/supervisord:latest /usr/local/bin/supervisord /usr/local/bin/supervisord
-
-COPY  ./deploy/files/ /
-
-COPY . .
-COPY --from=build /app/vendor/ /app/vendor/
-COPY --from=build /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
-
-RUN  chmod +x /usr/local/bin/php
-RUN rm -f public/storage && php artisan storage:link
+RUN cp .env.example .env \
+    && php artisan key:generate \
+    && rm -f public/storage && php artisan storage:link
 
 CMD ["/usr/local/bin/supervisord", "-c", "/etc/supervisord.conf"]
