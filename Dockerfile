@@ -57,6 +57,8 @@ ADD --chown=root:root --chmod=775 \
 ADD --chown=root:root --chmod=775 \
 https://github.com/yt-dlp/yt-dlp/releases/download/2024.08.06/yt-dlp_linux /usr/local/bin/yt-dlp_linux
 
+COPY --from=ochinchina/supervisord:latest /usr/local/bin/supervisord /usr/local/bin/supervisord
+
 COPY  ./deploy/files/ /
 
 COPY . .
