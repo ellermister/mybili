@@ -47,7 +47,7 @@ RUN docker-php-ext-install pcntl
 COPY . .
 
 COPY  ./deploy/files/ /
-#COPY --from=build /app/vendor/ /app/vendor/
+COPY --from=build /app/public/ /app/public/
 
 
 RUN composer install \
