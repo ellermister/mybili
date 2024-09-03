@@ -61,6 +61,9 @@ class DownloadVideoJob implements ShouldQueue
         $calcHash = hash_file('sha256', $savePath);
         file_put_contents($hashPath, $calcHash);
         $this->updateVideoStatus();
+
+        $key = sprintf('download_lock:%s', $this->vInfo['id']);
+        redis()->del($key);
     }
 
     public function updateVideoStatus()

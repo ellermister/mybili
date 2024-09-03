@@ -3,10 +3,7 @@
 namespace App\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 
 class DownloadAllVideoJob implements ShouldQueue
 {
@@ -37,10 +34,14 @@ class DownloadAllVideoJob implements ShouldQueue
             $result = redis()->get($videoKey);
             $data   = json_decode($result, true);
             if ($data) {
-                if(!video_has_invalid($data)){
-                    $job = new DownloadVideoJob($data);
-                    // $job->handle();
-                    dispatch($job);
+                if (!video_has_invalid($data)) {
+
+                    $key = sprintf('download_lock:%s', $data['id']);
+                    if (redis()->setnx($key, 1)) {
+                        redis()->expire($key, 60 * 60 * 24);
+                        $job = new DownloadVideoJob($data);
+                        dispatch($job);
+                    }
                 }
             }
         }
