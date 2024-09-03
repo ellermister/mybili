@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\DownloadAllVideoJob;
 use App\Jobs\UpdateFavListJob;
+use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 
@@ -64,6 +66,9 @@ class CookieController extends Controller
         if (!$lastLoginState && $isLogin) {
             $job = new UpdateFavListJob();
             dispatch($job);
+
+            $job = new DownloadAllVideoJob();
+            dispatch($job)->delay(Carbon::now()->addMinutes(1));
         }
 
         return response()->json([

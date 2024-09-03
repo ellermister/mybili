@@ -2,9 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Jobs\DownloadVideoJob;
+use App\Jobs\DownloadAllVideoJob;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Redis;
 
 class DownloadVideo extends Command
 {
@@ -27,24 +26,7 @@ class DownloadVideo extends Command
      */
     public function handle()
     {
-        $iterator = null;
-        $keys     = [
-        ];
-        do {
-            $result = redis()->scan($iterator, 'video:*', 50);
-            $keys   = array_merge($keys, $result);
-        } while ($iterator != 0);
-
-        foreach ($keys as $videoKey) {
-            $result = redis()->get($videoKey);
-            $data   = json_decode($result, true);
-            if ($data) {
-                if(!video_has_invalid($data)){
-                    $job = new DownloadVideoJob($data);
-                    // $job->handle();
-                    dispatch($job);
-                }
-            }
-        }
+        $job = new DownloadAllVideoJob();
+        $job->handle();
     }
 }
