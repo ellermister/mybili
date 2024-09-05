@@ -2,14 +2,10 @@
 
 import { createApp } from "vue";
 
-// import ExampleCounter from "./components/ExampleCounter.vue";
 import router from './router';
-import Image from "@/components/Image.vue";
-
 
 import App from "./App.vue";
 
-console.log('Image', Image)
 
 const app = createApp(App);
 

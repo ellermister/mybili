@@ -32,12 +32,27 @@ class VideoController extends Controller
         $downloaded = redis()->hlen('video_downloaded');
 
         $list = [];
+        $stat = [
+            'count'      => count($keys),
+            'downloaded' => $downloaded,
+            'invalid'    => 0,
+            'valid'      => 0,
+            'frozen'     => 0,
+        ];
         foreach ($keys as $vKey) {
             $result = redis()->get($vKey);
             $vInfo  = json_decode($result, true);
             if ($vInfo) {
                 $vInfo['downloaded'] = !!redis()->hExists('video_downloaded', $vInfo['id']);
-                $list[]              = $vInfo;
+
+                $vInfo['invalid'] = video_has_invalid($vInfo);
+                $vInfo['valid']   = !video_has_invalid($vInfo);
+
+                $list[] = $vInfo;
+
+                $stat['invalid'] += $vInfo['invalid'] ? 1 : 0;
+                $stat['valid'] += $vInfo['valid'] ? 1 : 0;
+                $stat['frozen'] += $vInfo['frozen'] ? 1 : 0;
             }
         }
 
@@ -49,9 +64,8 @@ class VideoController extends Controller
         });
 
         $data = [
-            'count'      => count($keys),
-            'downloaded' => $downloaded,
-            'data'       => $list,
+            'data' => $list,
+            'stat' => $stat,
         ];
 
         return response()->json($data, 200, [], JSON_UNESCAPED_UNICODE);

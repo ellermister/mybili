@@ -23,7 +23,6 @@
 </template>
 
 <script lang="ts" setup>
-console.log('fffffffffffffff')
 </script>
 
 <style scoped>

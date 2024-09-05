@@ -9,7 +9,6 @@
     </head>
     <body>
         <div id="app">
-            <example-counter></example-counter>
         </div>
     </body>
 </html>
