@@ -72,6 +72,8 @@ class DownloadVideoJob implements ShouldQueue
         $savePath  = sprintf('%s/%s.mp4', $videoPath, $this->vInfo['id']);
         if (is_file($savePath)) {
             redis()->hSet('video_downloaded', $this->vInfo['id'], 1);
+        }else{
+            redis()->hDel('video_downloaded', $this->vInfo['id']);
         }
     }
 }

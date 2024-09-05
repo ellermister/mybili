@@ -2,9 +2,11 @@
 
 namespace App\Jobs;
 
+use App\Console\Commands\DownloadVideo;
 use Arr;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Log;
 
 class UpdateFavListJob implements ShouldQueue
 {
@@ -141,6 +143,13 @@ class UpdateFavListJob implements ShouldQueue
 
         foreach ($favList as $video) {
             redis()->set(sprintf('video:%d', $video['id']), json_encode($video, JSON_UNESCAPED_UNICODE));
+            
+            $exist = redis()->hGet('video_downloaded', $video['id']);
+            if(!$exist && !video_has_invalid($video)){
+                Log::info(sprintf('create download video job: %s', $video['title']));
+                $job = new DownloadVideoJob($video);
+                dispatch($job);
+            }
         }
     }
 
