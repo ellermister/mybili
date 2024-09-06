@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Console\Commands\DownloadVideo;
 use Arr;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Log;
@@ -168,6 +169,11 @@ class UpdateFavListJob implements ShouldQueue
         $result    = json_decode($response, true);
         $favorites = [];
         if ($result && $result['code'] == 0) {
+            
+            if($result['data'] == null){
+                Log::error(sprintf("Account cookie is invalid when accessing the get fav folder api."));
+                $this->fail("Account cookie is invalid when get fav folder api");
+            }
             foreach ($result['data']['list'] as $value) {
                 $favorites[] = [
                     'title'       => $value['title'],
