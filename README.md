@@ -8,7 +8,7 @@
 
 🛠️功能如下：
 
-- ⏰ 每小时获取你的收藏夹所有视频，缓存标题、描述、封面等重要信息。
+- ⏰ 定时5分钟获取你的收藏夹所有视频，缓存标题、描述、封面等重要信息。
 - 🚀 自动通过队列，将你收藏的视频按照最高画质下载一份到本地。
 - 📺 提供友好的 web 页面展示你的收藏夹列表信息，以及进行在线播放预览。
 
@@ -62,12 +62,17 @@ services:
             - "./data:/app/storage/app/public"
             - "./.env:/app/.env"
             - "./cookie.txt:/app/storage/app/cookie.txt"
-        command: redis redis-server --save 60 1 --loglevel warning
     redis:
         image: redis
         volumes:
             - "./redis:/data"
+        command: redis redis-server --save 60 1 --loglevel warning
         
+```
+
+一键启动:
+```bash
+docker-compose up -d
 ```
 
 ### 🍪 2.获取 cookie
