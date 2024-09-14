@@ -38,6 +38,8 @@ touch /mnt/user/mybili/cookie.txt
 
 参考主要修改内容如下：
 ```
+APP_KEY=base64:1CJOuWliDyx0ZBIZyn0gRKOOOq6+23YG/UHcUP4ffaU=
+
 REDIS_HOST=redis
 REDIS_PASSWORD=null
 REDIS_PORT=6379
@@ -50,6 +52,8 @@ REDIS_PREFIX=
 
  `/mnt/user/mybili/docker-compose.yml`
 
+ 容器内部端口 80(http) 和 443(https) 都可以使用
+
 ```yml
 version: '3'
 
@@ -57,7 +61,7 @@ services:
     mybili:
         image: ellermister/mybili
         ports:
-            - "5151:443"
+            - "5151:80"
         volumes:
             - "./data:/app/storage/app/public"
             - "./.env:/app/.env"
@@ -86,3 +90,19 @@ docker-compose up -d
 访问 `http://your-ip:5151/cookie`
 
 上传 cookie 文件，稍后将自动开始同步你的收藏夹了！🍡🍡🍡
+
+
+### 📝 3. 日志排查
+
+在容器内部，存储了多份日志，来源于不同的服务产生的文件。
+```bash
+/app # ls /var/log
+queue.log.0        schedule.log.0     supervisord.log.0  web.log.0
+```
+
+web
+网页不通或者异常报错，可以查看 laravel 的日志
+```bash
+tail -f /app/storage/logs/laravel.log
+```
+
