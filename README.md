@@ -34,7 +34,7 @@ touch /mnt/user/mybili/cookie.txt
 ```
 
 
-复制一份 .env 修改 redis 配置为你自己的实际配置，将文件存储于 /mnt/user/mybili/.env
+**复制一份 .env.example 修改 redis 配置为你自己的实际配置**，将文件存储于 /mnt/user/mybili/.env
 
 参考主要修改内容如下：
 ```
@@ -70,7 +70,7 @@ services:
         image: redis
         volumes:
             - "./redis:/data"
-        command: redis redis-server --save 60 1 --loglevel warning
+        command: redis-server --save 60 1 --loglevel warning
         
 ```
 
