@@ -61,6 +61,7 @@ RUN composer install \
 
 RUN cp .env.example .env \
     && php artisan key:generate \
-    && rm -f public/storage && php artisan storage:link
+    && rm -f public/storage && php artisan storage:link \
+    && php artisan migrate
 
 CMD ["/usr/local/bin/supervisord", "-c", "/etc/supervisord.conf"]

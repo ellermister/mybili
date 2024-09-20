@@ -80,7 +80,7 @@ class UpdateFavListJob implements ShouldQueue
             $response = file_get_contents($url, false, $context);
             $result   = json_decode($response, true);
 
-            if (isset($result['data'])) {
+            if (isset($result['data']) && is_array($result['data']['medias'])) {
                 foreach ($result['data']['medias'] as $value) {
 
                     $filename = $this->convertToFilename($value['cover']);
