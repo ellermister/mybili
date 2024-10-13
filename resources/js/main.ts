@@ -6,6 +6,7 @@ import router from './router';
 
 import App from "./App.vue";
 
+import '../css/button.css';
 
 const app = createApp(App);
 
