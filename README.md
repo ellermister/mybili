@@ -106,3 +106,14 @@ web
 tail -f /app/storage/logs/laravel.log
 ```
 
+## 💓 支持本项目
+
+如果你喜欢这个项目，或者它对你有帮助，请考虑支持我！
+
+### 赞助方式
+
+你可以通过以下方式支持这个项目：
+
+- **Buy me a coffee**: [买一杯咖啡](https://buymeacoffee.com/ellermister)
+
+任何形式的支持都将帮助我继续改进和维护这个项目，非常感谢！
