@@ -81,6 +81,10 @@ docker-compose up -d
 
 ### 🍪 2.获取 cookie
 
+你有两个方案可选其一
+
+#### 方案1 - 手动
+
 在你的浏览器安装插件
 
 [Get cookies.txt LOCALLY](https://chrome.google.com/webstore/detail/cclelndahbckbenkjhflpdbgdldlbecc)
@@ -90,6 +94,23 @@ docker-compose up -d
 访问 `http://your-ip:5151/cookie`
 
 上传 cookie 文件，稍后将自动开始同步你的收藏夹了！🍡🍡🍡
+
+
+#### 方案2 - 自动
+
+由于方案1上传 cookie 会话之后，会在几天之后自动过期, 无法实现长期的自动同步。
+
+原因是因为登录的网页版 bilibili 在同期使用时，重新获取了新的短期 token，而 mybili 并没有更新，也没有机制去自动获取新的 token，如果 mybili 自己去获取新的 token 也会导致你的网页版本掉线。无论是从实现复杂度还是使用体验来论都不好。
+
+目前参考上述插件获取 cookie 内容，加以加工，制作了一个简单的自动同步 cookie chrome 扩展，只需要填写你的 mybili 网页地址。就能够实现自动无感知自动同步 cookie 到 mybili。
+
+https://github.com/ellermister/mybili-cookie
+
+1. 打开项目地址，点击 "Code" -> "Download ZIP" 下载项目
+2. 将下载的项目解压到本地目录，长期使用请合理安排目录位置，如 `C:\mybili-cookie`
+3. 打开 chrome 浏览器 `edge://extensions/` 打开 "开发人员模式"
+4. 加载解压缩的扩展 选择目录 `C:\mybili-cookie` 以开启扩展
+5. 点击新安装的扩展，在弹出的 popup.html 页面里填写你的 mybili 地址，截至到端口即可
 
 
 ### 📝 3. 日志排查
