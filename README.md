@@ -108,9 +108,9 @@ https://github.com/ellermister/mybili-cookie
 
 1. 打开项目地址，点击 "Code" -> "Download ZIP" 下载项目
 2. 将下载的项目解压到本地目录，长期使用请合理安排目录位置，如 `C:\mybili-cookie`
-3. 打开 chrome 浏览器 `edge://extensions/` 打开 "开发人员模式"
+3. 打开 chrome 浏览器 `chrome://extensions/` 打开 "开发人员模式"
 4. 加载解压缩的扩展 选择目录 `C:\mybili-cookie` 以开启扩展
-5. 点击新安装的扩展，在弹出的 popup.html 页面里填写你的 mybili 地址，截至到端口即可
+5. 点击新安装的扩展，在弹出的 popup.html 页面里填写你的 mybili 地址，截至到端口即可, 如 `http://192.168.1.200:5151`
 
 
 ### 📝 3. 日志排查
