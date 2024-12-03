@@ -29,7 +29,7 @@ WORKDIR /app
 ENV PHPRC=/etc/php.ini
 
 ADD --chown=root:root --chmod=775 \
-https://github.com/yt-dlp/yt-dlp/releases/download/2024.08.06/yt-dlp_linux /usr/local/bin/yt-dlp_linux
+https://github.com/grqz/yt-dlp/releases/download/ie%2Fbilibili%2Fpi_fallbk/yt-dlp_linux /usr/local/bin/yt-dlp_linux
 
 ADD --chown=root:root --chmod=775 \
     https://github.com/dunglas/frankenphp/releases/download/v1.2.5/frankenphp-linux-x86_64 /usr/local/bin/frankenphp
