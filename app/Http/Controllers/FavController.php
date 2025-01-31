@@ -2,17 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\VideoManagerService;
 use Illuminate\Http\Request;
 
 class FavController extends Controller
 {
+    public function __construct(public VideoManagerService $videoManagerService)
+    {
+
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $result = redis()->get('fav_list');
-        $data   = json_decode($result, true);
+        $data = $this->videoManagerService->getFavList();
         if ($data) {
             return response()->json($data);
         } else {
@@ -33,8 +38,7 @@ class FavController extends Controller
      */
     public function show(string $id)
     {
-        $result = redis()->get(sprintf('fav_list:%d', $id));
-        $data   = json_decode($result, true);
+        $data = $this->videoManagerService->getVideoListByFav($id);
         if ($data && is_array($data)) {
             usort($data, function ($a, $b) {
                 if ($a['fav_time'] == $b['fav_time']) {

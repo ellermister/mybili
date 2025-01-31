@@ -2,19 +2,26 @@
 
 namespace App\Jobs;
 
+use App\Services\DownloadFilterService;
+use App\Services\VideoManagerService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Log;
 
 class DownloadAllVideoJob implements ShouldQueue
 {
     use Queueable;
 
+
+    public VideoManagerService $videoManagerService;
+    public DownloadFilterService $downloadFilterService;
     /**
      * Create a new job instance.
      */
     public function __construct()
     {
-        //
+        $this->videoManagerService = app(VideoManagerService::class);
+        $this->downloadFilterService = app(DownloadFilterService::class);
     }
 
     /**
@@ -22,27 +29,41 @@ class DownloadAllVideoJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $iterator = null;
-        $keys     = [
-        ];
-        do {
-            $result = redis()->scan($iterator, 'video:*', 50);
-            $keys   = array_merge($keys, $result);
-        } while ($iterator != 0);
+       $favList = $this->videoManagerService->getFavList();
+       foreach($favList as $item){
+            if($this->downloadFilterService->shouldExcludeByFav($item['id'])){
+                Log::info('Exclude fav', ['id' => $item['id'], 'title' => $item['title']]);
+                continue;
+            }
 
-        foreach ($keys as $videoKey) {
-            $result = redis()->get($videoKey);
-            $data   = json_decode($result, true);
-            if ($data) {
-                if (!video_has_invalid($data)) {
+            $videoList = $this->videoManagerService->getVideoListByFav($item['id']);
+            foreach($videoList as $video){
 
-                    $key = sprintf('download_lock:%s', $data['id']);
-                    if (redis()->setnx($key, 1)) {
-                        redis()->expire($key, 60 * 60 * 24);
-                        $job = new DownloadVideoJob($data);
-                        dispatch($job);
+                if($this->videoManagerService->videoIsInvalid($video) || $video['invalid']){
+                    Log::info('Video is invalid, skip', ['id' => $video['id'], 'title' => $video['title']]);
+                    continue;
+                }
+
+                if($this->videoManagerService->videoDownloaded($video['id'])){
+                    Log::info('Video already downloaded, try to check parts', ['id' => $video['id'], 'title' => $video['title']]);
+
+                    // 已经缓存的情况下进一步检查分P是否缓存
+                    $videoTotalParts = intval($video['page'] ?? 1);
+                    $existsParts = $this->videoManagerService->getAllPartsVideo($video['id'], $videoTotalParts);
+
+                    if(count($existsParts) >= $videoTotalParts){
+                        Log::info('Video all parts already downloaded,skip', ['id' => $video['id'], 'title' => $video['title'], 'parts' => $videoTotalParts]);
+                        continue;
                     }
                 }
+
+                //检查名称是否符合
+                if($this->downloadFilterService->shouldExcludeByName($video['title'])){
+                    Log::info('Video name not match, skip', ['id' => $video['id'], 'title' => $video['title']]);
+                    continue;
+                }
+
+                $this->videoManagerService->dispatchDownloadVideoJob($video);
             }
         }
     }

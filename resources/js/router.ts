@@ -5,6 +5,7 @@ import FavlistView from './pages/FavlistView.vue';
 import VideoView from './pages/VideoView.vue';
 import ProgressView from './pages/ProgressView.vue';
 import CookieView from './pages/CookieView.vue';
+import SettingsView from './pages/SettingsView.vue';
 
 const routes = [
   { path: '/', component: Home },
@@ -13,6 +14,7 @@ const routes = [
   { path: '/about', component: About },
   { path: '/progress', component: ProgressView },
   { path: '/cookie', component: CookieView },
+  { path: '/settings', component: SettingsView },
 ];
 
 const router = createRouter({

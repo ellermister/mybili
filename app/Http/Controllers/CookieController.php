@@ -68,7 +68,7 @@ class CookieController extends Controller
             dispatch($job);
 
             $job = new DownloadAllVideoJob();
-            dispatch($job)->delay(Carbon::now()->addMinutes(1));
+            dispatch($job)->delay(Carbon::now()->addMinutes(5));
         }
 
         return response()->json([

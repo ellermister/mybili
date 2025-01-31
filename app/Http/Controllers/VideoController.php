@@ -2,18 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\VideoManagerService;
 use Illuminate\Http\Request;
 
 class VideoController extends Controller
 {
+
+    public function __construct(public VideoManagerService $videoManagerService)
+    {
+
+    }
+
     public function show(Request $request, int $id)
     {
-        $result = redis()->get(sprintf('video:%d', $id));
+        $result = $this->videoManagerService->getVideoInfo($id);
         if ($result) {
-            $data = json_decode($result, true);
-            if ($data) {
-                return response()->json($data);
-            }
+            $result['parts'] = $this->videoManagerService->getAllPartsVideoForUser($id, $result['page']);
+            return response()->json($result);
         }
         abort(404);
     }
@@ -69,5 +74,30 @@ class VideoController extends Controller
         ];
 
         return response()->json($data, 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    public function danmaku(Request $request, int $cid)
+    {
+        $result = $this->videoManagerService->getDanmaku($cid);
+        return response()->json($result);
+    }
+
+    public function danmakuV3(Request $request)
+    {
+        $cid = $request->input('id');
+        $result = $this->videoManagerService->getDanmaku($cid);
+        $result = array_map(function ($item) {
+            return [
+                $item['progress'] / 1000,
+                $item['mode'],
+                $item['color'],
+                '',
+                $item['content'],
+            ];
+        }, $result['danmaku'] ?? []);
+        return response()->json([
+            'code' => 0,
+            'data' => $result,
+        ]);
     }
 }

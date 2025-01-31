@@ -24,6 +24,6 @@
         "vue-tsc": "^2.0.21"
     },
     "dependencies": {
-        "dplayer": "^1.27.1"
+        "dplayer": "^1.26.0"
     }
 }
