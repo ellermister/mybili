@@ -84,15 +84,15 @@ class VideoController extends Controller
 
     public function danmakuV3(Request $request)
     {
-        $cid = $request->input('id');
+        $cid    = $request->input('id');
         $result = $this->videoManagerService->getDanmaku($cid);
         $result = array_map(function ($item) {
             return [
-                $item['progress'] / 1000,
-                $item['mode'],
-                $item['color'],
+                $item['progress'] ?? 0 / 1000,
+                $item['mode'] ?? 0,
+                $item['color'] ?? 0,
                 '',
-                $item['content'],
+                $item['content'] ?? '',
             ];
         }, $result['danmaku'] ?? []);
         return response()->json([

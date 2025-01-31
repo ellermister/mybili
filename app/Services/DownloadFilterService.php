@@ -52,7 +52,7 @@ class DownloadFilterService
     public function shouldExcludeByFav(int $favId)
     {
         $favExclude = $this->settings->get('favExclude');
-        if ($favExclude['enabled'] === false) {
+        if (!$favExclude || $favExclude['enabled'] === false) {
             return false;
         }
         return in_array($favId, $favExclude['selected']);
