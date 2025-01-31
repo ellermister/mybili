@@ -88,7 +88,7 @@ class VideoController extends Controller
         $result = $this->videoManagerService->getDanmaku($cid);
         $result = array_map(function ($item) {
             return [
-                $item['progress'] ?? 0 / 1000,
+                ($item['progress'] ?? 0 ) / 1000,
                 $item['mode'] ?? 0,
                 $item['color'] ?? 0,
                 '',
