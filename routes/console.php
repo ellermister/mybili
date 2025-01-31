@@ -4,12 +4,13 @@ use Illuminate\Support\Facades\Schedule;
 
 Schedule::call(function () {
     Artisan::call('app:update-fav');
-})->everyFiveMinutes();
+})->withoutOverlapping()
+  ->everyFiveMinutes();
 
 Schedule::call(function () {
     Artisan::call('app:download-video');
-})->everyFiveMinutes();
+})->withoutOverlapping()->everyFiveMinutes();
 
 Schedule::call(function () {
     Artisan::call('app:download-danmaku');
-})->everyOddHour();
+})->withoutOverlapping()->everyOddHour();
