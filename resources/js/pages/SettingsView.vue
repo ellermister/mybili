@@ -66,7 +66,7 @@
                         <input v-model="sizeExclude.type" type="radio" value="custom"
                             class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
                         <span class="text-gray-700">Custom</span>
-                        <input v-if="sizeExclude.type === 'custom'" v-model="sizeExclude.customSize" type="number"
+                        <input v-if="sizeExclude.type === 'custom'" v-model="sizeExclude.custom_size" type="number"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
                             placeholder="Enter size in MB" />
                     </label>
@@ -160,7 +160,7 @@ const nameExclude = ref({
 
 const sizeExclude = ref({
     type: 'off',
-    customSize: 0
+    custom_size: 0
 });
 
 const MultiPartitionCache = ref('on'); // off, on
@@ -176,19 +176,19 @@ const availableCollections = ref([]);
 
 const saveSettingHandler = () => {
     console.log('Settings saved:', {
-        nameExclude: nameExclude.value,
-        sizeExclude: sizeExclude.value,
-        favExclude: favExclude.value,
-        MultiPartitionCache: MultiPartitionCache.value,
-        danmakuCache: danmakuCache.value,
+        name_exclude: nameExclude.value,
+        size_exclude: sizeExclude.value,
+        fav_exclude: favExclude.value,
+        multi_partition_cache: MultiPartitionCache.value,
+        danmaku_cache: danmakuCache.value,
     });
 
     saveSettings({
-        nameExclude: nameExclude.value,
-        sizeExclude: sizeExclude.value,
-        favExclude: favExclude.value,
-        MultiPartitionCache: MultiPartitionCache.value,
-        danmakuCache: danmakuCache.value,
+        name_exclude: nameExclude.value,
+        size_exclude: sizeExclude.value,
+        fav_exclude: favExclude.value,
+        multi_partition_cache: MultiPartitionCache.value,
+        danmaku_cache: danmakuCache.value,
     }).then(()=>{
         alert('Settings saved successfully!');
     });
@@ -204,11 +204,11 @@ onMounted(()=>{
     getSettings().then((data)=>{
         console.log(data);
 
-        nameExclude.value = data.nameExclude;
-        sizeExclude.value = data.sizeExclude;
-        favExclude.value = data.favExclude;
-        MultiPartitionCache.value = data.MultiPartitionCache;
-        danmakuCache.value = data.danmakuCache;
+        nameExclude.value = data.name_exclude;
+        sizeExclude.value = data.size_exclude;
+        favExclude.value = data.fav_exclude;
+        MultiPartitionCache.value = data.multi_partition_cache;
+        danmakuCache.value = data.danmaku_cache;
     })
 })
 

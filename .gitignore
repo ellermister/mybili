@@ -19,3 +19,7 @@ yarn-error.log
 /.idea
 /.vscode
 vite.config.ts.timestamp*
+
+**/caddy
+frankenphp
+frankenphp-worker.php

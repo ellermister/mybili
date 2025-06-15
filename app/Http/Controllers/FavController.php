@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\VideoManagerService;
+use App\Contracts\VideoManagerServiceInterface;
 use Illuminate\Http\Request;
 
 class FavController extends Controller
 {
-    public function __construct(public VideoManagerService $videoManagerService)
+    public function __construct(public VideoManagerServiceInterface $videoManagerService)
     {
 
     }

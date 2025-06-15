@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Contracts\VideoManagerServiceInterface;
 use App\Services\BilibiliService;
 use App\Services\DownloadFilterService;
-use App\Services\VideoManagerService;
 use Illuminate\Console\Command;
 use Log;
 
@@ -27,7 +27,7 @@ class DownloadDanmaku extends Command
     /**
      * Execute the console command.
      */
-    public function handle(VideoManagerService $videoManagerService, DownloadFilterService $downloadFilterService)
+    public function handle(VideoManagerServiceInterface $videoManagerService, DownloadFilterService $downloadFilterService)
     {
         $favList = $videoManagerService->getFavList();
         foreach ($favList as $fav) {

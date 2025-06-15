@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Contracts\VideoManagerServiceInterface;
 use App\Services\DownloadFilterService;
-use App\Services\VideoManagerService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Log;
@@ -13,14 +13,14 @@ class DownloadAllVideoJob implements ShouldQueue
     use Queueable;
 
 
-    public VideoManagerService $videoManagerService;
+    public VideoManagerServiceInterface $videoManagerService;
     public DownloadFilterService $downloadFilterService;
     /**
      * Create a new job instance.
      */
     public function __construct()
     {
-        $this->videoManagerService = app(VideoManagerService::class);
+        $this->videoManagerService = app(VideoManagerServiceInterface::class);
         $this->downloadFilterService = app(DownloadFilterService::class);
     }
 

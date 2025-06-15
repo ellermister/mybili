@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Contracts\VideoManagerServiceInterface;
 use App\Services\DownloadFilterService;
-use App\Services\VideoManagerService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Log;
@@ -57,7 +57,7 @@ class DownloadVideoJob implements ShouldQueue
             throw new \Exception("获取视频信息失败");
         }
 
-        $videoManagerService = app(VideoManagerService::class);
+        $videoManagerService = app(VideoManagerServiceInterface::class);
 
         $totalParts = count($output);
         // $output 多个分集的视频就会有多个数组，默认单集只有一个
@@ -123,7 +123,7 @@ class DownloadVideoJob implements ShouldQueue
      */
     public function then(): void
     {
-        $videoManagerService = app(VideoManagerService::class);
+        $videoManagerService = app(VideoManagerServiceInterface::class);
         $videoManagerService->finishDownloadVideo($this->vInfo['id']);
         Log::info('Video download task completed', ['video_id' => $this->vInfo['id']]);
     }
@@ -133,7 +133,7 @@ class DownloadVideoJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        $videoManagerService = app(VideoManagerService::class);
+        $videoManagerService = app(VideoManagerServiceInterface::class);
         $videoManagerService->finishDownloadVideo($this->vInfo['id']);
         Log::error('Video download task failed', [
             'video_id' => $this->vInfo['id'],

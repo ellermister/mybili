@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Services\SettingsService;
@@ -16,20 +15,20 @@ class SettingsController extends Controller
     public function getSettings()
     {
         $presets = [
-            'danmakuCache'        => 'on',
-            'favExclude'          => [
+            'danmaku_cache'         => 'on',
+            'fav_exclude'           => [
                 'enabled'  => false,
                 'selected' => [],
             ],
-            'MultiPartitionCache' => 'off',
-            'nameExclude'         => [
+            'multi_partition_cache' => 'off',
+            'name_exclude'          => [
                 'contains' => '',
                 'regex'    => '',
                 'type'     => 'off',
             ],
-            'sizeExclude'         => [
-                'customSize' => 0,
-                'type'       => 'off',
+            'size_exclude'          => [
+                'custom_size' => 0,
+                'type'        => 'off',
             ],
         ];
 
@@ -46,21 +45,21 @@ class SettingsController extends Controller
     public function saveSettings(Request $request)
     {
         $data = $request->validate([
-            'MultiPartitionCache'    => 'required|string|in:on,off',
-            'danmakuCache'           => 'required|string|in:on,off',
+            'multi_partition_cache'    => 'required|string|in:on,off',
+            'danmaku_cache'            => 'required|string|in:on,off',
 
-            'nameExclude'            => 'required|array',
-            'nameExclude.contains'   => 'required_if:nameExclude.type,contains|string',
-            'nameExclude.regex'      => 'required_if:nameExclude.type,regex|string',
-            'nameExclude.type'       => 'required|string|in:off,contains,regex',
+            'name_exclude'             => 'required|array',
+            'name_exclude.contains'    => 'required_if:name_exclude.type,contains|string',
+            'name_exclude.regex'       => 'required_if:name_exclude.type,regex|string',
+            'name_exclude.type'        => 'required|string|in:off,contains,regex',
 
-            'sizeExclude'            => 'required|array',
-            'sizeExclude.customSize' => 'required_if:sizeExclude.type,custom|integer',
-            'sizeExclude.type'       => 'required|string|in:off,1GB,2GB,custom',
+            'size_exclude'             => 'required|array',
+            'size_exclude.custom_size' => 'required_if:size_exclude.type,custom|integer',
+            'size_exclude.type'        => 'required|string|in:off,1GB,2GB,custom',
 
-            'favExclude'             => 'required|array',
-            'favExclude.enabled'     => 'required|boolean',
-            'favExclude.selected'    => 'required_if:favExclude.enabled,true|array',
+            'fav_exclude'              => 'required|array',
+            'fav_exclude.enabled'      => 'required|boolean',
+            'fav_exclude.selected'     => 'required_if:fav_exclude.enabled,true|array',
         ]);
 
         foreach ($data as $key => $value) {

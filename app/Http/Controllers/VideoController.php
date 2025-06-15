@@ -1,14 +1,13 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use App\Services\VideoManagerService;
+use App\Contracts\VideoManagerServiceInterface;
 use Illuminate\Http\Request;
 
 class VideoController extends Controller
 {
 
-    public function __construct(public VideoManagerService $videoManagerService)
+    public function __construct(public VideoManagerServiceInterface $videoManagerService)
     {
 
     }
@@ -25,42 +24,7 @@ class VideoController extends Controller
 
     public function progress()
     {
-        // laravel_horizon:job:App\Jobs\DownloadVideoJob
-        $iterator = null;
-        $keys     = [
-        ];
-        do {
-            $result = redis()->scan($iterator, 'video:*', 50);
-            $keys   = array_merge($keys, $result);
-        } while ($iterator != 0);
-
-        $downloaded = redis()->hlen('video_downloaded');
-
-        $list = [];
-        $stat = [
-            'count'      => count($keys),
-            'downloaded' => $downloaded,
-            'invalid'    => 0,
-            'valid'      => 0,
-            'frozen'     => 0,
-        ];
-        foreach ($keys as $vKey) {
-            $result = redis()->get($vKey);
-            $vInfo  = json_decode($result, true);
-            if ($vInfo) {
-                $vInfo['downloaded'] = !!redis()->hExists('video_downloaded', $vInfo['id']);
-
-                $vInfo['invalid'] = video_has_invalid($vInfo);
-                $vInfo['valid']   = !video_has_invalid($vInfo);
-
-                $list[] = $vInfo;
-
-                $stat['invalid'] += $vInfo['invalid'] ? 1 : 0;
-                $stat['valid'] += $vInfo['valid'] ? 1 : 0;
-                $stat['frozen'] += $vInfo['frozen'] ? 1 : 0;
-            }
-        }
-
+        $list = $this->videoManagerService->getVideos();
         usort($list, function ($a, $b) {
             if ($a['fav_time'] == $b['fav_time']) {
                 return 0;
@@ -70,7 +34,7 @@ class VideoController extends Controller
 
         $data = [
             'data' => $list,
-            'stat' => $stat,
+            'stat' => $this->videoManagerService->getVideosStat([]),
         ];
 
         return response()->json($data, 200, [], JSON_UNESCAPED_UNICODE);
@@ -84,17 +48,20 @@ class VideoController extends Controller
 
     public function danmakuV3(Request $request)
     {
-        $cid    = $request->input('id');
+        $cid = $request->input('id');
+        if (! $cid) {
+            abort(400);
+        }
         $result = $this->videoManagerService->getDanmaku($cid);
         $result = array_map(function ($item) {
             return [
-                ($item['progress'] ?? 0 ) / 1000,
+                ($item['progress'] ?? 0) / 1000,
                 $item['mode'] ?? 0,
                 $item['color'] ?? 0,
                 '',
                 $item['content'] ?? '',
             ];
-        }, $result['danmaku'] ?? []);
+        }, $result);
         return response()->json([
             'code' => 0,
             'data' => $result,

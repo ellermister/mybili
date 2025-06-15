@@ -396,6 +396,7 @@ class BilibiliService
         $response = $client->request('GET', "https://api.bilibili.com/x/v3/fav/folder/created/list?pn=1&ps=20&up_mid={$this->mid}");
 
         $result    = json_decode($response->getBody()->getContents(), true);
+
         $favorites = [];
         if ($result && $result['code'] == 0) {
 

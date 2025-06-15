@@ -63,13 +63,13 @@ class CookieController extends Controller
 
         redis()->set('state:is_login', $isLogin ? 1 : 0);
 
-        if (!$lastLoginState && $isLogin) {
-            $job = new UpdateFavListJob();
-            dispatch($job);
+        // if (!$lastLoginState && $isLogin) {
+        //     $job = new UpdateFavListJob();
+        //     dispatch($job);
 
-            $job = new DownloadAllVideoJob();
-            dispatch($job)->delay(Carbon::now()->addMinutes(5));
-        }
+        //     $job = new DownloadAllVideoJob();
+        //     dispatch($job)->delay(Carbon::now()->addMinutes(5));
+        // }
 
         return response()->json([
             'logged' => $isLogin,
