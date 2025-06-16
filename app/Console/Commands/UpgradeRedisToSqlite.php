@@ -1,6 +1,7 @@
 <?php
 namespace App\Console\Commands;
 
+use App\Enums\SettingKey;
 use App\Models\Danmaku;
 use App\Models\FavoriteList;
 use App\Models\FavoriteListVideo;
@@ -226,7 +227,7 @@ class UpgradeRedisToSqlite extends Command
             $value = $redis->hget('settings', $key);
 
             // 将key驼峰转为下划线命名
-            $key = $this->camelToSnake($key);
+            $key = $this->convertSettingKey($key);
 
             Setting::query()->updateOrCreate([
                 'name' => $key,
@@ -251,5 +252,23 @@ class UpgradeRedisToSqlite extends Command
         
         // 转换为小写
         return strtolower(preg_replace($pattern, $replacement, $input));
+    }
+    
+    protected function convertSettingKey(string $key): string
+    {
+        switch ($key) {
+            case 'MultiPartitionCache':
+                return SettingKey::MULTI_PARTITION_DOWNLOAD_ENABLED->value;
+            case 'danmakuCache':
+                return SettingKey::DANMAKU_DOWNLOAD_ENABLED->value;
+            case 'nameExclude':
+                return SettingKey::NAME_EXCLUDE->value;
+            case 'sizeExclude':
+                return SettingKey::SIZE_EXCLUDE->value;
+            case 'favExclude':
+                return SettingKey::FAVORITE_EXCLUDE->value;
+            default:
+                return strtolower($key);
+        }
     }
 }
