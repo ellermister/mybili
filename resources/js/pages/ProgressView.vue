@@ -45,15 +45,15 @@
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-4 w-full gap-4">
                     <div class="flex flex-col relative" v-for="item in dataList">
                         <RouterLink :to="{ name: 'video-id', params: { id: item.id } }">
-                            <Image class="rounded-lg w-full h-auto md:w-96 md:h-56" :src="image(item.cache_image)"
-                                :class="{ 'grayscale-image': !item.downloaded }" :title="item.title" />
+                            <Image class="rounded-lg w-full h-auto md:w-96 md:h-56" :src="item.cache_image"
+                                :class="{ 'grayscale-image': item.video_downloaded_num == 0 }" :title="item.title" />
                         </RouterLink>
                         <span class="mt-4 text-center">{{ item.title }}</span>
                         <span class="text-sm">发布时间:{{ formatTimestamp(item.pubtime, "yyyy-mm-dd") }}</span>
                         <span class="text-sm">收藏时间:{{ formatTimestamp(item.fav_time, "yyyy-mm-dd") }}</span>
-                        <span
+                        <span v-if="item.page > 1"
                             class="text-sm text-white bg-gray-600 rounded-lg w-10 text-center  absolute top-2 right-2">{{
-                                item.media_count }}</span>
+                                item.page }}</span>
                     </div>
                 </div>
             </div>
@@ -65,7 +65,7 @@
 import { computed, ref } from 'vue';
 import Image from '@/components/Image.vue';
 import { formatTimestamp, image } from "../lib/helper"
-const videoList = ref([])
+const videoList = ref<VideoType[]>([])
 const progress = ref(0)
 
 const stat = ref({
@@ -82,6 +82,19 @@ const filter = ref<{
     class: null
 })
 
+interface VideoType {
+    id: string
+    title: string
+    cache_image: string
+    video_downloaded_at: string
+    invalid: boolean
+    frozen: boolean
+    pubtime: number
+    fav_time: number
+    page: number
+    video_downloaded_num: number
+}
+
 
 const dataList = computed(() => {
     return videoList.value.filter(i => {
@@ -91,7 +104,7 @@ const dataList = computed(() => {
 
         if (filter.value.class == 'invalid' && i.invalid) {
             return true
-        } else if (filter.value.class == 'valid' && i.valid) {
+        } else if (filter.value.class == 'valid' && !i.invalid) {
             return true
         } else if (filter.value.class == 'frozen' && i.frozen) {
             return true

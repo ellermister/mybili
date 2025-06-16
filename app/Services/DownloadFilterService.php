@@ -13,6 +13,9 @@ class DownloadFilterService
     public function shouldExcludeByName(string $name)
     {
         $nameExclude = $this->settings->get('name_exclude');
+        if (is_null($nameExclude)) {
+            throw new \Exception('name_exclude is not set');
+        }
         if ($nameExclude['type'] === 'off') {
             return false;
         }

@@ -1,10 +1,9 @@
 <?php
 namespace App\Jobs;
 
-use App\Contracts\VideoManagerServiceInterface;
+use App\Contracts\VideoDownloadServiceInterface;
 use App\Models\VideoPart;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 
 class ScanCheckVideoLocalFileJob implements ShouldQueue
 {
@@ -12,7 +11,7 @@ class ScanCheckVideoLocalFileJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(public int $videoPartId)
+    public function __construct(public int $videoPartId, public bool $download = false)
     {
         //
     }
@@ -20,11 +19,11 @@ class ScanCheckVideoLocalFileJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(VideoManagerServiceInterface $videoManagerService): void
+    public function handle(VideoDownloadServiceInterface $videoDownloadService): void
     {
         $videoPart = VideoPart::where('id', $this->videoPartId)->first();
         if ($videoPart) {
-            $videoManagerService->downloadVideoPartFile($videoPart, true);
+            $videoDownloadService->downloadVideoPartFile($videoPart, $this->download);
         }
     }
 }

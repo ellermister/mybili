@@ -39,7 +39,7 @@ function video_has_invalid(array $videoInfo)
 function match_cookie_main()
 {
     $cookiPath = storage_path('app/cookie.txt');
-    if (!is_file($cookiPath)) {
+    if (! is_file($cookiPath)) {
         throw new \LogicException("cookie 文件不存在");
     }
     $result   = file_get_contents($cookiPath);
@@ -58,14 +58,15 @@ function match_cookie_main()
     }
 }
 
-function parse_netscape_cookie_file($filename) {
+function parse_netscape_cookie_file($filename)
+{
 
-    if(!is_file($filename)){
+    if (! is_file($filename)) {
         throw new ErrorException("cookie.txt 不存在");
     }
 
     $cookies = [];
-    $lines = file($filename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $lines   = file($filename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
     foreach ($lines as $line) {
         if ($line[0] === '#' || substr_count($line, "\t") < 6) {
@@ -75,14 +76,29 @@ function parse_netscape_cookie_file($filename) {
         list($domain, $flag, $path, $secure, $expiry, $name, $value) = explode("\t", $line);
 
         $cookies[] = new SetCookie([
-            'Domain'   => $domain,
-            'Path'     => $path,
-            'Name'     => $name,
-            'Value'    => $value,
-            'Expires'  => $expiry,
-            'Secure'   => ($secure === 'TRUE'),
+            'Domain'  => $domain,
+            'Path'    => $path,
+            'Name'    => $name,
+            'Value'   => $value,
+            'Expires' => $expiry,
+            'Secure'  => ($secure === 'TRUE'),
         ]);
     }
 
     return new CookieJar(false, $cookies);
+}
+
+function get_relative_path(string $absolutePath): string
+{
+    // 如果是 storage 路径，转换为 URL
+    if (Str::startsWith($absolutePath, storage_path('app/public'))) {
+        return Str::after($absolutePath, storage_path('app/public/'));
+    }
+
+    // 如果是 public 路径，转换为相对路径
+    if (Str::startsWith($absolutePath, public_path())) {
+        return Str::after($absolutePath, public_path());
+    }
+
+    return $absolutePath;
 }

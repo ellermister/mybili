@@ -29,10 +29,7 @@ class VideoPartDanmakuDownload implements ShouldQueue
         if (isset($event->newVideoPart)) {
             $videoPart = VideoPart::where('cid', $event->newVideoPart['cid'])->first();
             if ($videoPart) {
-                //模拟测试
-                sleep(10);
-                return;
-                // $this->videoManagerService->downloadDanmaku($videoPart);
+                $this->videoManagerService->downloadDanmaku($videoPart);
             }
         }
     }

@@ -11,43 +11,18 @@ interface VideoManagerServiceInterface
     /**
      * 获取图片存储目录，如果不存在则创建
      */
-    // public function getImagesDirIfNotExistCreate(): string;
-
-    /**
-     * 创建视频存储目录
-     */
-    public function createVideoDirectory(): void;
-
-    /**
-     * 获取视频下载路径
-     */
-    public function getVideoDownloadPath(string $id, int $part = 1): string;
-
-    /**
-     * 获取视频下载哈希文件路径
-     */
-    public function getVideoDownloadHashPath(string $id, int $part = 1): string;
 
     // ==================== 视频信息相关 ====================
     /**
      * 获取视频信息
      */
-    public function getVideoInfo(string $id): ?Video;
-
-    /**
-     * 获取视频文件哈希值
-     */
-    public function getVideoFileHash(string $id): ?string;
+    public function getVideoInfo(string $id, bool $withParts = false): ?Video;
 
     /**
      * 检查视频是否已下载
      */
     public function videoDownloaded(string $id): bool;
 
-    /**
-     * 检查视频文件是否存在
-     */
-    public function hasVideoFile(string $id, int $part = 1): bool;
 
 
     /**
@@ -69,7 +44,7 @@ interface VideoManagerServiceInterface
     /**
      * 获取用户可访问的视频分P信息
      */
-    public function getAllPartsVideoForUser(string $id, int $parts = 1): array;
+    public function getAllPartsVideoForUser(Video $video): array;
 
     // ==================== 收藏夹相关 ====================
     /**
@@ -119,15 +94,6 @@ interface VideoManagerServiceInterface
      */
     public function dispatchDownloadVideoJob(array $video): void;
 
-    /**
-     * 完成视频下载
-     */
-    public function finishDownloadVideo(string $id): void;
-
-    /**
-     * 下载视频分P文件
-     */
-    public function downloadVideoPartFile(VideoPart $videoPart, bool $onlyLocalCheck = false): void;
 
     /**
      * 分发弹幕下载任务

@@ -1,8 +1,8 @@
 <?php
 namespace App\Services;
 
-use App\Contracts\VideoManagerServiceInterface;
 use App\Contracts\DownloadImageServiceInterface;
+use App\Contracts\VideoManagerServiceInterface;
 use App\Events\FavoriteUpdated;
 use App\Events\VideoPartUpdated;
 use App\Events\VideoUpdated;
@@ -19,6 +19,7 @@ use Log;
 
 class VideoManagerDBService implements VideoManagerServiceInterface
 {
+
     public function __construct(
         public SettingsService $settings,
         public BilibiliService $bilibiliService,
@@ -27,9 +28,13 @@ class VideoManagerDBService implements VideoManagerServiceInterface
 
     }
 
-    public function getVideoInfo(string $id): ?Video
+    public function getVideoInfo(string $id, bool $withParts = false): ?Video
     {
-        return Video::query()->where('id', $id)->first();
+        $video = Video::query()->where('id', $id)->first();
+        if ($video && $withParts) {
+            $video->load('parts');
+        }
+        return $video;
     }
 
     public function getVideoListByFav(int $favId): array
@@ -263,71 +268,6 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         ]);
     }
 
-    /**
-     * 视频文件和hash同时存在才认为有效
-     */
-    public function hasVideoFile(string $id, int $part = 1): bool
-    {
-        $savePath = $this->getVideoDownloadPath($id, $part);
-        $hashPath = $this->getVideoDownloadHashPath($id, $part);
-        return is_file($savePath) && is_file($hashPath);
-    }
-
-    public function getVideoFileHash(string $id): ?string
-    {
-        $hashPath = $this->getVideoDownloadHashPath($id);
-
-        if (is_file($hashPath)) {
-            $content = file_get_contents($hashPath);
-            if ($content) {
-                return $content;
-            }
-        }
-        return null;
-    }
-
-    public function createVideoDirectory(): void
-    {
-        $videoPath = storage_path('app/public/videos');
-        if (! is_dir($videoPath)) {
-            mkdir($videoPath, 0644);
-            if (! is_dir($videoPath)) {
-                throw new \Exception("下载路径不存在, 创建失败");
-            }
-        }
-    }
-
-    public function getVideoDownloadPath(string $id, int $part = 1): string
-    {
-        $videoPath = storage_path('app/public/videos');
-        if ($part === 1) {
-            return sprintf('%s/%s.mp4', $videoPath, $id);
-        }
-        return sprintf('%s/%s.part%d.mp4', $videoPath, $id, $part);
-    }
-
-    public function getVideoDownloadHashPath(string $id, int $part = 1): string
-    {
-        $videoPath = storage_path('app/public/videos');
-        if ($part === 1) {
-            return sprintf('%s/%s.mp4.hash', $videoPath, $id);
-        }
-        return sprintf('%s/%s.part%d.mp4.hash', $videoPath, $id, $part);
-    }
-
-    public function markVideoDownloaded(string $id, int $part = 1)
-    {
-        $savePath = $this->getVideoDownloadPath($id, $part);
-        $hashPath = $this->getVideoDownloadHashPath($id, $part);
-        if (is_file($savePath)) {
-            $calcHash = hash_file('sha256', $savePath);
-            if ($calcHash !== $this->getVideoFileHash($id)) {
-                file_put_contents($hashPath, $calcHash);
-                $this->setVideoDownloaded($id);
-            }
-        }
-    }
-
     public function getAllPartsVideo(string $id): array
     {
         return VideoPart::where('video_id', $id)
@@ -336,30 +276,22 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             ->toArray();
 
     }
-    public function getAllPartsVideoForUser(string $id, int $parts = 1): array
+
+    public function getAllPartsVideoForUser(Video $video): array
     {
-        $videoParts = collect($this->getAllPartsVideo($id));
-
         $list = [];
-        for ($i = 1; $i <= $parts; $i++) {
-            $savePath = $this->getVideoDownloadPath($id, $i);
-            $urlPath  = str_replace(storage_path('app/public/'), '', $savePath);
-            if (is_file($savePath)) {
-                $title = '';
-                $cid   = 0;
-                if ($videoParts->isNotEmpty()) {
-                    $part  = $videoParts->where('page', $i)->first();
-                    $title = $part['part'] ?? '';
-                    $cid   = $part['cid'] ?? 0;
-                }
-
-                $list[] = [
-                    'id'    => $cid,
-                    'part'  => $i,
-                    'url'   => '/storage/' . $urlPath,
-                    'title' => $title,
-                ];
+        foreach ($video->parts as $videoPart) {
+            if (! empty($videoPart['video_download_url'])) {
+                $urlPath = $videoPart['video_download_url'];
+            } else {
+                $urlPath = null;
             }
+            $list[] = [
+                'id'    => $videoPart['cid'],
+                'part'  => $videoPart['page'],
+                'url'   => $urlPath,
+                'title' => $videoPart['part'] ?? 'P' . $videoPart['page'],
+            ];
         }
         return $list;
     }
@@ -405,8 +337,8 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         // 释放内存
         unset($danmakuIds);
 
-        $videoPart = VideoPart::where('cid', $cid)->first();
-        $insertData = array_map(function($item) use ($videoPart){
+        $videoPart  = VideoPart::where('cid', $cid)->first();
+        $insertData = array_map(function ($item) use ($videoPart) {
             $item['video_id'] = $videoPart->video_id;
             return $item;
         }, $insertData);
@@ -441,16 +373,16 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         }
         redis()->expire(sprintf('danmaku_downloading:%s', $videoPart->cid), 3600 * 8);
 
-        try{
+        try {
             $video = Video::where('id', $videoPart->video_id)->first();
             // 如果上次下载时间小于7天则不更新
             if ($videoPart->danmaku_downloaded_at && $videoPart->danmaku_downloaded_at > Carbon::now()->subDays(7)) {
                 Log::info('Danmaku has been saved in the last 7 days', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
                 return;
             }
-    
+
             $partDanmakus = $this->bilibiliService->getDanmaku($videoPart->cid, intval($videoPart->duration));
-    
+
             Log::info('Download danmaku success', [
                 'id'       => $videoPart->cid,
                 'title'    => $videoPart->part,
@@ -460,13 +392,13 @@ class VideoManagerDBService implements VideoManagerServiceInterface
                 'title'    => $video->title,
             ]);
             $this->saveDanmaku($videoPart->cid, $partDanmakus);
-    
+
             $videoPart->danmaku_downloaded_at = Carbon::now();
             $videoPart->save();
-        }catch(\Throwable $e){
+        } catch (\Throwable $e) {
             Log::error('Download danmaku failed', ['id' => $videoPart->cid, 'title' => $videoPart->part, 'error' => $e->getMessage()]);
             return;
-        }finally{
+        } finally {
             // 移除下载锁
             redis()->del(sprintf('danmaku_downloading:%s', $videoPart->cid));
         }
@@ -488,67 +420,11 @@ class VideoManagerDBService implements VideoManagerServiceInterface
     {
         $stat = [
             'count'      => Video::count(),
-            'downloaded' => Video::where('video_downloaded_at', '!=', null)->count(),
+            'downloaded' => Video::where('video_downloaded_num', '>', 0)->count(),
             'invalid'    => Video::where('invalid', 1)->count(),
             'valid'      => Video::where('invalid', 0)->count(),
             'frozen'     => Video::where('frozen', 1)->count(),
         ];
         return $stat;
-    }
-
-    public function downloadVideoPartFile(VideoPart $videoPart, bool $onlyLocalCheck = false): void
-    {
-        $video = Video::where('id', $videoPart->video_id)->first();
-
-        // 获取当前分片在视频第几个索引
-        $videoParts = VideoPart::where('video_id', $video->id)->select(['video_id','page','cid'])->get();
-
-        // 如果是全数字命名的，则数字对应的就是文件名索引
-        $isNumberNamed = false;
-        foreach($videoParts as $item){
-            if(preg_match('/^\d+$/', $item['page']) && intval($item['page']) == $item['page']){
-                $isNumberNamed = true;
-            }else{
-                $isNumberNamed = false;
-                break;
-            }
-        }
-
-        $currentIndex = 1;
-        if($isNumberNamed){
-            $currentIndex = $videoPart->page;
-            Log::info('Video part is number named', ['id' => $videoPart->cid, 'title' => $videoPart->part, 'currentIndex' => $currentIndex]);
-        }else{
-            // 如果不是数字索引的，则按照排序，取当前分片在视频第几个索引
-            $videoParts = $videoParts->sortBy('video_id');
-            $currentIndex = $videoParts->search(function($item) use ($videoPart){
-                return $item['cid'] == $videoPart->cid;
-            }) + 1;
-        }
-        
-
-        if($video){
-            $savePath = $this->getVideoDownloadPath($video->id, $currentIndex);
-            if(!is_file($savePath)){
-                // 输出日志下次再做
-                Log::info('Video part file not exists, TODO: download video part file', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
-
-                if($onlyLocalCheck){
-                    return;
-                }
-                
-                // TODO: 下载视频分P文件
-            }else{
-                // 如果文件存在，则更新记录到数据库并写入日志
-                Log::info('Video part file already exists', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
-
-                // 时间取文件创建时间
-                $videoPart->video_downloaded_at = Carbon::createFromTimestamp(filectime($savePath));
-
-                // 获取相对路径
-                $videoPart->video_download_path = str_replace(storage_path('app/public/'), '', $savePath);
-                $videoPart->save();
-            }
-        }
     }
 }

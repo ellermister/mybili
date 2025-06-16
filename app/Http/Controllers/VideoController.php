@@ -14,10 +14,10 @@ class VideoController extends Controller
 
     public function show(Request $request, int $id)
     {
-        $result = $this->videoManagerService->getVideoInfo($id);
-        if ($result) {
-            $result['parts'] = $this->videoManagerService->getAllPartsVideoForUser($id, $result['page']);
-            return response()->json($result);
+        $video = $this->videoManagerService->getVideoInfo($id, true);
+        if ($video) {
+            $video->video_parts = $this->videoManagerService->getAllPartsVideoForUser($video);
+            return response()->json($video);
         }
         abort(404);
     }

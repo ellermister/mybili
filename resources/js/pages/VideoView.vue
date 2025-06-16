@@ -9,13 +9,13 @@
 
     <div class="flex flex-col md:flex-row gap-4 w-full">
         <div id="dplayer" ref="dplayerEle" class="w-full md:flex-1"></div>
-        <div class="w-full md:w-80 md:shrink-0" v-if="videoInfo && videoInfo.parts.length > 1">
+        <div class="w-full md:w-80 md:shrink-0" v-if="videoInfo && videoInfo.video_parts.length > 1">
             <div class="parts bg-[#f1f2f3] rounded-lg p-4">
                 <h3 class="text-xl mb-4 font-medium">Parts</h3>
                 <div class="flex flex-col gap-2">
-                    <button v-for="part in videoInfo?.parts" :key="part.id" @click="playPart(part.id)"
+                    <button v-for="part in videoInfo?.video_parts" :key="part.id" @click="playPart(part.id)"
                         class="px-4 py-2 text-left rounded hover:text-sky-500 transition-colors"
-                        :class="{ 'bg-white': currentPart === part.id, 'text-sky-500': currentPart === part.id }">
+                        :class="{ 'bg-white': currentPart?.id === part.id, 'text-sky-500': currentPart?.id === part.id }">
                         {{ part.title }}
                     </button>
                 </div>
@@ -56,14 +56,17 @@ interface VideoType {
     bvid: string
     attr: number
     page: number
-    parts: {
-        id: number
-        url: string
-        title: string
-    }[]
+    video_parts: VideoPartType[]
     _metas: {
         cover: string
     }
+}
+
+interface VideoPartType {
+    id: number
+    url: string
+    title: string
+    part: number
 }
 
 const bilibiliUrl = (bvid: string) => {
@@ -73,11 +76,11 @@ const bilibiliUrl = (bvid: string) => {
 const videoInfo = ref<VideoType | null>()
 const notfound = ref(false)
 
-const currentPart = ref(null)
+const currentPart = ref<VideoPartType | null>(null)
 
 const playPart = (partId: number) => {
     console.log('playPart', partId)
-    const part = videoInfo.value?.parts.find(part => part.id === partId)
+    const part = videoInfo.value?.video_parts.find(part => part.id === partId)
     if (part) {
         // p1 视频, p2 弹幕
         dp.value.switchVideo({
@@ -93,7 +96,7 @@ const playPart = (partId: number) => {
             dp.value.play()
         }, 1000)
 
-        currentPart.value = partId
+        currentPart.value = part as VideoPartType
     }
 }
 const dp = ref<DPlayer | null>(null)
@@ -117,7 +120,7 @@ onMounted(() => {
                     api: '/api/danmaku/',
                 },
             }
-            const part = jsonData.parts[0]
+            const part = jsonData.video_parts[0]
             if (part) {
                 options.video.url = part.url
                 options.danmaku.id = part.id

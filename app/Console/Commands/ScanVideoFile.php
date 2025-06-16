@@ -12,7 +12,7 @@ class ScanVideoFile extends Command
      *
      * @var string
      */
-    protected $signature = 'app:scan-video-file {--video-id=}';
+    protected $signature = 'app:scan-video-file {--video-id=} {--force} {--download}';
 
     /**
      * The console command description.
@@ -26,17 +26,28 @@ class ScanVideoFile extends Command
      */
     public function handle()
     {
-        $videoId = $this->option('video-id');
-        if($videoId){
-            VideoPart::where('video_id', '=', $videoId)->where('video_download_path', '=', null)->chunk(100, function ($videoParts) {
-                foreach ($videoParts as $videoPart) {
-                    dispatch(new ScanCheckVideoLocalFileJob($videoPart->id));
+        $download = $this->option('download') ? true : false;
+        $videoId  = $this->option('video-id');
+        if ($videoId) {
+            $videoParts = VideoPart::where('video_id', '=', $videoId)->get();
+            if ($videoParts->count() > 0) {
+                foreach ($videoParts as $part) {
+                    dispatch(new ScanCheckVideoLocalFileJob($part->id, $download));
                 }
-            });
-        }else{
-            VideoPart::where('video_download_path', '=', null)->chunk(100, function ($videoParts) {
+            } else {
+                $this->error('Video parts not found');
+            }
+        } else {
+            $query = VideoPart::query();
+            $force = $this->option('force');    
+            if (! $force) {
+                $query->whereNull('video_download_path');
+            }
+            $count = $query->count();
+            $this->info('Total video parts to scan: ' . $count);
+            $query->chunk(100, function ($videoParts) use ($download) {
                 foreach ($videoParts as $videoPart) {
-                    dispatch(new ScanCheckVideoLocalFileJob($videoPart->id));
+                    dispatch(new ScanCheckVideoLocalFileJob($videoPart->id, $download));
                 }
             });
         }

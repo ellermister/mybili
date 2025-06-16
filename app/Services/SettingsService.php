@@ -1,20 +1,18 @@
 <?php
 namespace App\Services;
+
+use App\Models\Setting;
+
 class SettingsService
 {
-    public function __construct()
-    {
-        
-    }
-
     public function put($name, $values)
     {
-        redis()->hset('settings', $name, json_encode($values));
+        Setting::updateOrCreate(['name' => $name], ['value' => $values]);
     }
 
     public function get($name)
     {
-        $value = redis()->hget('settings', $name);
-        return json_decode($value, true);
+        $setting = Setting::where('name', $name)->first();
+        return $setting ? $setting->value : null;
     }
 }
