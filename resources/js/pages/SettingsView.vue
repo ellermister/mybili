@@ -98,44 +98,84 @@
                 </div>
             </div>
 
-            <!-- Collection Cache -->
+            <!-- Favorite Sync -->
             <div class="mb-6" v-if="availableCollections">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Multi-Partition Cache</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Favorite Sync</label>
                 <div class="space-y-2">
-                    <!-- Off -->
+                    <!-- Off (Default) -->
                     <label class="flex items-center space-x-3">
-                        <input v-model="MultiPartitionCache" type="radio" value="off"
+                        <input v-model="favoriteSyncEnabled" type="radio" value="off"
                             class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Off</span>
+                        <span class="text-gray-700">Off (Default)</span>
                     </label>
-
-                    <!-- On (Default) -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="MultiPartitionCache" type="radio" value="on"
+                    
+                         <!-- On (Default) -->
+                         <label class="flex items-center space-x-3">
+                        <input v-model="favoriteSyncEnabled" type="radio" value="on"
                             class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">On (Default)</span>
+                        <span class="text-gray-700">On </span>
                     </label>
                 </div>
             </div>
 
-            <!-- Danmaku Cache -->
+            <!-- Multi-Partition Download -->
             <div class="mb-6" v-if="availableCollections">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Danmaku Cache</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Multi-Partition Download</label>
+                <div class="space-y-2">
+                    <!-- Off -->
+                    <label class="flex items-center space-x-3">
+                        <input v-model="multiPartitionDownloadEnabled" type="radio" value="off"
+                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                        <span class="text-gray-700">Off (Default)</span>
+                    </label>
+
+                    <!-- On (Default) -->
+                    <label class="flex items-center space-x-3">
+                        <input v-model="multiPartitionDownloadEnabled" type="radio" value="on"
+                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                        <span class="text-gray-700">On </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Danmaku Download -->
+            <div class="mb-6" v-if="availableCollections">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Danmaku Download</label>
                 <div class="space-y-2">
                     <!-- Off (Default) -->
                     <label class="flex items-center space-x-3">
-                        <input v-model="danmakuCache" type="radio" value="off"
+                        <input v-model="danmakuDownloadEnabled" type="radio" value="off"
                             class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
                         <span class="text-gray-700">Off (Default)</span>
                     </label>
 
                     <!-- On -->
                     <label class="flex items-center space-x-3">
-                        <input v-model="danmakuCache" type="radio" value="on"
+                        <input v-model="danmakuDownloadEnabled" type="radio" value="on"
                             class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
                         <span class="text-gray-700">On</span>
                     </label>
                 </div>
+            </div>
+
+            <!-- Video Download -->
+            <div class="mb-6" v-if="availableCollections">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Video Download</label>
+                <div class="space-y-2">
+                    <!-- Off (Default) -->
+                    <label class="flex items-center space-x-3">
+                        <input v-model="videoDownloadEnabled" type="radio" value="off"
+                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                        <span class="text-gray-700">Off (Default)</span>
+                    </label>
+                </div>
+
+                <!-- On -->
+                <label class="flex items-center space-x-3">
+                    <input v-model="videoDownloadEnabled" type="radio" value="on"
+                        class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                    <span class="text-gray-700">On</span>
+                </label>
             </div>
 
             <!-- Save Button -->
@@ -163,8 +203,10 @@ const sizeExclude = ref({
     custom_size: 0
 });
 
-const MultiPartitionCache = ref('on'); // off, on
-const danmakuCache = ref('off'); // off, on
+const multiPartitionDownloadEnabled = ref('on'); // off, on
+const danmakuDownloadEnabled = ref('off'); // off, on
+const videoDownloadEnabled = ref('off'); // off, on
+const favoriteSyncEnabled = ref('off'); // off, on
 
 // 添加合集过滤相关的响应式数据
 const favExclude = ref({
@@ -179,16 +221,20 @@ const saveSettingHandler = () => {
         name_exclude: nameExclude.value,
         size_exclude: sizeExclude.value,
         fav_exclude: favExclude.value,
-        multi_partition_cache: MultiPartitionCache.value,
-        danmaku_cache: danmakuCache.value,
+        multi_partition_download_enabled: multiPartitionDownloadEnabled.value,
+        danmaku_download_enabled: danmakuDownloadEnabled.value,
+        video_download_enabled: videoDownloadEnabled.value,
+        favorite_sync_enabled: favoriteSyncEnabled.value,
     });
 
     saveSettings({
         name_exclude: nameExclude.value,
         size_exclude: sizeExclude.value,
         fav_exclude: favExclude.value,
-        multi_partition_cache: MultiPartitionCache.value,
-        danmaku_cache: danmakuCache.value,
+        multi_partition_download_enabled: multiPartitionDownloadEnabled.value,
+        danmaku_download_enabled: danmakuDownloadEnabled.value,
+        video_download_enabled: videoDownloadEnabled.value,
+        favorite_sync_enabled: favoriteSyncEnabled.value,
     }).then(()=>{
         alert('Settings saved successfully!');
     });
@@ -207,8 +253,10 @@ onMounted(()=>{
         nameExclude.value = data.name_exclude;
         sizeExclude.value = data.size_exclude;
         favExclude.value = data.fav_exclude;
-        MultiPartitionCache.value = data.multi_partition_cache;
-        danmakuCache.value = data.danmaku_cache;
+        multiPartitionDownloadEnabled.value = data.multi_partition_download_enabled;
+        danmakuDownloadEnabled.value = data.danmaku_download_enabled;
+        videoDownloadEnabled.value = data.video_download_enabled;
+        favoriteSyncEnabled.value = data.favorite_sync_enabled;
     })
 })
 

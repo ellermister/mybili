@@ -1,24 +1,28 @@
 <?php
+
+use App\Enums\SettingKey;
+use App\Services\SettingsService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::call(function () {
-    Artisan::call('app:update-fav');
+    $updateFavEnable = app(SettingsService::class)->get(SettingKey::FAVORITE_SYNC_ENABLED);
+    if ($updateFavEnable == "on") {
+        Artisan::call('app:update-fav', ['--update-fav' => true]);
+    }
 })
 ->name('update-fav')
 ->withoutOverlapping()
 ->everyTenMinutes();
 
+
 Schedule::call(function () {
-    Artisan::call('app:download-video');
+    $updateFavEnable = app(SettingsService::class)->get(SettingKey::FAVORITE_SYNC_ENABLED);
+    if ($updateFavEnable == "on") {
+        Artisan::call('app:update-fav', ['--update-fav-videos' => true]);
+    }
 })
-->name('download-video')
+->name('update-fav-videos')
 ->withoutOverlapping()
 ->everyTenMinutes();
 
-Schedule::call(function () {
-    Artisan::call('app:download-danmaku');
-})
-->name('download-danmaku')
-->withoutOverlapping()
-->dailyAt('00:00');

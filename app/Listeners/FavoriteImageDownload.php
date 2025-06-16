@@ -32,8 +32,9 @@ class FavoriteImageDownload
                 return;
             }
             try {
-                $this->downloadImageService->downloadImage($newFav['cover'], $this->downloadImageService->getImageLocalPath($newFav['cover']));
-                FavoriteList::where('id', $newFav['id'])->update(['cache_image' => $this->downloadImageService->convertToFilename($newFav['cover'])]);
+                $savePath = $this->downloadImageService->getImageLocalPath($newFav['cover']);
+                $this->downloadImageService->downloadImage($newFav['cover'], $savePath);
+                FavoriteList::where('id', $newFav['id'])->update(['cache_image' => get_relative_path($savePath)]);
             } catch (\Exception $e) {
                 Log::error('Download fav image failed', ['error' => $e->getMessage()]);
             }

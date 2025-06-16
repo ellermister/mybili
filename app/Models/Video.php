@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Storage;
 
 class Video extends Model
 {
@@ -14,8 +15,17 @@ class Video extends Model
         'fav_time' => 'timestamp',
     ];
 
+    protected $appends = [
+        'cache_image_url',
+    ];
+
     public function parts()
     {
         return $this->hasMany(VideoPart::class, 'video_id', 'id');
+    }
+
+    public function getCacheImageUrlAttribute()
+    {
+        return $this->cache_image ? Storage::url($this->cache_image) : null;
     }
 }

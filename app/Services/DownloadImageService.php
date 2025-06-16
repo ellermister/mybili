@@ -27,7 +27,7 @@ class DownloadImageService implements DownloadImageServiceInterface
         file_put_contents($hashPath, hash_file('sha256', $savePath));
     }
 
-    public function convertToFilename(string $url): string
+    protected function convertToFilename(string $url): string
     {
         if (empty($url)) {
             return "";

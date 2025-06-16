@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Enums\SettingKey;
 use App\Services\SettingsService;
 use Illuminate\Http\Request;
 
@@ -15,18 +16,20 @@ class SettingsController extends Controller
     public function getSettings()
     {
         $presets = [
-            'danmaku_cache'         => 'on',
-            'fav_exclude'           => [
+            SettingKey::DANMAKU_DOWNLOAD_ENABLED->value         => 'off',
+            SettingKey::VIDEO_DOWNLOAD_ENABLED->value           => 'off',
+            SettingKey::FAVORITE_SYNC_ENABLED->value            => 'off',
+            SettingKey::FAVORITE_EXCLUDE->value                 => [
                 'enabled'  => false,
                 'selected' => [],
             ],
-            'multi_partition_cache' => 'off',
-            'name_exclude'          => [
+            SettingKey::MULTI_PARTITION_DOWNLOAD_ENABLED->value => 'off',
+            SettingKey::NAME_EXCLUDE->value                     => [
                 'contains' => '',
                 'regex'    => '',
                 'type'     => 'off',
             ],
-            'size_exclude'          => [
+            SettingKey::SIZE_EXCLUDE->value                     => [
                 'custom_size' => 0,
                 'type'        => 'off',
             ],
@@ -45,21 +48,23 @@ class SettingsController extends Controller
     public function saveSettings(Request $request)
     {
         $data = $request->validate([
-            'multi_partition_cache'    => 'required|string|in:on,off',
-            'danmaku_cache'            => 'required|string|in:on,off',
+            SettingKey::MULTI_PARTITION_DOWNLOAD_ENABLED->value => 'required|string|in:on,off',
+            SettingKey::DANMAKU_DOWNLOAD_ENABLED->value         => 'required|string|in:on,off',
+            SettingKey::VIDEO_DOWNLOAD_ENABLED->value           => 'required|string|in:on,off',
+            SettingKey::FAVORITE_SYNC_ENABLED->value            => 'required|string|in:on,off',
 
-            'name_exclude'             => 'required|array',
-            'name_exclude.contains'    => 'required_if:name_exclude.type,contains|string',
-            'name_exclude.regex'       => 'required_if:name_exclude.type,regex|string',
-            'name_exclude.type'        => 'required|string|in:off,contains,regex',
+            SettingKey::NAME_EXCLUDE->value                     => 'required|array',
+            SettingKey::NAME_EXCLUDE->value . '.contains'       => 'required_if:name_exclude.type,contains|string',
+            SettingKey::NAME_EXCLUDE->value . '.regex'          => 'required_if:name_exclude.type,regex|string',
+            SettingKey::NAME_EXCLUDE->value . '.type'           => 'required|string|in:off,contains,regex',
 
-            'size_exclude'             => 'required|array',
-            'size_exclude.custom_size' => 'required_if:size_exclude.type,custom|integer',
-            'size_exclude.type'        => 'required|string|in:off,1GB,2GB,custom',
+            SettingKey::SIZE_EXCLUDE->value                     => 'required|array',
+            SettingKey::SIZE_EXCLUDE->value . '.custom_size'    => 'required_if:size_exclude.type,custom|integer',
+            SettingKey::SIZE_EXCLUDE->value . '.type'           => 'required|string|in:off,1GB,2GB,custom',
 
-            'fav_exclude'              => 'required|array',
-            'fav_exclude.enabled'      => 'required|boolean',
-            'fav_exclude.selected'     => 'required_if:fav_exclude.enabled,true|array',
+            SettingKey::FAVORITE_EXCLUDE->value                 => 'required|array',
+            SettingKey::FAVORITE_EXCLUDE->value . '.enabled'    => 'required|boolean',
+            SettingKey::FAVORITE_EXCLUDE->value . '.selected'   => 'required_if:fav_exclude.enabled,true|array',
         ]);
 
         foreach ($data as $key => $value) {

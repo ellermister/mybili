@@ -3,6 +3,7 @@ namespace App\Services;
 
 use App\Contracts\DownloadImageServiceInterface;
 use App\Contracts\VideoManagerServiceInterface;
+use App\Enums\SettingKey;
 use App\Events\FavoriteUpdated;
 use App\Events\VideoPartUpdated;
 use App\Events\VideoUpdated;
@@ -91,7 +92,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
 
             if ($frozen) {
                 Log::info('Frozen video', ['id' => $item['id'], 'title' => $exist['title']]);
-                $item     = array_merge($exist, Arr::except($item, ['attr', 'title', 'cover', 'cache_image']));
+                $item     = array_merge($exist, Arr::except($item, ['attr', 'title', 'cover']));
                 $newValue = $item;
             } else {
                 $newValue = $item;
@@ -109,7 +110,6 @@ class VideoManagerDBService implements VideoManagerServiceInterface
                 'attr'        => $newValue['attr'],
                 'invalid'     => $newValue['invalid'],
                 'frozen'      => $newValue['frozen'],
-                'cache_image' => $newValue['cache_image'] ?? '',
                 'page'        => $newValue['page'],
                 'fav_time'    => $newValue['fav_time'],
             ];
@@ -159,7 +159,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             $video->fill($item);
             $video->save();
 
-            event(new VideoUpdated($oldVideoData, $item));
+            event(new VideoUpdated($oldVideoData, $video->toArray()));
 
             Log::info('Update video success', ['id' => $item['id'], 'title' => $item['title']]);
         }
@@ -172,10 +172,11 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             return;
         }
 
-        if ($video->video_downloaded_at && $video->video_downloaded_at > Carbon::now()->subDays(7)) {
-            Log::info('Video parts has been saved in the last 7 days', ['id' => $video->id, 'bvid' => $video->bvid, 'title' => $video->title]);
-            return;
-        }
+        // 后面考虑要不要控制频率，减少风控
+        // if ($video->video_downloaded_at && $video->video_downloaded_at > Carbon::now()->subDays(7)) {
+        //     Log::info('Video parts has been saved in the last 7 days', ['id' => $video->id, 'bvid' => $video->bvid, 'title' => $video->title]);
+        //     return;
+        // }
 
         try {
             $videoParts = $this->bilibiliService->getVideoParts($video->bvid);
@@ -236,38 +237,6 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         return $video['attr'] > 0 || $video['title'] == '已失效视频';
     }
 
-    public function videoDownloaded(string $id): bool
-    {
-        return Video::where('id', $id)->value('video_downloaded_at') ? true : false;
-    }
-
-    public function setVideoDownloaded(string $avId): void
-    {
-        Video::where('id', $avId)->update([
-            'video_downloaded_at' => Carbon::now(),
-        ]);
-    }
-
-    public function delVideoDownloaded(string $avId): void
-    {
-        Video::where('id', $avId)->update([
-            'video_downloaded_at' => null,
-        ]);
-    }
-
-    public function danmakuDownloadedTime(string $avId): ?int
-    {
-        $time = Video::where('id', $avId)->value('danmaku_downloaded_at');
-        return $time ? Carbon::parse($time)->timestamp : null;
-    }
-
-    public function setDanmakuDownloadedTime(string $avId): void
-    {
-        Video::where('id', $avId)->update([
-            'danmaku_downloaded_at' => Carbon::now(),
-        ]);
-    }
-
     public function getAllPartsVideo(string $id): array
     {
         return VideoPart::where('video_id', $id)
@@ -296,33 +265,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         return $list;
     }
 
-    public function dispatchDownloadVideoJob(array $video): void
-    {
-        $id     = $video['id'];
-        $exists = redis()->setnx(sprintf('video_downloading:%s', $id), 1);
-        if ($exists) {
-            redis()->expire(sprintf('video_downloading:%s', $id), 3600 * 8);
-            $job = new DownloadVideoJob($video);
-            dispatch($job);
-        }
-    }
-
-    public function finishDownloadVideo(string $id): void
-    {
-        redis()->del(sprintf('video_downloading:%s', $id));
-    }
-
-    public function dispatchDownloadDanmakuJob(int $avId): void
-    {
-        $exists = redis()->setnx(sprintf('danmaku_downloading:%s', $avId), 1);
-        if ($exists) {
-            redis()->expire(sprintf('danmaku_downloading:%s', $avId), 3600 * 8);
-            $job = new DownloadDanmakuJob($avId);
-            dispatch($job);
-        }
-    }
-
-    public function saveDanmaku(string $cid, array $danmaku): void
+    protected function saveDanmaku(string $cid, array $danmaku): void
     {
         $danmakuIds = Danmaku::where('cid', $cid)->select([
             'id',
@@ -365,6 +308,11 @@ class VideoManagerDBService implements VideoManagerServiceInterface
 
     public function downloadDanmaku(VideoPart $videoPart): void
     {
+        if ($this->settings->get(SettingKey::DANMAKU_DOWNLOAD_ENABLED) != 'on') {
+            Log::info('Download danmaku disabled', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
+            return;
+        }
+
         //加锁
         $lock = redis()->setnx(sprintf('danmaku_downloading:%s', $videoPart->cid), 1);
         if (! $lock) {

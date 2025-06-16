@@ -2,19 +2,20 @@
 namespace App\Services;
 
 use App\Contracts\VideoDownloadServiceInterface;
+use App\Enums\SettingKey;
 use App\Jobs\DownloadVideoJob;
 use App\Models\Video;
 use App\Models\VideoPart;
+use App\Services\DownloadFilterService;
 use Carbon\Carbon;
 use Log;
-use App\Services\DownloadFilterService;
 use Storage;
 use Str;
 
 class VideoDownloadService implements VideoDownloadServiceInterface
 {
 
-    public function __construct(public DownloadFilterService $downloadFilterService)
+    public function __construct(public DownloadFilterService $downloadFilterService, public SettingsService $settingsService)
     {
     }
 
@@ -153,7 +154,7 @@ class VideoDownloadService implements VideoDownloadServiceInterface
             $isDownloaded = false;
             if ($videoPart->video_download_path) {
                 $isDownloaded = true;
-                $savePath = Storage::disk('public')->path(Str::after($videoPart->video_download_path, '/storage/'));
+                $savePath     = Storage::disk('public')->path(Str::after($videoPart->video_download_path, '/storage/'));
                 if (is_file($savePath)) {
                     $isDownloaded = true;
                 }
@@ -165,15 +166,16 @@ class VideoDownloadService implements VideoDownloadServiceInterface
             }
 
             if (! $isDownloaded) {
-                if (!$tryDownload) {
+                if (! $tryDownload) {
                     return;
                 }
 
-                // 输出日志下次再做
-                Log::info('Video part file not exists, TODO: download video part file', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
-
-                // TODO: 下载视频分P文件
-                dispatch(new DownloadVideoJob($videoPart));
+                // 下载视频分P文件
+                if ($this->settingsService->get(SettingKey::VIDEO_DOWNLOAD_ENABLED) == 'on') {
+                    dispatch(new DownloadVideoJob($videoPart));
+                } else {
+                    Log::info('Video part file not exists, download video part file disabled', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
+                }
             } else {
                 // 如果文件存在，则更新记录到数据库并写入日志
                 Log::info('Video part file already exists', ['id' => $videoPart->cid, 'title' => $videoPart->part]);

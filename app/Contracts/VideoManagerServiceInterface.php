@@ -7,22 +7,12 @@ use App\Models\VideoPart;
 
 interface VideoManagerServiceInterface
 {
-    // ==================== 文件系统相关 ====================
-    /**
-     * 获取图片存储目录，如果不存在则创建
-     */
 
     // ==================== 视频信息相关 ====================
     /**
      * 获取视频信息
      */
     public function getVideoInfo(string $id, bool $withParts = false): ?Video;
-
-    /**
-     * 检查视频是否已下载
-     */
-    public function videoDownloaded(string $id): bool;
-
 
 
     /**
@@ -79,48 +69,12 @@ interface VideoManagerServiceInterface
     public function getDanmaku(string $cid): array;
 
     /**
-     * 保存弹幕数据
-     */
-    public function saveDanmaku(string $cid, array $danmaku): void;
-
-    /**
-     * 获取弹幕下载时间
-     */
-    public function danmakuDownloadedTime(string $avId): ?int;
-
-    // ==================== 下载任务相关 ====================
-    /**
-     * 分发视频下载任务
-     */
-    public function dispatchDownloadVideoJob(array $video): void;
-
-
-    /**
-     * 分发弹幕下载任务
-     */
-    public function dispatchDownloadDanmakuJob(int $avId): void;
-
-
-    /**
      * 下载弹幕数据
      */
     public function downloadDanmaku(VideoPart $videoPart):void;
 
     // ==================== 视频状态管理 ====================
-    /**
-     * 标记视频已下载
-     */
-    public function setVideoDownloaded(string $avId): void;
 
-    /**
-     * 取消视频下载标记
-     */
-    public function delVideoDownloaded(string $avId): void;
-
-    /**
-     * 标记弹幕已下载
-     */
-    public function setDanmakuDownloadedTime(string $avId): void;
 
     /**
      * 检查视频是否无效

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Storage;
 
 class FavoriteList extends Model
 {
@@ -15,8 +16,17 @@ class FavoriteList extends Model
         'mtime' => 'timestamp',
     ];
 
+    protected $appends = [
+        'cache_image_url',
+    ];
+
     public function videos()
     {
         return $this->belongsToMany(Video::class, 'favorite_list_videos', 'favorite_list_id', 'video_id');
+    }
+
+    public function getCacheImageUrlAttribute()
+    {
+        return $this->cache_image ? Storage::url($this->cache_image) : null;
     }
 }

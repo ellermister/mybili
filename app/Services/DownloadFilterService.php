@@ -1,6 +1,7 @@
 <?php
 namespace App\Services;
 
+use App\Enums\SettingKey;
 use Log;
 
 class DownloadFilterService
@@ -12,7 +13,7 @@ class DownloadFilterService
 
     public function shouldExcludeByName(string $name)
     {
-        $nameExclude = $this->settings->get('name_exclude');
+        $nameExclude = $this->settings->get(SettingKey::NAME_EXCLUDE);
         if (is_null($nameExclude)) {
             throw new \Exception('name_exclude is not set');
         }
@@ -35,7 +36,7 @@ class DownloadFilterService
 
     public function shouldExcludeBySize(int $size)
     {
-        $sizeExclude = $this->settings->get('size_exclude');
+        $sizeExclude = $this->settings->get(SettingKey::SIZE_EXCLUDE);
         if ($sizeExclude['type'] === 'off') {
             return false;
         }
@@ -53,7 +54,7 @@ class DownloadFilterService
 
     public function shouldExcludeByFav(int $favId)
     {
-        $favExclude = $this->settings->get('fav_exclude');
+        $favExclude = $this->settings->get(SettingKey::FAVORITE_EXCLUDE);
         if (! $favExclude || $favExclude['enabled'] === false) {
             return false;
         }
@@ -62,7 +63,7 @@ class DownloadFilterService
 
     public function isMultiPEnabled()
     {
-        $multiP = $this->settings->get('multi_partition_cache');
+        $multiP = $this->settings->get(SettingKey::MULTI_PARTITION_DOWNLOAD_ENABLED);
         return $multiP === 'on';
     }
 }

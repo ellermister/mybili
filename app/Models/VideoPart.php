@@ -26,6 +26,6 @@ class VideoPart extends Model
 
     public function getVideoDownloadUrlAttribute()
     {
-        return Storage::url($this->video_download_path);
+        return $this->video_download_path ? Storage::url($this->video_download_path) : null;
     }
 }

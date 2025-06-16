@@ -2,6 +2,7 @@
 namespace App\Console\Commands;
 
 use App\Contracts\VideoManagerServiceInterface;
+use App\Contracts\VideoDownloadServiceInterface;
 use App\Jobs\UpdateFavListJob;
 use App\Jobs\UpdateFavVideosJob;
 use App\Models\Video;
@@ -27,7 +28,7 @@ class UpdateFav extends Command
     /**
      * Execute the console command.
      */
-    public function handle(VideoManagerServiceInterface $videoManagerService)
+    public function handle(VideoManagerServiceInterface $videoManagerService, VideoDownloadServiceInterface $videoDownloadService)
     {
         if ($this->option('update-fav')) {
             $job = new UpdateFavListJob();
@@ -48,9 +49,9 @@ class UpdateFav extends Command
         }
 
         if ($this->option('download-video-part')) {
-            VideoPart::chunk(100, function ($videoParts) use ($videoManagerService) {
+            VideoPart::chunk(100, function ($videoParts) use ($videoDownloadService) {
                 foreach ($videoParts as $videoPart) {
-                    $videoManagerService->downloadVideoPartFile($videoPart);
+                    $videoDownloadService->downloadVideoPartFile($videoPart, true);
                 }
             });
         }

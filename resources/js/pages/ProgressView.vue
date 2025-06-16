@@ -45,7 +45,7 @@
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-4 w-full gap-4">
                     <div class="flex flex-col relative" v-for="item in dataList">
                         <RouterLink :to="{ name: 'video-id', params: { id: item.id } }">
-                            <Image class="rounded-lg w-full h-auto md:w-96 md:h-56" :src="item.cache_image"
+                            <Image class="rounded-lg w-full h-auto md:w-96 md:h-56" :src="item.cache_image_url"
                                 :class="{ 'grayscale-image': item.video_downloaded_num == 0 }" :title="item.title" />
                         </RouterLink>
                         <span class="mt-4 text-center">{{ item.title }}</span>
@@ -86,6 +86,7 @@ interface VideoType {
     id: string
     title: string
     cache_image: string
+    cache_image_url: string
     video_downloaded_at: string
     invalid: boolean
     frozen: boolean
