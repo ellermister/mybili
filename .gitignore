@@ -23,3 +23,5 @@ vite.config.ts.timestamp*
 **/caddy
 frankenphp
 frankenphp-worker.php
+
+app/Console/Commands/TestCommand.php
