@@ -62,10 +62,12 @@ RUN composer install \
 RUN cp .env.example .env \
     && php artisan key:generate \
     && rm -f public/storage && php artisan storage:link \
-    && php artisan migrate --force
+    && php artisan migrate --force \
+    && php artisan octane:install --server=frankenphp
 
 
 ENV APP_VERSION=1.0.0
 ENV WEBSITE_ID=f0180403-dc46-41e0-90d0-e294e262b528
+ENV DB_DATABASE=/data/database.sqlite
 
 CMD ["/usr/local/bin/supervisord", "-c", "/etc/supervisord.conf"]
