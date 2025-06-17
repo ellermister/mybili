@@ -152,7 +152,6 @@ class VideoDownloadService implements VideoDownloadServiceInterface
         if ($video) {
             $isDownloaded = false;
             if ($videoPart->video_download_path) {
-                $isDownloaded = true;
                 $savePath     = Storage::disk('public')->path(Str::after($videoPart->video_download_path, '/storage/'));
                 if (is_file($savePath)) {
                     $isDownloaded = true;
