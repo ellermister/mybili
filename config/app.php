@@ -2,6 +2,9 @@
 
 return [
 
+    'version' => env('APP_VERSION', '1.0.0'),
+    'website_id' => env('WEBSITE_ID', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Application Name

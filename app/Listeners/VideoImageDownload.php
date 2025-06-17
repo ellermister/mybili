@@ -3,7 +3,7 @@ namespace App\Listeners;
 
 use App\Contracts\DownloadImageServiceInterface;
 use App\Events\VideoUpdated;
-use App\Jobs\DownloadVideoImage;
+use App\Jobs\DownloadVideoImageJob;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Log;
@@ -39,7 +39,7 @@ class VideoImageDownload implements ShouldQueue
             ($oldCover != $newCover) || ($newCover != '' && $newVideo['cache_image'] == '')
         ) {
             Log::info('Download video image', ['cover' => $newVideo['cover']]);
-            DownloadVideoImage::dispatch($newVideo, $this->downloadImageService);
+            dispatch(new DownloadVideoImageJob($newVideo, $this->downloadImageService));
         }
     }
 }

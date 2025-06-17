@@ -26,3 +26,5 @@ Schedule::call(function () {
 ->withoutOverlapping()
 ->everyTenMinutes();
 
+
+Schedule::command('stats:send')->daily();

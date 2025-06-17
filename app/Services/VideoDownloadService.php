@@ -141,7 +141,6 @@ class VideoDownloadService implements VideoDownloadServiceInterface
         $currentIndex = 1;
         if ($isNumberNamed) {
             $currentIndex = $videoPart->page;
-            Log::info('Video part is number named', ['id' => $videoPart->cid, 'title' => $videoPart->part, 'currentIndex' => $currentIndex]);
         } else {
             // 如果不是数字索引的，则按照排序，取当前分片在视频第几个索引
             $videoParts   = $videoParts->sortBy('video_id');

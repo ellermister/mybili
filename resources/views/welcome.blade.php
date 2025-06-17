@@ -6,6 +6,9 @@
 
         <title> Mybili </title>
         @vite(['resources/css/app.css', 'resources/js/main.ts'])
+        @if(config('app.website_id'))
+            <script defer src="https://cloud.umami.is/script.js" data-website-id="{{ config('app.website_id') }}"></script>
+        @endif
     </head>
     <body>
         <div id="app">

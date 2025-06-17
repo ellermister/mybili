@@ -2,7 +2,7 @@
 namespace App\Console\Commands;
 
 use App\Contracts\DownloadImageServiceInterface;
-use App\Jobs\DownloadVideoImage;
+use App\Jobs\DownloadVideoImageJob;
 use App\Models\Video;
 use Illuminate\Console\Command;
 
@@ -31,7 +31,7 @@ class ScanVideoImage extends Command
         if ($id) {
             $video = Video::find($id);
             if ($video) {
-                dispatch(new DownloadVideoImage($video->toArray(), $downloadImageService));
+                dispatch(new DownloadVideoImageJob($video->toArray(), $downloadImageService));
             } else {
                 $this->error('Video not found');
             }
@@ -45,7 +45,7 @@ class ScanVideoImage extends Command
             $this->info('Total videos to scan: ' . $count);
             $query->chunk(100, function ($videos) use ($downloadImageService) {
                 foreach ($videos as $video) {
-                    dispatch(new DownloadVideoImage($video->toArray(), $downloadImageService));
+                    dispatch(new DownloadVideoImageJob($video->toArray(), $downloadImageService));
                 }
             });
         }

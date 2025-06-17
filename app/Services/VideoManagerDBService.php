@@ -3,12 +3,9 @@ namespace App\Services;
 
 use App\Contracts\DownloadImageServiceInterface;
 use App\Contracts\VideoManagerServiceInterface;
-use App\Enums\SettingKey;
 use App\Events\FavoriteUpdated;
 use App\Events\VideoPartUpdated;
 use App\Events\VideoUpdated;
-use App\Jobs\DownloadDanmakuJob;
-use App\Jobs\DownloadVideoJob;
 use App\Models\Danmaku;
 use App\Models\FavoriteList;
 use App\Models\Video;
@@ -274,6 +271,10 @@ class VideoManagerDBService implements VideoManagerServiceInterface
 
         // 过滤出新增的数据
         $insertData = array_filter($danmaku, function ($item) use ($danmakuIds) {
+            // 内容为空的也不要
+            if (empty($item['content'])) {
+                return false;
+            }
             return ! in_array($item['id'], $danmakuIds);
         });
 
@@ -308,11 +309,6 @@ class VideoManagerDBService implements VideoManagerServiceInterface
 
     public function downloadDanmaku(VideoPart $videoPart): void
     {
-        if ($this->settings->get(SettingKey::DANMAKU_DOWNLOAD_ENABLED) != 'on') {
-            Log::info('Download danmaku disabled', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
-            return;
-        }
-
         //加锁
         $lock = redis()->setnx(sprintf('danmaku_downloading:%s', $videoPart->cid), 1);
         if (! $lock) {
@@ -323,11 +319,6 @@ class VideoManagerDBService implements VideoManagerServiceInterface
 
         try {
             $video = Video::where('id', $videoPart->video_id)->first();
-            // 如果上次下载时间小于7天则不更新
-            if ($videoPart->danmaku_downloaded_at && $videoPart->danmaku_downloaded_at > Carbon::now()->subDays(7)) {
-                Log::info('Danmaku has been saved in the last 7 days', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
-                return;
-            }
 
             $partDanmakus = $this->bilibiliService->getDanmaku($videoPart->cid, intval($videoPart->duration));
 

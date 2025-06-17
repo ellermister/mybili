@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 use Log;
 use Storage;
 
-class DownloadVideoImage implements ShouldQueue
+class DownloadVideoImageJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, SerializesModels;
 

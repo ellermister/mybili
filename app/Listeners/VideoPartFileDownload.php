@@ -9,7 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 class VideoPartFileDownload implements ShouldQueue
 {
 
-    public $queue = 'slow';
+    public $queue = 'default';
     /**
      * Create the event listener.
      */

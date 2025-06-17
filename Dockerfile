@@ -64,4 +64,8 @@ RUN cp .env.example .env \
     && rm -f public/storage && php artisan storage:link \
     && php artisan migrate
 
+
+ENV APP_VERSION=1.0.0
+ENV WEBSITE_ID=f0180403-dc46-41e0-90d0-e294e262b528
+
 CMD ["/usr/local/bin/supervisord", "-c", "/etc/supervisord.conf"]
