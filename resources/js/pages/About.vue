@@ -15,11 +15,12 @@
             <li>定时同步收藏夹视频信息</li>
             <li>自动下载高画质视频备份</li>
             <li>提供在线播放和管理界面</li>
+            <li>自动下载视频弹幕数据</li>
           </ul>
         </div>
       </div>
 
-      <div class="mt-8">
+      <div class="mt-8" v-if="!loading">
         <a 
           href="https://github.com/ellermister/mybili" 
           target="_blank"
@@ -31,11 +32,101 @@
           在 GitHub 上查看
         </a>
       </div>
+
+      <!-- 系统信息区域 -->
+      <div class="mt-12 border-t pt-8">
+        <h2 class="text-xl font-semibold mb-6">系统信息</h2>
+        
+        <div v-if="loading" class="flex justify-center items-center py-8">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
+        </div>
+        
+        <div v-else class="grid grid-cols-2 gap-4 text-left">
+          <div class="space-y-4">
+            <div>
+              <h3 class="text-lg font-medium mb-2">版本信息</h3>
+              <div class="space-y-2 text-gray-600">
+                <p>应用版本：{{ systemInfo.app_version }}</p>
+                <p>PHP 版本：{{ systemInfo.php_version }}</p>
+                <p>Laravel 版本：{{ systemInfo.laravel_version }}</p>
+                <p>数据库版本：{{ systemInfo.database_version }}</p>
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="text-lg font-medium mb-2">时间信息</h3>
+              <div class="space-y-2 text-gray-600">
+                <p>时区：{{ systemInfo.timezone }}</p>
+                <p>当前时间：{{ systemInfo.time_now }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-medium mb-2">数据库使用情况</h3>
+            <div class="space-y-2 text-gray-600">
+              <p>收藏夹列表：{{ systemInfo.database_usage.favorite_lists }} 个</p>
+              <p>视频数量：{{ systemInfo.database_usage.videos }} 个</p>
+              <p>视频分片：{{ systemInfo.database_usage.video_parts }} 个</p>
+              <p>弹幕数量：{{ systemInfo.database_usage.danmaku.toLocaleString() }} 条</p>
+              <p>数据库大小：{{ (systemInfo.database_usage.db_size / 1024).toFixed(2) }} MB</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { ref, onMounted } from 'vue'
+import { getSystemInfo } from '@/api/system'
+
+interface DatabaseUsage {
+  favorite_lists: number
+  videos: number
+  video_parts: number
+  danmaku: number
+  db_size: number
+}
+
+interface SystemInfo {
+  app_version: string
+  php_version: string
+  laravel_version: string
+  database_version: string
+  timezone: string
+  time_now: string
+  database_usage: DatabaseUsage
+}
+
+const loading = ref(true)
+const systemInfo = ref<SystemInfo>({
+  app_version: '',
+  php_version: '',
+  laravel_version: '',
+  database_version: '',
+  timezone: '',
+  time_now: '',
+  database_usage: {
+    favorite_lists: 0,
+    videos: 0,
+    video_parts: 0,
+    danmaku: 0,
+    db_size: 0
+  }
+})
+
+onMounted(async () => {
+  try {
+    const res = await getSystemInfo()
+    systemInfo.value = res
+  } catch (error) {
+    console.error('获取系统信息失败:', error)
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <style scoped>

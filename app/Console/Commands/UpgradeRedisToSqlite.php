@@ -12,7 +12,6 @@ use App\Services\DownloadImageService;
 use App\Services\SettingsService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use League\OAuth1\Client\Server\Trello;
 
 class UpgradeRedisToSqlite extends Command
 {
@@ -31,6 +30,7 @@ class UpgradeRedisToSqlite extends Command
         {--settings} 
         {--finished}
         {--scan-video-image}
+        {--all}
     ';
 
     /**
@@ -71,6 +71,16 @@ class UpgradeRedisToSqlite extends Command
             $this->upgradeSettings();
         }
         if ($this->option('finished')) {
+            $this->setUpgradeFinished();
+        }
+
+        if ($this->option('all')) {
+            $this->upgradeFavoriteList();
+            $this->upgradeVideo();
+            $this->upgradeVideoPart();
+            $this->upgradeFavoriteListVideo();
+            $this->upgradeDanmaku();
+            $this->upgradeSettings();
             $this->setUpgradeFinished();
         }
     }

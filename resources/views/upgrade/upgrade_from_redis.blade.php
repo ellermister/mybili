@@ -84,19 +84,25 @@
         <div class="migration-steps">
             <h2>Migration Steps:</h2>
             <ol>
-                <li>Open your terminal</li>
-                <li>Navigate to your project directory</li>
-                <li>Execute the following command:</li>
+                <li>Open the terminal in your application directory or Docker container</li>
+                <li>Execute the following commands in sequence:</li>
             </ol>
         </div>
 
         <div class="command-box">
+            <h3>Step 1: Migrate Redis Data</h3>
             <code>php artisan app:upgrade-redis-to-sqlite --all</code>
+            
+            <h3>Step 2: Scan Video Images</h3>
+            <code>php artisan app:scan-video-image</code>
+            
+            <h3>Step 3: Scan Video Files</h3>
+            <code>php artisan app:scan-video-file</code>
         </div>
 
         <div class="note">
             <h2>Important Note:</h2>
-            <p>This process will migrate all your data from Redis to the new database. Please ensure you have backed up your data before proceeding with the migration.</p>
+            <p>This process will migrate all your data from Redis to the new database and scan your video resources. Please ensure you have backed up your data before proceeding with the migration.</p>
         </div>
     </div>
 </body>
