@@ -62,7 +62,7 @@ RUN composer install \
 RUN cp .env.example .env \
     && php artisan key:generate \
     && rm -f public/storage && php artisan storage:link \
-    && php artisan migrate
+    && php artisan migrate --force
 
 
 ENV APP_VERSION=1.0.0

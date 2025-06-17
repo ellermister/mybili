@@ -15,7 +15,6 @@ class UsageStatisticsService
 
     public function __construct()
     {
-        $this->ensureAnonymousId();
         $this->websiteId = config('app.website_id', '');
     }
 
@@ -63,6 +62,8 @@ class UsageStatisticsService
             if (empty($this->websiteId)) {
                 return;
             }
+
+            $this->ensureAnonymousId();
 
             $stats = $this->collectStats();
 
