@@ -11,6 +11,10 @@ enum SettingKey: string {
     case NAME_EXCLUDE     = 'name_exclude';
     case SIZE_EXCLUDE     = 'size_exclude';
 
+
+    case INSTALLED_DATETIME = 'installed_datetime';
+    case COOKIES_CONTENT = 'cookies_content';
+
     public function label(): string
     {
         return match ($this) {
@@ -22,6 +26,9 @@ enum SettingKey: string {
             self::FAVORITE_EXCLUDE => '收藏夹排除',
             self::NAME_EXCLUDE => '名称排除',
             self::SIZE_EXCLUDE => '大小排除',
+
+            self::INSTALLED_DATETIME => '安装日期时间',
+            self::COOKIES_CONTENT => 'Cookies 内容',
         };
     }
 }

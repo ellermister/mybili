@@ -36,28 +36,6 @@ function video_has_invalid(array $videoInfo)
     return false;
 }
 
-function match_cookie_main()
-{
-    $cookiPath = storage_path('app/cookie.txt');
-    if (! is_file($cookiPath)) {
-        throw new \LogicException("cookie 文件不存在");
-    }
-    $result   = file_get_contents($cookiPath);
-    $SESSDATA = $DedeUserID = '';
-    if (preg_match('/SESSDATA\t([\S]+)/', $result, $matches)) {
-        $SESSDATA = $matches[1];
-    }
-    if (preg_match('/DedeUserID\t([\S]+)/', $result, $matches)) {
-        $DedeUserID = $matches[1];
-    }
-
-    if ($SESSDATA && $DedeUserID) {
-        return [$SESSDATA, $DedeUserID];
-    } else {
-        throw new \LogicException("未能够从cookie中提取密钥信息");
-    }
-}
-
 function parse_netscape_cookie_file($filename)
 {
 
@@ -74,6 +52,42 @@ function parse_netscape_cookie_file($filename)
         }
 
         list($domain, $flag, $path, $secure, $expiry, $name, $value) = explode("\t", $line);
+
+        $cookies[] = new SetCookie([
+            'Domain'  => $domain,
+            'Path'    => $path,
+            'Name'    => $name,
+            'Value'   => $value,
+            'Expires' => $expiry,
+            'Secure'  => ($secure === 'TRUE'),
+        ]);
+    }
+
+    return new CookieJar(false, $cookies);
+}
+
+
+function parse_netscape_cookie_content($content)
+{
+    if (empty($content)) {
+        throw new \InvalidArgumentException("Cookie 内容不能为空");
+    }
+
+    $cookies = [];
+    $lines = explode("\n", $content);
+
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if (empty($line) || ($line[0] ?? '') === '#' || substr_count($line, "\t") < 6) {
+            continue; // 跳过注释和无效行
+        }
+
+        $parts = explode("\t", $line);
+        if (count($parts) < 7) {
+            continue; // 确保有足够的字段
+        }
+
+        list($domain, $flag, $path, $secure, $expiry, $name, $value) = $parts;
 
         $cookies[] = new SetCookie([
             'Domain'  => $domain,

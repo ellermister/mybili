@@ -1,79 +1,82 @@
 <?php
-
 namespace App\Services;
 
+use App\Enums\SettingKey;
+use App\Services\SettingsService;
 use Arr;
 use GuzzleHttp\Client;
 use Log;
 
 class BilibiliService
 {
-    protected $SESSDATA = '';
-    protected $mid      = 0;
 
+    const API_HOST = 'https://api.bilibili.com';
+
+    public function __construct(public SettingsService $settingsService)
+    {
+    }
 
     private function getClient()
     {
-        $cookies = parse_netscape_cookie_file(storage_path('app/cookie.txt'));
+        $cookies = parse_netscape_cookie_content($this->settingsService->get(SettingKey::COOKIES_CONTENT));
         return new Client([
             'cookies' => $cookies,
             'headers' => [
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
-                'Referer' => 'https://www.bilibili.com/'
-            ]
+                'Referer'    => 'https://www.bilibili.com/',
+            ],
         ]);
     }
 
-    public function getDanmaku(int $cid,int $duration)
+    public function getDanmaku(int $cid, int $duration)
     {
-        $cookies = parse_netscape_cookie_file(storage_path('app/cookie.txt'));
-        $client = $this->getClient();
-        
+        $cookies = parse_netscape_cookie_content($this->settingsService->get(SettingKey::COOKIES_CONTENT));
+        $client  = $this->getClient();
+
         // 获取 WBI keys
-        $navResponse = $client->request('GET', 'https://api.bilibili.com/x/web-interface/nav', [
+        $navResponse = $client->request('GET', self::API_HOST . '/x/web-interface/nav', [
             'cookies' => $cookies,
         ]);
         $navData = json_decode($navResponse->getBody()->getContents(), true);
-        
-        if (!isset($navData['data']['wbi_img'])) {
+
+        if (! isset($navData['data']['wbi_img'])) {
             throw new \Exception('无法获取 WBI keys');
         }
-        
+
         $imgUrl = $navData['data']['wbi_img']['img_url'];
         $subUrl = $navData['data']['wbi_img']['sub_url'];
         $imgKey = substr($imgUrl, strrpos($imgUrl, '/') + 1, -4);
         $subKey = substr($subUrl, strrpos($subUrl, '/') + 1, -4);
-        
-        $segmentCount  = ceil($duration / 360);
-        $danmakus = [];
-        for($i = 1; $i <= $segmentCount; $i++){
-                    // 准备参数
+
+        $segmentCount = ceil($duration / 360);
+        $danmakus     = [];
+        for ($i = 1; $i <= $segmentCount; $i++) {
+            // 准备参数
             $params = [
-                'type' => 1,
-                'oid' => $cid,
+                'type'          => 1,
+                'oid'           => $cid,
                 'segment_index' => $i,
-                'web_location' => 1315873,
-                'wts' => time()
+                'web_location'  => 1315873,
+                'wts'           => time(),
             ];
 
-            
             // 生成 WBI 签名
             $query = $this->encWbi($params, $imgKey, $subKey);
-            
+
             // 请求弹幕数据
-            $url = "https://api.bilibili.com/x/v2/dm/wbi/web/seg.so?" . $query;
+            $url      = self::API_HOST . "/x/v2/dm/wbi/web/seg.so?" . $query;
             $response = $client->request('GET', $url, [
                 'cookies' => $cookies,
                 'headers' => [
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
-                    'Referer' => 'https://www.bilibili.com/'
-                ]
+                    'Referer'    => 'https://www.bilibili.com/',
+                ],
             ]);
-            $content = $response->getBody()->getContents();
+            $content         = $response->getBody()->getContents();
             $currentDanmakus = $this->parseDanmakuProtobuf($content);
-            $danmakus = array_merge($danmakus, $currentDanmakus);
+            $danmakus        = array_merge($danmakus, $currentDanmakus);
         }
-        return array_map(function($danmaku){
+        return array_map(function ($danmaku) {
             // [
             //     "id" => 1620000000000000000000000000
             //     "progress" => 390379
@@ -98,11 +101,11 @@ class BilibiliService
             46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49,
             33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13, 37, 48, 7, 16, 24, 55, 40,
             61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11,
-            36, 20, 34, 44, 52
+            36, 20, 34, 44, 52,
         ];
-        
+
         // 获取混合密钥
-        $orig = $imgKey . $subKey;
+        $orig     = $imgKey . $subKey;
         $mixinKey = '';
         foreach ($mixinKeyEncTab as $n) {
             if (isset($orig[$n])) {
@@ -110,22 +113,22 @@ class BilibiliService
             }
         }
         $mixinKey = substr($mixinKey, 0, 32);
-        
+
         // 过滤参数
         $filteredParams = [];
         foreach ($params as $key => $value) {
-            $filteredParams[$key] = preg_replace("/[!'()*]/", '', (string)$value);
+            $filteredParams[$key] = preg_replace("/[!'()*]/", '', (string) $value);
         }
-        
+
         // 按键排序
         ksort($filteredParams);
-        
+
         // 构建查询字符串
         $query = http_build_query($filteredParams);
-        
+
         // 计算 MD5
         $wbiSign = md5($query . $mixinKey);
-        
+
         return $query . '&w_rid=' . $wbiSign;
     }
 
@@ -135,42 +138,42 @@ class BilibiliService
     private function parseDanmakuProtobuf($binary)
     {
         $danmakus = [];
-        $pos = 0;
-        $length = strlen($binary);
-        
+        $pos      = 0;
+        $length   = strlen($binary);
+
         while ($pos < $length) {
             // 添加边界检查
             if ($pos >= $length) {
                 break;
             }
-            
+
             // 读取字段标识和类型
-            $byte = ord($binary[$pos]);
+            $byte        = ord($binary[$pos]);
             $fieldNumber = $byte >> 3;
-            $wireType = $byte & 0x07;
+            $wireType    = $byte & 0x07;
             $pos++;
-            
+
             // 如果是弹幕数组字段 (field number = 1)
             if ($fieldNumber === 1) {
                 // 读取长度
                 $msgLen = 0;
-                $shift = 0;
+                $shift  = 0;
                 do {
                     // 添加边界检查
                     if ($pos >= $length) {
-                        break 2;  // 跳出外层循环
+                        break 2; // 跳出外层循环
                     }
                     $byte = ord($binary[$pos]);
                     $msgLen |= ($byte & 0x7F) << $shift;
                     $shift += 7;
                     $pos++;
                 } while ($byte & 0x80);
-                
+
                 // 添加长度检查
                 if ($pos + $msgLen > $length) {
                     break;
                 }
-                
+
                 // 解析单条弹幕
                 $danmaku = $this->parseSingleDanmaku(substr($binary, $pos, $msgLen));
                 if ($danmaku) {
@@ -185,29 +188,41 @@ class BilibiliService
                         break;
                     case 1: // 64-bit
                         $pos += 8;
-                        if ($pos > $length) break 2;
+                        if ($pos > $length) {
+                            break 2;
+                        }
+
                         break;
                     case 2: // Length-delimited
-                        $len = 0;
+                        $len   = 0;
                         $shift = 0;
                         do {
-                            if ($pos >= $length) break 3;  // 跳出所有循环
+                            if ($pos >= $length) {
+                                break 3;
+                            }
+                            // 跳出所有循环
                             $byte = ord($binary[$pos]);
                             $len |= ($byte & 0x7F) << $shift;
                             $shift += 7;
                             $pos++;
                         } while ($byte & 0x80);
                         $pos += $len;
-                        if ($pos > $length) break 2;
+                        if ($pos > $length) {
+                            break 2;
+                        }
+
                         break;
                     case 5: // 32-bit
                         $pos += 4;
-                        if ($pos > $length) break 2;
+                        if ($pos > $length) {
+                            break 2;
+                        }
+
                         break;
                 }
             }
         }
-        
+
         return $danmakus;
     }
 
@@ -217,25 +232,25 @@ class BilibiliService
     private function parseSingleDanmaku($binary)
     {
         $result = [];
-        $pos = 0;
+        $pos    = 0;
         $length = strlen($binary);
-        
+
         while ($pos < $length) {
             // 读取字段标识和类型
-            $byte = ord($binary[$pos]);
+            $byte        = ord($binary[$pos]);
             $fieldNumber = $byte >> 3;
-            $wireType = $byte & 0x07;
+            $wireType    = $byte & 0x07;
             $pos++;
-            
+
             // 根据字段编号解析对应的值
             switch ($fieldNumber) {
-                case 1: // id
-                case 2: // progress
-                case 3: // mode
-                case 4: // fontsize
-                case 5: // color
-                case 8: // ctime
-                case 9: // weight
+                case 1:  // id
+                case 2:  // progress
+                case 3:  // mode
+                case 4:  // fontsize
+                case 5:  // color
+                case 8:  // ctime
+                case 9:  // weight
                 case 11: // attr
                     $value = 0;
                     $shift = 0;
@@ -245,24 +260,32 @@ class BilibiliService
                         $shift += 7;
                         $pos++;
                     } while ($byte & 0x80);
-                    
+
                     switch ($fieldNumber) {
-                        case 1: $result['id'] = $value; break;
-                        case 2: $result['progress'] = $value; break;
-                        case 3: $result['mode'] = $value; break;
-                        case 4: $result['fontsize'] = $value; break;
-                        case 5: $result['color'] = $value; break;
-                        case 8: $result['ctime'] = $value; break;
-                        case 9: $result['weight'] = $value; break;
-                        case 11: $result['attr'] = $value; break;
+                        case 1:$result['id'] = $value;
+                            break;
+                        case 2:$result['progress'] = $value;
+                            break;
+                        case 3:$result['mode'] = $value;
+                            break;
+                        case 4:$result['fontsize'] = $value;
+                            break;
+                        case 5:$result['color'] = $value;
+                            break;
+                        case 8:$result['ctime'] = $value;
+                            break;
+                        case 9:$result['weight'] = $value;
+                            break;
+                        case 11:$result['attr'] = $value;
+                            break;
                     }
                     break;
-                    
-                case 6: // midHash
-                case 7: // content
+
+                case 6:  // midHash
+                case 7:  // content
                 case 10: // idStr
                 case 12: // action
-                    $len = 0;
+                    $len   = 0;
                     $shift = 0;
                     do {
                         $byte = ord($binary[$pos]);
@@ -270,55 +293,59 @@ class BilibiliService
                         $shift += 7;
                         $pos++;
                     } while ($byte & 0x80);
-                    
+
                     $value = substr($binary, $pos, $len);
                     $pos += $len;
-                    
+
                     switch ($fieldNumber) {
-                        case 6: $result['midHash'] = $value; break;
-                        case 7: $result['content'] = $value; break;
-                        case 10: $result['idStr'] = $value; break;
-                        case 12: $result['action'] = $value; break;
+                        case 6:$result['midHash'] = $value;
+                            break;
+                        case 7:$result['content'] = $value;
+                            break;
+                        case 10:$result['idStr'] = $value;
+                            break;
+                        case 12:$result['action'] = $value;
+                            break;
                     }
                     break;
-                    
+
                 default:
                     // 跳过未知字段
                     if ($wireType === 0) {
                         // 添加边界检查
                         while ($pos < $length && (ord($binary[$pos++]) & 0x80));
                     } elseif ($wireType === 2) {
-                        $len = 0;
+                        $len   = 0;
                         $shift = 0;
                         do {
                             // 添加边界检查
                             if ($pos >= $length) {
-                                break 2;  // 跳出外层循环
+                                break 2; // 跳出外层循环
                             }
                             $byte = ord($binary[$pos]);
                             $len |= ($byte & 0x7F) << $shift;
                             $shift += 7;
                             $pos++;
                         } while ($byte & 0x80);
-                        
+
                         // 添加长度检查
                         if ($pos + $len > $length) {
-                            break 2;  // 跳出外层循环
+                            break 2; // 跳出外层循环
                         }
                         $pos += $len;
                     }
                     break;
             }
         }
-        
+
         return $result;
     }
 
     private function getVideoPartFromWebpage(string $bvid)
     {
-        $cookies  = parse_netscape_cookie_file(storage_path('app/cookie.txt'));
-        $client = $this->getClient();
-        $url      = "https://www.bilibili.com/video/{$bvid}";
+        $cookies  = parse_netscape_cookie_content($this->settingsService->get(SettingKey::COOKIES_CONTENT));
+        $client   = $this->getClient();
+        $url      = self::API_HOST . "/video/{$bvid}";
         $response = $client->request('GET', $url, [
             'cookies' => $cookies,
         ]);
@@ -336,10 +363,10 @@ class BilibiliService
 
     private function getVideoPartFromApi(string $bvid)
     {
-        $cookies = parse_netscape_cookie_file(storage_path('app/cookie.txt'));
+        $cookies = parse_netscape_cookie_content($this->settingsService->get(SettingKey::COOKIES_CONTENT));
 
         $client   = $this->getClient();
-        $url      = "https://api.bilibili.com/x/web-interface/wbi/view/detail?platform=web&bvid={$bvid}";
+        $url      = self::API_HOST . "/x/web-interface/wbi/view/detail?platform=web&bvid={$bvid}";
         $response = $client->request('GET', $url, [
             'headers' => [
                 'Referer'    => "https://www.bilibili.com/video/{$bvid}",
@@ -388,14 +415,18 @@ class BilibiliService
 
     public function pullFav()
     {
-        list($this->SESSDATA, $this->mid) = match_cookie_main();
+        $cookies    = parse_netscape_cookie_content($this->settingsService->get(SettingKey::COOKIES_CONTENT));
+        $dedeUserID = $cookies->getCookieByName('DedeUserID');
+        if (! $dedeUserID) {
+            throw new \Exception("DedeUserID 不存在");
+        }
+        $mid = $dedeUserID->getValue();
 
- 
         $client = $this->getClient();
-        
-        $response = $client->request('GET', "https://api.bilibili.com/x/v3/fav/folder/created/list?pn=1&ps=20&up_mid={$this->mid}");
 
-        $result    = json_decode($response->getBody()->getContents(), true);
+        $response = $client->request('GET', self::API_HOST . "/x/v3/fav/folder/created/list?pn=1&ps=20&up_mid={$mid}");
+
+        $result = json_decode($response->getBody()->getContents(), true);
 
         $favorites = [];
         if ($result && $result['code'] == 0) {
@@ -421,11 +452,11 @@ class BilibiliService
     public function pullFavVideoList(int $favId)
     {
         $client = $this->getClient();
-        $pn      = 1;
+        $pn     = 1;
 
         $videos = [];
         while (true) {
-            $url = "https://api.bilibili.com/x/v3/fav/resource/list?media_id=$favId&pn=$pn&ps=20&keyword=&order=mtime&type=0&tid=0&platform=web";
+            $url = self::API_HOST . "/x/v3/fav/resource/list?media_id=$favId&pn=$pn&ps=20&keyword=&order=mtime&type=0&tid=0&platform=web";
             echo "fetch $url\n";
             $response = $client->request('GET', $url);
             $result   = json_decode($response->getBody()->getContents(), true);

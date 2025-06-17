@@ -15,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api([
             \App\Http\Middleware\ForceJsonResponse::class,
         ]);
+        $middleware->web([
+            \App\Http\Middleware\CheckDatabaseIsOkMiddleware::class,
+            \App\Http\Middleware\CheckCanUpgradedFromRedisMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

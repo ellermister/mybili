@@ -1,20 +1,17 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use App\Jobs\DownloadAllVideoJob;
-use App\Jobs\UpdateFavListJob;
-use Carbon\Carbon;
+use App\Enums\SettingKey;
+use App\Services\BilibiliService;
+use App\Services\SettingsService;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 
 class CookieController extends Controller
 {
 
-    protected $path = null;
-    public function __construct()
+    public function __construct(public SettingsService $settingsService, public BilibiliService $bilibiliService)
     {
-        $this->path = storage_path('app/cookie.txt');
     }
 
     public function uploadCookieFile(Request $request)
@@ -22,8 +19,12 @@ class CookieController extends Controller
         $file = $request->file('file');
         if ($file) {
             if ($file->getMimeType() == 'text/plain') {
-                $file->move(storage_path('app/'), 'cookie.txt');
-                return response()->json();
+                // 将 $file 写入并删除文件
+                $this->settingsService->put(SettingKey::COOKIES_CONTENT, file_get_contents($file->getRealPath()));
+                $file->delete();
+                return response()->json([
+                    'success' => true,
+                ]);
             }
         }
         abort(400);
@@ -32,13 +33,13 @@ class CookieController extends Controller
     public function checkFileExist()
     {
         return response()->json([
-            'exist' => is_file($this->path),
+            'exist' => empty($this->settingsService->get(SettingKey::COOKIES_CONTENT)) ? false : true,
         ]);
     }
 
     public function checkCookieValid()
     {
-        $jar      = parse_netscape_cookie_file($this->path);
+        $jar      = parse_netscape_cookie_content($this->settingsService->get(SettingKey::COOKIES_CONTENT));
         $client   = new Client();
         $response = $client->request('GET', 'https://api.bilibili.com/x/web-interface/nav', [
             'headers' => [
@@ -49,27 +50,12 @@ class CookieController extends Controller
         ]);
 
         $body = $response->getBody()->getContents();
-        // dump($response->getStatusCode());
-        // dd($body);
-
         $data = json_decode($body, true);
-
-        $lastLoginState = intval(redis()->get('state:is_login') ?? false) ? true : false;
 
         $isLogin = false;
         if ($data['data']['isLogin'] === true) {
             $isLogin = true;
         }
-
-        redis()->set('state:is_login', $isLogin ? 1 : 0);
-
-        // if (!$lastLoginState && $isLogin) {
-        //     $job = new UpdateFavListJob();
-        //     dispatch($job);
-
-        //     $job = new DownloadAllVideoJob();
-        //     dispatch($job)->delay(Carbon::now()->addMinutes(5));
-        // }
 
         return response()->json([
             'logged' => $isLogin,
