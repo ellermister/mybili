@@ -31,9 +31,11 @@ jobs:
           # 从tag获取版本号，去掉v前缀
           VERSION=${GITHUB_REF#refs/tags/}
           VERSION=${VERSION#v}
+          echo "is_tag=true" >> $GITHUB_OUTPUT
         else
           # main分支使用dev版本号
           VERSION="dev-$(date +%Y%m%d)-$(git rev-parse --short HEAD)"
+          echo "is_tag=false" >> $GITHUB_OUTPUT
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Using version: $VERSION"
@@ -52,6 +54,4 @@ jobs:
         build-args: |
           APP_VERSION=${{ steps.version.outputs.version }}
           WEBSITE_ID=${{ secrets.WEBSITE_ID }}
-        tags: |
-          ellermister/mybili:latest
-          ellermister/mybili:${{ steps.version.outputs.version }}
+        tags: ${{ steps.version.outputs.is_tag == 'true' && format('ellermister/mybili:latest,ellermister/mybili:{0}', steps.version.outputs.version) || 'ellermister/mybili:latest' }}
