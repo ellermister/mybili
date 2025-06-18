@@ -19,9 +19,9 @@ class CookieController extends Controller
         $file = $request->file('file');
         if ($file) {
             if ($file->getMimeType() == 'text/plain') {
-                // 将 $file 写入并删除文件
+                // 读取文件内容并存储到设置中
                 $this->settingsService->put(SettingKey::COOKIES_CONTENT, file_get_contents($file->getRealPath()));
-                $file->delete();
+                
                 return response()->json([
                     'success' => true,
                 ]);
