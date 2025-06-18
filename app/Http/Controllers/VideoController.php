@@ -16,7 +16,8 @@ class VideoController extends Controller
     {
         $video = $this->videoManagerService->getVideoInfo($id, true);
         if ($video) {
-            $video->video_parts = $this->videoManagerService->getAllPartsVideoForUser($video);
+            $video->video_parts   = $this->videoManagerService->getAllPartsVideoForUser($video);
+            $video->danmaku_count = $this->videoManagerService->getVideoDanmakuCount($video);
             return response()->json($video);
         }
         abort(404);
@@ -50,14 +51,19 @@ class VideoController extends Controller
     {
         $cid = $request->input('id');
         if (! $cid) {
-            abort(400);
+            return response()->json([
+                'code'    => 0,
+                'message' => 'empty cid request',
+                'data'    => [],
+            ]);
         }
         $result = $this->videoManagerService->getDanmaku($cid);
         $result = array_map(function ($item) {
+
             return [
                 ($item['progress'] ?? 0) / 1000,
-                $item['mode'] ?? 0,
-                $item['color'] ?? 0,
+                $this->covertMode($item['mode'] ?? 0),
+                $this->covertColor($item['color'] ?? 0),
                 '',
                 $item['content'] ?? '',
             ];
@@ -66,5 +72,30 @@ class VideoController extends Controller
             'code' => 0,
             'data' => $result,
         ]);
+    }
+
+    protected function covertMode($mode)
+    {
+        // default: right
+        // 1：普通弹幕 => right
+        // 4：底部弹幕 => bottom
+        // 5：顶部弹幕 => top
+        // 7：高级弹幕
+        switch ($mode) {
+            case 1:
+                return 'right';
+            case 4:
+                return 'bottom';
+            case 5:
+                return 'top';
+            default:
+                return 'right';
+        }
+    }
+
+    protected function covertColor($color)
+    {
+        //默认为 #ffffff    
+        return '#' . str_pad(dechex($color), 6, '0', STR_PAD_LEFT);
     }
 }

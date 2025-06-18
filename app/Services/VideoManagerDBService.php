@@ -35,6 +35,15 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         return $video;
     }
 
+    public function getVideoDanmakuCount(Video $video): int
+    {
+        $count = 0;
+        foreach ($video->parts as $part) {
+            $count += Danmaku::where('cid', $part->cid)->count();
+        }
+        return $count;
+    }
+
     public function getVideoListByFav(int $favId): array
     {
         return FavoriteList::query()->where('id', $favId)->first()->videos()->get()->toArray();

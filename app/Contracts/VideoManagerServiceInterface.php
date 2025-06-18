@@ -14,6 +14,8 @@ interface VideoManagerServiceInterface
      */
     public function getVideoInfo(string $id, bool $withParts = false): ?Video;
 
+    public function getVideoDanmakuCount(Video $video): int;
+
 
     /**
      * 获取所有视频
