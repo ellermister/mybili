@@ -2,7 +2,7 @@
     <div id="dplayer" ref="dplayerEle" class="w-full md:flex-1"></div>
 </template>
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, nextTick } from 'vue';
 import DPlayer from 'dplayer';
 /**
  *  player 1.27 版本问题巨多，弹幕显示不出来或者弹幕速度有问题，也不用倒退到1.25，1.26没有css也能够正确显示。
@@ -27,9 +27,15 @@ declare global {
 
 const dplayerEle = ref<HTMLDivElement | null>(null)
 const dp = ref<DPlayerInstance | null>(null)
+const isReady = ref(false)
+
+// 定义事件
+const emit = defineEmits<{
+    ready: []
+}>()
 
 const switchVideo = (param: { url: string, type: string, danmaku_id: string }) => {
-    if (dp.value) {
+    if (dp.value && isReady.value) {
         dp.value.switchVideo({
             url: param.url,
             type: param.type,
@@ -38,13 +44,15 @@ const switchVideo = (param: { url: string, type: string, danmaku_id: string }) =
             api: '/api/danmaku/',
         })
         // p1 视频, p2 弹幕
-        setTimeout(() => {
-            dp.value?.play()
-        }, 1000)
+        dp.value?.play()
+    } else {
+        console.warn('Player not ready yet')
     }
 }
 
-onMounted(() => {
+onMounted(async () => {
+    // await nextTick()
+    
     const options = {
         container: dplayerEle.value,
         video: {
@@ -87,12 +95,18 @@ onMounted(() => {
             console.log('容器宽度:', containerWidth);
             console.log('弹幕容器:', danmakuContainer);
         });
+        
+        isReady.value = true
+        console.log('Player is ready')
+        emit('ready')
+       
     }
 })
 
 // 暴露方法给父组件
 defineExpose({
-    switchVideo
+    switchVideo,
+    isReady
 })
 </script>
 <style scoped>
@@ -113,6 +127,6 @@ defineExpose({
 <style scoped>
 /* 弹幕速度 通过css控制，dplayer 的js初始化参数控制不了，默认5s, 这里设置为10s */
 :deep(.dplayer-danmaku .dplayer-danmaku-right.dplayer-danmaku-move) {
-    animation: danmaku 10s linear;
+    animation-duration: 10s !important;
 }
 </style>

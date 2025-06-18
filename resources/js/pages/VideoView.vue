@@ -20,7 +20,7 @@
                 <!-- Main Player -->
                 <div class="flex-1">
                     <div class="bg-white shadow-lg overflow-hidden border border-gray-200/50">
-                        <Player ref="playerRef" />
+                        <Player ref="playerRef" @ready="onPlayerReady" />
                     </div>
                 </div>
 
@@ -138,6 +138,7 @@ import { formatTimestamp } from '../lib/helper';
 import Player from '../components/Player.vue';
 
 const playerRef = ref()
+const playerReady = ref(false)
 
 const route = useRoute()
 const id = route.params.id
@@ -175,9 +176,33 @@ const notfound = ref(false)
 
 const currentPart = ref<VideoPartType | null>(null)
 
+// Player 准备就绪时的回调
+const onPlayerReady = () => {
+    playerReady.value = true
+    // 如果视频数据已经加载，立即播放第一个视频
+    if (videoInfo.value && videoInfo.value.video_parts.length > 0) {
+        const firstVideo = videoInfo.value.video_parts[0]
+        playFirstVideo(firstVideo)
+    }
+}
+
+// 播放第一个视频
+const playFirstVideo = (firstVideo: VideoPartType) => {
+    if (playerRef.value && playerReady.value) {
+        playerRef.value.switchVideo(
+            {
+                url: firstVideo.url,
+                type: 'mp4',
+                danmaku_id: firstVideo.id,
+            }
+        )
+        currentPart.value = firstVideo
+    }
+}
+
 const playPart = (partId: number) => {
     const part = videoInfo.value?.video_parts.find(part => part.id === partId)
-    if (part) {
+    if (part && playerRef.value && playerReady.value) {
         // p1 视频, p2 弹幕
         playerRef.value.switchVideo({
             url: part.url,
@@ -198,15 +223,10 @@ onMounted(() => {
         } else {
             const jsonData = await rsp.json()
             videoInfo.value = jsonData
-            if (jsonData.video_parts.length > 0) {
+            // 如果 Player 已经准备就绪，立即播放第一个视频
+            if (playerReady.value && jsonData.video_parts.length > 0) {
                 const firstVideo = jsonData.video_parts[0]
-                playerRef.value.switchVideo(
-                    {
-                        url: firstVideo.url,
-                        type: 'mp4',
-                        danmaku_id: firstVideo.id,
-                    }
-                )
+                playFirstVideo(firstVideo)
             }
         }
     })
