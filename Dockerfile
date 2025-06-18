@@ -1,5 +1,4 @@
 ARG NODE_VERSION=22
-ARG APP_VERSION=1.0.0
 
 FROM node:${NODE_VERSION}-bullseye-slim as build
 
@@ -26,6 +25,10 @@ RUN apt update \
 
 
 FROM phpswoole/swoole:php8.3-alpine
+
+# 重新声明 ARG，确保能从构建参数接收版本号
+ARG APP_VERSION=1.0.0
+ARG WEBSITE_ID
 
 WORKDIR /app
 
