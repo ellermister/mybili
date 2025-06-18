@@ -42,6 +42,7 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 COPY --from=composer/composer:2-bin /composer /usr/bin/composer
 
 COPY --from=build /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
+COPY --from=build /usr/local/bin/ffprobe /usr/local/bin/ffprobe
 
 COPY --from=ochinchina/supervisord:latest /usr/local/bin/supervisord /usr/local/bin/supervisord
 
