@@ -6,6 +6,8 @@ import { onMounted, ref, nextTick } from 'vue';
 import DPlayer from 'dplayer';
 /**
  *  player 1.27 版本问题巨多，弹幕显示不出来或者弹幕速度有问题，也不用倒退到1.25，1.26没有css也能够正确显示。
+ * https://github.com/DIYgod/DPlayer/blob/master/src/js/danmaku.js
+ * 官方文档有大大debug，直接看源码比较好
  */
 
 // 声明 DPlayer 类型
@@ -95,7 +97,7 @@ onMounted(async () => {
             console.log('容器宽度:', containerWidth);
             console.log('弹幕容器:', danmakuContainer);
         });
-        
+
         isReady.value = true
         console.log('Player is ready')
         emit('ready')

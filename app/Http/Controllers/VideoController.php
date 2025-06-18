@@ -2,12 +2,13 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\VideoManagerServiceInterface;
+use App\Services\DPlayerDanmakuService;
 use Illuminate\Http\Request;
 
 class VideoController extends Controller
 {
 
-    public function __construct(public VideoManagerServiceInterface $videoManagerService)
+    public function __construct(public VideoManagerServiceInterface $videoManagerService, public DPlayerDanmakuService $dplayerDanmakuService)
     {
 
     }
@@ -58,16 +59,7 @@ class VideoController extends Controller
             ]);
         }
         $result = $this->videoManagerService->getDanmaku($cid);
-        $result = array_map(function ($item) {
-
-            return [
-                ($item['progress'] ?? 0) / 1000,
-                $this->covertMode($item['mode'] ?? 0),
-                $this->covertColor($item['color'] ?? 0),
-                '',
-                $item['content'] ?? '',
-            ];
-        }, $result);
+        $result = $this->dplayerDanmakuService->convertDanmaku($result);
         return response()->json([
             'code' => 0,
             'data' => $result,
@@ -91,6 +83,18 @@ class VideoController extends Controller
             default:
                 return 'right';
         }
+        // number2Type: (number) => {
+        //     switch (number) {
+        //         case 0:
+        //             return 'right';
+        //         case 1:
+        //             return 'top';
+        //         case 2:
+        //             return 'bottom';
+        //         default:
+        //             return 'right';
+        //     }
+        // },
     }
 
     protected function covertColor($color)
