@@ -10,6 +10,7 @@ use App\Models\Video;
 use App\Models\VideoPart;
 use App\Services\DownloadImageService;
 use App\Services\SettingsService;
+use App\Services\VideoDownloadService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
@@ -21,15 +22,16 @@ class UpgradeRedisToSqlite extends Command
      *
      * @var string
      */
-    protected $signature = 'app:upgrade-redis-to-sqlite 
-        {--favorite-list} 
-        {--video} 
-        {--video-part} 
-        {--favorite-list-video} 
-        {--danmaku} 
-        {--settings} 
+    protected $signature = 'app:upgrade-redis-to-sqlite
+        {--favorite-list}
+        {--video}
+        {--video-part}
+        {--favorite-list-video}
+        {--danmaku}
+        {--settings}
         {--finished}
         {--scan-video-image}
+        {--fix-single-video-freeze-not-found}
         {--all}
     ';
 
@@ -42,15 +44,15 @@ class UpgradeRedisToSqlite extends Command
 
     protected $downloadImageService;
     protected $settingService;
-
+    protected $videoDownloadService;
     /**
      * Execute the console command.
      */
     public function handle()
     {
         $this->downloadImageService = app(DownloadImageService::class);
-        $this->settingService = app(SettingsService::class);
-
+        $this->settingService       = app(SettingsService::class);
+        $this->videoDownloadService = app(VideoDownloadService::class);
         if ($this->option('favorite-list')) {
             $this->upgradeFavoriteList();
         }
@@ -79,9 +81,13 @@ class UpgradeRedisToSqlite extends Command
             $this->upgradeVideo();
             $this->upgradeVideoPart();
             $this->upgradeFavoriteListVideo();
+            $this->fixSingleVideoFreezeNotFound();
             $this->upgradeDanmaku();
             $this->upgradeSettings();
             $this->setUpgradeFinished();
+        }
+        if ($this->option('fix-single-video-freeze-not-found')) {
+            $this->fixSingleVideoFreezeNotFound();
         }
     }
 
@@ -93,14 +99,14 @@ class UpgradeRedisToSqlite extends Command
 
     protected function upgradeFavoriteList()
     {
-        
+
         $redis = redis();
         $data  = $redis->get('fav_list');
         $data  = json_decode($data, true);
         foreach ($data as $item) {
-            $imgPath = $this->downloadImageService->getImageLocalPath($item['cover']);
+            $imgPath      = $this->downloadImageService->getImageLocalPath($item['cover']);
             $relativePath = '';
-            if(is_file($imgPath)){
+            if (is_file($imgPath)) {
                 $relativePath = get_relative_path($imgPath);
             }
             FavoriteList::query()->updateOrCreate([
@@ -124,9 +130,9 @@ class UpgradeRedisToSqlite extends Command
             $value = $redis->get($key);
             $data  = json_decode($value, true);
 
-            $imgPath = $this->downloadImageService->getImageLocalPath($data['cover']);
+            $imgPath      = $this->downloadImageService->getImageLocalPath($data['cover']);
             $relativePath = '';
-            if(is_file($imgPath)){
+            if (is_file($imgPath)) {
                 $relativePath = get_relative_path($imgPath);
             }
 
@@ -345,6 +351,137 @@ class UpgradeRedisToSqlite extends Command
                 return SettingKey::FAVORITE_EXCLUDE->value;
             default:
                 return strtolower($key);
+        }
+    }
+
+    protected function fixSingleVideoFreezeNotFound()
+    {
+        Video::where(
+            [
+                'frozen'               => 1,
+                'video_downloaded_num' => 0,
+            ]
+        )->chunk(100, function ($videos) {
+            foreach ($videos as $video) {
+
+                $checkFilePath = $this->videoDownloadService->buildVideoPartFilePath(new VideoPart([
+                    'video_id' => $video->id,
+                    'cid'      => 1,
+                ]));
+
+                $videoPartCount = VideoPart::where('video_id', $video->id)->count();
+
+                if (is_file($checkFilePath) && $videoPartCount == 0) {
+                    // 如果视频文件存在，切没有任何视频分P存在，则认为这个视频是在旧版本数据结构中缓存的，需要为它创建一个虚拟的VideoPart并关联。
+                    // 输出日志，查看有多这种视频
+                    $this->info(sprintf('发现视频：%s, 视频文件存在，切没有任何视频分P存在，需要为它创建一个虚拟的VideoPart并关联。title:%s', $video->id, $video->title));
+
+                    $files = glob(dirname($checkFilePath) . '/' . $video->id . '*.mp4');
+                    if (count($files) >= 1) {
+                        foreach ($files as $file) {
+                            if (preg_match('/part(\d+)\.mp4/', $file, $matches)) {
+                                $page = $matches[1];
+                            } else {
+                                $page = 1;
+                            }
+
+                            $parsedMeta = $this->matchMMfpegMeta($file);
+                            $videoPart           = new VideoPart();
+                            $videoPart->video_id = $video->id;
+                            // 虚构的ID，前者是视频ID，间隔2个0，通过1补全。
+                            $videoPart->cid                 = intval(sprintf('%d00%d', $video->id, 1));
+                            $videoPart->page                = $page;
+                            $videoPart->from                = 'video_part_fix';
+                            $videoPart->part                = $page;
+                            $videoPart->duration            = ceil($parsedMeta['duration']);
+                            $videoPart->vid                 = '';
+                            $videoPart->weblink             = $video->link;
+                            $videoPart->width               = $parsedMeta['width'];
+                            $videoPart->height              = $parsedMeta['height'];
+                            $videoPart->rotate              = $parsedMeta['rotate'];
+                            $videoPart->video_download_path = get_relative_path($checkFilePath);
+                            $videoPart->video_downloaded_at = Carbon::createFromTimestamp(filectime($checkFilePath));
+                            $videoPart->save();
+                            $video->video_downloaded_num += 1;
+                            $video->save();
+                            $this->info(sprintf('成功修复一个视频分P，视频ID：%s，视频分PID：%s, 标题:%s', $video->id, $videoPart->cid, $video->title));
+                        }
+                    }
+
+                }
+            }
+        });
+    }
+
+    protected function matchMMfpegMeta(string $filePath)
+    {
+        if (! is_file($filePath)) {
+            return [
+                'width'    => 0,
+                'height'   => 0,
+                'duration' => 0,
+                'rotate'   => 0,
+            ];
+        }
+
+        try {
+            // 使用 ffprobe 获取视频信息
+            $command = sprintf(
+                'ffprobe -v quiet -print_format json -show_streams -show_format %s 2>/dev/null',
+                escapeshellarg($filePath)
+            );
+            
+            $output = shell_exec($command);
+            $data   = json_decode($output, true);
+            // dd($data);
+            if (! $data || ! isset($data['streams'])) {
+                return [
+                    'width'    => 0,
+                    'height'   => 0,
+                    'duration' => 0,
+                    'rotate'   => 0,
+                ];
+            }
+
+            $width    = 0;
+            $height   = 0;
+            $duration = 0;
+            $rotate   = 0;
+
+            // 查找视频流
+            foreach ($data['streams'] as $stream) {
+                if (isset($stream['codec_type']) && $stream['codec_type'] === 'video') {
+                    $width  = (int) ($stream['width'] ?? 0);
+                    $height = (int) ($stream['height'] ?? 0);
+
+                    // 检查旋转信息
+                    if (isset($stream['tags']['rotate'])) {
+                        $rotate = (int) $stream['tags']['rotate'];
+                    }
+                    break;
+                }
+            }
+
+            // 获取时长信息
+            if (isset($data['format']['duration'])) {
+                $duration = (float) $data['format']['duration'];
+            }
+
+            return [
+                'width'    => $width,
+                'height'   => $height,
+                'duration' => $duration,
+                'rotate'   => $rotate,
+            ];
+
+        } catch (\Exception $e) {
+            // 如果出现异常，返回默认值
+            return [
+                'width'    => 0,
+                'height'   => 0,
+                'duration' => 0,
+                'rotate'   => 0,
+            ];
         }
     }
 }
