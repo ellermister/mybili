@@ -20,7 +20,9 @@ RUN apt update \
     && xz -d /tmp/ffmpeg-6.0.1* \
     && tar -xf ffmpeg-6.0.1* -C /tmp --strip-components=1 \
     && cp /tmp/ffmpeg /usr/local/bin/ffmpeg \
-    && chmod +x /usr/local/bin/ffmpeg
+    && chmod +x /usr/local/bin/ffmpeg \
+    && cp /tmp/ffprobe /usr/local/bin/ffprobe \
+    && chmod +x /usr/local/bin/ffprobe
 
 
 FROM phpswoole/swoole:php8.3-alpine
