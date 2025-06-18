@@ -98,7 +98,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
 
             if ($frozen) {
                 Log::info('Frozen video', ['id' => $item['id'], 'title' => $exist['title']]);
-                $item     = array_merge($exist, Arr::except($item->toArray(), ['attr', 'title', 'cover', 'intro']));
+                $item     = array_merge($exist->toArray(), Arr::except($item, ['attr', 'title', 'cover', 'intro']));
                 $newValue = $item;
             } else {
                 $newValue = $item;
@@ -118,6 +118,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
                 'frozen'      => $newValue['frozen'],
                 'page'        => $newValue['page'],
                 'fav_time'    => $newValue['fav_time'],
+                'cache_image' => '',
             ];
         }, $videos);
 
