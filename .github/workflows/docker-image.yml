@@ -3,6 +3,7 @@ name: Docker Image CI
 on:
   push:
     branches: [ "main" ]
+    tags: [ "v*" ]
     paths-ignore:
       - 'README.md'
       - '.github/**'
@@ -20,7 +21,23 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
+    - name: Set version
+      id: version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          # 从tag获取版本号，去掉v前缀
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+        else
+          # main分支使用dev版本号
+          VERSION="dev-$(date +%Y%m%d)-$(git rev-parse --short HEAD)"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Using version: $VERSION"
+        
     - name: Login to Docker Hub
       uses: docker/login-action@v3
       with:
@@ -30,5 +47,11 @@ jobs:
     - name: Build and push
       uses: docker/build-push-action@v6
       with:
+        context: .
         push: true
-        tags: ellermister/mybili:latest
+        build-args: |
+          APP_VERSION=${{ steps.version.outputs.version }}
+          WEBSITE_ID=${{ secrets.WEBSITE_ID }}
+        tags: |
+          ellermister/mybili:latest
+          ellermister/mybili:${{ steps.version.outputs.version }}

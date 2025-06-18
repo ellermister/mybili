@@ -1,4 +1,5 @@
 ARG NODE_VERSION=22
+ARG APP_VERSION=1.0.0
 
 FROM node:${NODE_VERSION}-bullseye-slim as build
 
@@ -66,8 +67,8 @@ RUN cp .env.example .env \
     && php artisan octane:install --server=frankenphp
 
 
-ENV APP_VERSION=1.0.0
-ENV WEBSITE_ID=f0180403-dc46-41e0-90d0-e294e262b528
+ENV APP_VERSION=${APP_VERSION}
+ENV WEBSITE_ID=${WEBSITE_ID}
 ENV DB_DATABASE=/data/database.sqlite
 
 CMD ["/usr/local/bin/supervisord", "-c", "/etc/supervisord.conf"]
