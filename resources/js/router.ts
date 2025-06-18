@@ -12,7 +12,7 @@ const routes = [
   { path: '/fav/:id', component: FavlistView, name:'favlist-id' },
   { path: '/video/:id', component: VideoView, name:'video-id' },
   { path: '/about', component: About },
-  { path: '/progress', component: ProgressView },
+  { path: '/progress', component: ProgressView, name: 'progress' },
   { path: '/cookie', component: CookieView },
   { path: '/settings', component: SettingsView },
 ];
