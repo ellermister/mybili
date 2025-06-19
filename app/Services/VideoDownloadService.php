@@ -211,6 +211,10 @@ class VideoDownloadService implements VideoDownloadServiceInterface
             return;
         }
 
+        // 写入cookie到文件
+        $cookiePath = storage_path('app/cookie.txt');
+        file_put_contents($cookiePath, $this->settingsService->get(SettingKey::COOKIES_CONTENT));
+
         // 获取视频信息
         $url     = sprintf('https://www.bilibili.com/video/%s/', $video->bvid);
         $command = sprintf('yt-dlp_linux -j %s', escapeshellarg($url));
