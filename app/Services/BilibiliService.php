@@ -345,7 +345,7 @@ class BilibiliService
     {
         $cookies  = parse_netscape_cookie_content($this->settingsService->get(SettingKey::COOKIES_CONTENT));
         $client   = $this->getClient();
-        $url      = self::API_HOST . "/video/{$bvid}";
+        $url      = "https://www.bilibili.com/video/{$bvid}";
         $response = $client->request('GET', $url, [
             'cookies' => $cookies,
         ]);
