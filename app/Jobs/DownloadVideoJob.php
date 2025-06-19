@@ -4,11 +4,16 @@ namespace App\Jobs;
 use App\Contracts\VideoDownloadServiceInterface;
 use App\Models\VideoPart;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 
 class DownloadVideoJob implements ShouldQueue
 {
+    use Dispatchable, InteractsWithQueue, SerializesModels;
 
     public $queue = 'slow';
+    
 
     /**
      * Create a new job instance.
