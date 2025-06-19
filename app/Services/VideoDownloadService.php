@@ -170,6 +170,14 @@ class VideoDownloadService implements VideoDownloadServiceInterface
 
                 // 下载视频分P文件
                 if ($this->settingsService->get(SettingKey::VIDEO_DOWNLOAD_ENABLED) == 'on') {
+                    // 加锁， 控流
+                    $lock = redis()->setnx(sprintf('video_downloading:%s', $videoPart->cid), 1);
+                    if (! $lock) {
+                        Log::info('Video is being downloaded', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
+                        return;
+                    }
+                    redis()->expire(sprintf('video_downloading:%s', $videoPart->cid), 3600 * 8);
+
                     dispatch(new DownloadVideoJob($videoPart));
                 } else {
                     Log::info('Video part file not exists, download video part file disabled', ['id' => $videoPart->cid, 'title' => $videoPart->part]);

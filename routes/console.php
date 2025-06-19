@@ -28,3 +28,6 @@ Schedule::call(function () {
 
 
 Schedule::command('stats:send')->daily();
+
+// Horizon metrics snapshot - 每分钟收集队列指标数据
+Schedule::command('horizon:snapshot')->everyMinute();

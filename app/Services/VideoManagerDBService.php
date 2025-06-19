@@ -162,10 +162,37 @@ class VideoManagerDBService implements VideoManagerServiceInterface
 
             $oldVideoData = $video->toArray();
 
+            // 检查视频数据是否真正发生了变化
+            $hasChanges = false;
+            $changedFields = [];
+            
+            foreach ($item as $field => $value) {
+                if (!isset($oldVideoData[$field]) || $oldVideoData[$field] != $value) {
+                    $hasChanges = true;
+                    $changedFields[$field] = [
+                        'old' => $oldVideoData[$field] ?? null,
+                        'new' => $value
+                    ];
+                }
+            }
+
             $video->fill($item);
             $video->save();
 
-            event(new VideoUpdated($oldVideoData, $video->toArray()));
+            // 只有在数据真正发生变化时才触发事件
+            if ($hasChanges) {
+                Log::info('Video data changed, triggering VideoUpdated event', [
+                    'id' => $item['id'], 
+                    'title' => $item['title'],
+                    'changed_fields' => array_keys($changedFields)
+                ]);
+                event(new VideoUpdated($oldVideoData, $video->toArray()));
+            } else {
+                Log::info('Video data unchanged, skipping VideoUpdated event', [
+                    'id' => $item['id'], 
+                    'title' => $item['title']
+                ]);
+            }
 
             Log::info('Update video success', ['id' => $item['id'], 'title' => $item['title']]);
         }
