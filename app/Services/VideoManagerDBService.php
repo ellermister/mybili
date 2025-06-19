@@ -91,7 +91,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             $exist = $this->getVideoInfo($item['id']);
 
             // 是否冻结该视频: 是否已经保护备份了该视频
-            // 如果已经冻结了该视频, 就不更新该视频的三元素信息
+            // 如果已经冻结了该视频, 就不更新该视频的主要信息
             $frozen          = $exist && $exist['title'] !== '已失效视频' && $videoInvalid;
             $item['frozen']  = $frozen;
             $item['invalid'] = $videoInvalid;
@@ -118,7 +118,6 @@ class VideoManagerDBService implements VideoManagerServiceInterface
                 'frozen'      => $newValue['frozen'],
                 'page'        => $newValue['page'],
                 'fav_time'    => $newValue['fav_time'],
-                'cache_image' => '',
             ];
         }, $videos);
 

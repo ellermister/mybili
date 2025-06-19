@@ -19,6 +19,10 @@ class Video extends Model
         'cache_image_url',
     ];
 
+    protected $attributes = [
+        'cache_image' => '',
+    ];
+
     public function parts()
     {
         return $this->hasMany(VideoPart::class, 'video_id', 'id');
