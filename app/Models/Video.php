@@ -32,4 +32,9 @@ class Video extends Model
     {
         return $this->cache_image ? Storage::url($this->cache_image) : null;
     }
+
+    public function favorite()
+    {
+        return $this->belongsToMany(FavoriteList::class, 'favorite_list_videos', 'video_id', 'favorite_list_id');
+    }
 }

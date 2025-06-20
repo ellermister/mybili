@@ -22,7 +22,8 @@ class FavoriteList extends Model
 
     public function videos()
     {
-        return $this->belongsToMany(Video::class, 'favorite_list_videos', 'favorite_list_id', 'video_id');
+        return $this->belongsToMany(Video::class, 'favorite_list_videos', 'favorite_list_id', 'video_id')
+                    ->orderBy('fav_time', 'desc');
     }
 
     public function getCacheImageUrlAttribute()

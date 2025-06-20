@@ -1,17 +1,13 @@
 <template>
     <div>
-        <!-- Header -->
-        <header class="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10 mb-4">
-            <div class="flex items-center justify-between h-16 px-1">
-                <RouterLink to="/" class="flex items-center space-x-2 text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent hover:from-pink-600 hover:to-purple-700 transition-all duration-300">
-                    <span>🌸</span>
-                    <span>my fav</span>
-                </RouterLink>
+        <Breadcrumbs :items="breadcrumbItems">
+            <template #actions>
                 <div class="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
                     {{ $route.params.id }}
                 </div>
-            </div>
-        </header>
+            </template>
+        </Breadcrumbs>
+
 
         <!-- Video Content -->
         <div class="space-y-4" v-if="videoInfo != null">
@@ -19,29 +15,25 @@
             <div class="flex flex-col lg:flex-row gap-4">
                 <!-- Main Player -->
                 <div class="flex-1">
-                    <div class="bg-white shadow-lg overflow-hidden border border-gray-200/50">
+                    <div ref="playerContainer" class="bg-white shadow-lg overflow-hidden border border-gray-200/50 ">
                         <Player ref="playerRef" @ready="onPlayerReady" />
                     </div>
                 </div>
 
                 <!-- Parts Sidebar -->
-                <div class="w-full lg:w-72 lg:shrink-0" v-if="videoInfo && videoInfo.video_parts.length > 1">
-                    <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-3">
-                        <h3 class="text-xl font-semibold mb-3 text-gray-800 flex items-center">
+                <div class="w-full lg:w-72 lg:shrink-0" v-if="videoInfo && videoInfo.video_parts && videoInfo.video_parts.length > 1">
+                    <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-3 flex flex-col" :style="{ height: sidebarHeight }">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-800 flex items-center flex-shrink-0">
                             <span class="w-2 h-2 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full mr-2"></span>
-                            分P列表
+                            视频选集&nbsp;<span class="text-gray-500 text-sm font-normal">({{ videoInfo.video_parts.findIndex(part => part.id === currentPart?.id) + 1 }}/{{ videoInfo.video_parts.length }})</span>
                         </h3>
-                        <div class="space-y-1">
-                            <button 
-                                v-for="part in videoInfo?.video_parts" 
-                                :key="part.id" 
-                                @click="playPart(part.id)"
+                        <div class="space-y-1 overflow-y-auto flex-1 min-h-0 pr-1 custom-scrollbar">
+                            <button v-for="part in videoInfo?.video_parts" :key="part.id" @click="playPart(part.id)"
                                 class="w-full px-3 py-2 text-left rounded-lg transition-all duration-300 group relative overflow-hidden"
-                                :class="{ 
-                                    'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow': currentPart?.id === part.id, 
-                                    'bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-gray-900': currentPart?.id !== part.id 
-                                }"
-                            >
+                                :class="{
+                                    'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow': currentPart?.id === part.id,
+                                    'bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-gray-900': currentPart?.id !== part.id
+                                }">
                                 <div class="flex items-center justify-between">
                                     <span class="font-medium truncate">{{ part.title }}</span>
                                     <span v-if="currentPart?.id === part.id" class="text-white/80">▶</span>
@@ -53,7 +45,8 @@
             </div>
 
             <!-- Video Info Section -->
-            <div v-if="videoInfo != null" class="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-4">
+            <div v-if="videoInfo != null"
+                class="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-4">
                 <div class="space-y-4">
                     <!-- Title -->
                     <div>
@@ -72,7 +65,8 @@
 
                     <!-- Meta Information -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200/50">
+                        <div
+                            class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200/50">
                             <div class="flex items-center space-x-2">
                                 <span class="text-blue-500">📅</span>
                                 <span class="text-sm text-gray-600">发布时间</span>
@@ -82,7 +76,8 @@
                             </div>
                         </div>
 
-                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200/50">
+                        <div
+                            class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200/50">
                             <div class="flex items-center space-x-2">
                                 <span class="text-green-500">⭐</span>
                                 <span class="text-sm text-gray-600">收藏时间</span>
@@ -92,7 +87,8 @@
                             </div>
                         </div>
 
-                        <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-200/50">
+                        <div
+                            class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-200/50">
                             <div class="flex items-center space-x-2">
                                 <span class="text-purple-500">💬</span>
                                 <span class="text-sm text-gray-600">弹幕数量</span>
@@ -105,12 +101,8 @@
 
                     <!-- External Link -->
                     <div class="flex justify-center pt-2">
-                        <a 
-                            class="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow hover:shadow-lg transform hover:-translate-y-0.5" 
-                            :href="bilibiliUrl(videoInfo.bvid)"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
+                        <a class="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow hover:shadow-lg transform hover:-translate-y-0.5"
+                            :href="bilibiliUrl(videoInfo.bvid)" target="_blank" rel="noopener noreferrer">
                             <span class="text-lg">📺</span>
                             <span class="font-semibold">在哔哩哔哩观看</span>
                             <span class="text-white/80">↗</span>
@@ -125,53 +117,42 @@
             <div class="text-6xl mb-4">😢</div>
             <div class="text-3xl font-semibold text-gray-700 mb-2">视频未找到</div>
             <div class="text-gray-500">抱歉，您要查找的视频不存在或已被删除</div>
-            <RouterLink to="/" class="inline-block mt-6 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl">
+            <RouterLink to="/"
+                class="inline-block mt-6 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl">
                 返回首页
             </RouterLink>
         </div>
     </div>
 </template>
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref, nextTick, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { formatTimestamp } from '../lib/helper';
 import Player from '../components/Player.vue';
+import Breadcrumbs from '../components/Breadcrumbs.vue';
+import type { Video, VideoPartType } from '@/api/fav';
 
 const playerRef = ref()
+const playerContainer = ref()
 const playerReady = ref(false)
+const sidebarHeight = ref('auto')
 
 const route = useRoute()
 const id = route.params.id
 
-interface VideoType {
-    title: string
-    id: number
-    link: string
-    intro: string
-    pubtime: number
-    fav_time: number
-    bvid: string
-    attr: number
-    page: number
-    video_parts: VideoPartType[]
-    danmaku_count: number
-    _metas: {
-        cover: string
-    }
-}
-
-interface VideoPartType {
-    id: number
-    url: string
-    title: string
-    part: number
-}
+const breadcrumbItems = computed(() => {
+    return [
+        { text: '首页', to: '/' },
+        { text: (videoInfo.value?.favorite?.[0]?.title ?? '收藏夹'), to: '/fav/' + (videoInfo.value?.favorite?.[0]?.id ?? '') },
+        { text: videoInfo.value?.title ?? '加载中...' }
+    ]
+})
 
 const bilibiliUrl = (bvid: string) => {
     return `https://www.bilibili.com/video/${bvid}`
 }
 
-const videoInfo = ref<VideoType | null>()
+const videoInfo = ref<Video | null>()
 const notfound = ref(false)
 
 const currentPart = ref<VideoPartType | null>(null)
@@ -180,7 +161,7 @@ const currentPart = ref<VideoPartType | null>(null)
 const onPlayerReady = () => {
     playerReady.value = true
     // 如果视频数据已经加载，立即播放第一个视频
-    if (videoInfo.value && videoInfo.value.video_parts.length > 0) {
+    if (videoInfo.value?.video_parts && videoInfo.value.video_parts.length > 0) {
         const firstVideo = videoInfo.value.video_parts[0]
         playFirstVideo(firstVideo)
     }
@@ -201,7 +182,7 @@ const playFirstVideo = (firstVideo: VideoPartType) => {
 }
 
 const playPart = (partId: number) => {
-    const part = videoInfo.value?.video_parts.find(part => part.id === partId)
+    const part = videoInfo.value?.video_parts?.find(part => part.id === partId)
     if (part && playerRef.value && playerReady.value) {
         // p1 视频, p2 弹幕
         playerRef.value.switchVideo({
@@ -216,6 +197,17 @@ const playPart = (partId: number) => {
     }
 }
 
+// 更新侧边栏高度
+const updateSidebarHeight = () => {
+    if (playerContainer.value) {
+        const height = playerContainer.value.offsetHeight
+        sidebarHeight.value = height > 0 ? `${height}px` : 'auto'
+    }
+}
+
+// 监听窗口大小变化
+let resizeObserver: ResizeObserver | null = null
+
 onMounted(() => {
     fetch(`/api/video/${id}`).then(async (rsp) => {
         if (!rsp.ok) {
@@ -228,7 +220,54 @@ onMounted(() => {
                 const firstVideo = jsonData.video_parts[0]
                 playFirstVideo(firstVideo)
             }
+            
+            // 等待DOM更新后设置高度监听
+            nextTick(() => {
+                updateSidebarHeight()
+                
+                // 使用ResizeObserver监听播放器容器大小变化
+                if (playerContainer.value && window.ResizeObserver) {
+                    resizeObserver = new ResizeObserver(() => {
+                        updateSidebarHeight()
+                    })
+                    resizeObserver.observe(playerContainer.value)
+                }
+            })
         }
     })
 })
+
+// 组件卸载时清理
+onUnmounted(() => {
+    if (resizeObserver) {
+        resizeObserver.disconnect()
+        resizeObserver = null
+    }
+})
 </script>
+
+<style scoped>
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+</style>

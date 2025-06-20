@@ -2,6 +2,7 @@
 
 namespace App\Contracts;
 
+use App\Models\FavoriteList;
 use App\Models\Video;
 use App\Models\VideoPart;
 
@@ -48,6 +49,11 @@ interface VideoManagerServiceInterface
      * 获取收藏夹列表
      */
     public function getFavList(): array;
+
+    /**
+     * 获取收藏夹详情
+     */
+    public function getFavDetail(int $favId, array $columns = ['*']): ?FavoriteList;
 
     /**
      * 更新收藏夹列表

@@ -29,6 +29,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
     public function getVideoInfo(string $id, bool $withParts = false): ?Video
     {
         $video = Video::query()->where('id', $id)->first();
+        
         if ($video && $withParts) {
             $video->load('parts');
         }
@@ -57,6 +58,11 @@ class VideoManagerDBService implements VideoManagerServiceInterface
     {
         return FavoriteList::query()->get()
             ->toArray();
+    }
+
+    public function getFavDetail(int $favId, array $columns = ['*']): ?FavoriteList
+    {
+        return FavoriteList::query()->where('id', $favId)->first($columns);
     }
 
     public function updateFavList(): void

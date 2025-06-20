@@ -3,8 +3,9 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="icon" href="{{ asset('assets/images/favicon.svg') }}">
 
-        <title> Mybili </title>
+        <title>Mybili</title>
         @vite(['resources/css/app.css', 'resources/js/main.ts'])
         @if(config('app.website_id'))
             <script defer src="https://cloud.umami.is/script.js" data-website-id="{{ config('app.website_id') }}"></script>

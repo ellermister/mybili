@@ -19,6 +19,8 @@ class VideoController extends Controller
         if ($video) {
             $video->video_parts   = $this->videoManagerService->getAllPartsVideoForUser($video);
             $video->danmaku_count = $this->videoManagerService->getVideoDanmakuCount($video);
+            $video->load('favorite');
+            
             return response()->json($video);
         }
         abort(404);

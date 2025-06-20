@@ -2,6 +2,7 @@
     <div value="w-full flex justify-center	">
         <div class="container  mx-auto justify-center " id="main">
             <div class="m-4">
+
                 <div class="flex justify-between">
                     <h1 class="my-8 text-2xl">
                         <RouterLink to="/">🌸</RouterLink> progress {{ $route.params.id }}
@@ -10,9 +11,36 @@
                         <RouterLink to="/horizon" target="_blank">🔭 查看任务</RouterLink> 
                     </h1>
                 </div>
-                <h2 class="text-xl" title="如果你的收藏夹中出现了无效视频那么就会低于100%">缓存的视频率 {{ progress }}% ({{ stat.downloaded
+
+                <div class="flex justify-between">
+                    <h2 class="text-xl" title="如果你的收藏夹中出现了无效视频那么就会低于100%">缓存的视频率 {{ progress }}% ({{ stat.downloaded
                     }}/{{ stat.count }})</h2>
 
+                    <div class="flex items-center gap-2">
+                        <button
+                            @click="showCachedOnly = !showCachedOnly"
+                            :class="[
+                                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+                                showCachedOnly ? 'bg-blue-600' : 'bg-gray-200'
+                            ]"
+                            role="switch"
+                            :aria-checked="showCachedOnly"
+                        >
+                            <span
+                                :class="[
+                                    'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                                    showCachedOnly ? 'translate-x-6' : 'translate-x-1'
+                                ]"
+                            />
+                        </button>
+                        <label class="text-sm text-gray-700 cursor-pointer" @click="showCachedOnly = !showCachedOnly">
+                            只显示本地缓存的视频
+                        </label>
+                    </div>
+
+                </div>
+
+          
 
                 <div class="my-8 w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                     <div class="bg-blue-600 h-2.5 rounded-full" :style="{ width: progress + '%' }"></div>
@@ -48,9 +76,11 @@
                             <Image class="rounded-lg w-full h-auto md:w-96 md:h-56 hover:scale-105 transition-all duration-300" :src="item.cache_image_url ?? '/assets/images/notfound.webp'"
                                 :class="{ 'grayscale-image': item.video_downloaded_num == 0 }" :title="item.title" />
                         </RouterLink>
-                        <span class="mt-4 text-center">{{ item.title }}</span>
-                        <span class="text-sm">发布时间:{{ formatTimestamp(item.pubtime, "yyyy-mm-dd") }}</span>
-                        <span class="text-sm">收藏时间:{{ formatTimestamp(item.fav_time, "yyyy-mm-dd") }}</span>
+                        <span class="mt-4 text-center h-12 line-clamp-2" :title="item.title">{{ item.title }}</span>
+                        <div class="mt-2 flex justify-between text-xs text-gray-400 px-1">
+                            <span>发布: {{ formatTimestamp(item.pubtime, "yyyy.mm.dd") }}</span>
+                            <span>收藏: {{ formatTimestamp(item.fav_time, "yyyy.mm.dd") }}</span>
+                        </div>
                         <span v-if="item.page > 1"
                             class="text-sm text-white bg-gray-600 rounded-lg w-10 text-center  absolute top-2 right-2">{{
                                 item.page }}</span>
@@ -75,6 +105,7 @@ const videoList = ref<VideoType[]>([])
 const progress = ref(0)
 const dataLoaded = ref(false)
 const isInitialLoad = ref(true)
+const showCachedOnly = ref(false)
 
 const stat = ref({
     count: 0,
@@ -165,6 +196,11 @@ const handleScroll = () => {
 
 const dataList = computed(() => {
     return videoList.value.filter(i => {
+        // 如果启用了只显示缓存视频的选项，则过滤掉未缓存的视频
+        if (showCachedOnly.value && i.video_downloaded_num === 0) {
+            return false
+        }
+
         if (filter.value.class == null) {
             return true
         }
