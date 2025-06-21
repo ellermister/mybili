@@ -178,6 +178,24 @@
                 </label>
             </div>
 
+
+            <!-- Human Readable Name -->
+            <div class="mb-6" v-if="availableCollections">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Human Readable Name</label>
+                <div class="space-y-2">
+                    <label class="flex items-center space-x-3">
+                        <input v-model="humanReadableNameEnabled" type="radio" value="off"
+                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                        <span class="text-gray-700">Off (Default)</span>
+                    </label>
+                    <label class="flex items-center space-x-3">
+                        <input v-model="humanReadableNameEnabled" type="radio" value="on"
+                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                        <span class="text-gray-700">On</span>
+                    </label>
+                </div>
+            </div>
+
             <!-- Save Button -->
             <button @click="saveSettingHandler"
                 class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-4 rounded-lg hover:from-purple-600 hover:to-pink-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition duration-200">
@@ -207,6 +225,7 @@ const multiPartitionDownloadEnabled = ref('on'); // off, on
 const danmakuDownloadEnabled = ref('off'); // off, on
 const videoDownloadEnabled = ref('off'); // off, on
 const favoriteSyncEnabled = ref('off'); // off, on
+const humanReadableNameEnabled = ref('off'); // off, on
 
 // 添加合集过滤相关的响应式数据
 const favExclude = ref({
@@ -225,6 +244,7 @@ const saveSettingHandler = () => {
         danmaku_download_enabled: danmakuDownloadEnabled.value,
         video_download_enabled: videoDownloadEnabled.value,
         favorite_sync_enabled: favoriteSyncEnabled.value,
+        human_readable_name_enabled: humanReadableNameEnabled.value,
     });
 
     saveSettings({
@@ -235,6 +255,7 @@ const saveSettingHandler = () => {
         danmaku_download_enabled: danmakuDownloadEnabled.value,
         video_download_enabled: videoDownloadEnabled.value,
         favorite_sync_enabled: favoriteSyncEnabled.value,
+        human_readable_name_enabled: humanReadableNameEnabled.value,
     }).then(()=>{
         alert('Settings saved successfully!');
     });
@@ -257,6 +278,7 @@ onMounted(()=>{
         danmakuDownloadEnabled.value = data.danmaku_download_enabled;
         videoDownloadEnabled.value = data.video_download_enabled;
         favoriteSyncEnabled.value = data.favorite_sync_enabled;
+        humanReadableNameEnabled.value = data.human_readable_name_enabled;
     })
 })
 

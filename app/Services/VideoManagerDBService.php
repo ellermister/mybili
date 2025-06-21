@@ -12,6 +12,7 @@ use App\Models\Video;
 use App\Models\VideoPart;
 use Arr;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Log;
 
@@ -225,7 +226,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         }
 
         // 找出本地多余远端的数据
-        $localVideoParts     = $this->getAllPartsVideo($video->id);
+        $localVideoParts     = $this->getAllPartsVideo($video->id)->toArray();
         $localVideoPartsIds  = array_column($localVideoParts, 'cid');
         $remoteVideoPartsIds = array_column($videoParts, 'cid');
 
@@ -276,12 +277,11 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         return $video['attr'] > 0 || $video['title'] == '已失效视频';
     }
 
-    public function getAllPartsVideo(string $id): array
+    public function getAllPartsVideo(string $id): Collection
     {
         return VideoPart::where('video_id', $id)
             ->orderBy('page', 'asc')
-            ->get()
-            ->toArray();
+            ->get();
 
     }
 
@@ -385,7 +385,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         }
     }
 
-    public function getVideos(array $conditions = []): array
+    public function getVideos(array $conditions = []): Collection
     {
         $query = Video::query();
         if (isset($conditions['invalid'])) {
@@ -394,7 +394,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         if (isset($conditions['frozen'])) {
             $query->where('frozen', $conditions['frozen']);
         }
-        return $query->get()->toArray();
+        return $query->get();
     }
 
     public function getVideosStat(array $conditions = []): array

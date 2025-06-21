@@ -31,3 +31,14 @@ Schedule::command('stats:send')->daily();
 
 // Horizon metrics snapshot - 每分钟收集队列指标数据
 Schedule::command('horizon:snapshot')->everyMinute();
+
+
+Schedule::call(function () {
+    $humanReadableNameEnable = app(SettingsService::class)->get(SettingKey::HUMAN_READABLE_NAME_ENABLED);
+    if ($humanReadableNameEnable == "on") {
+        Artisan::call('app:make-human-readable-names');
+    }
+})
+->name('make-human-readable-names')
+->withoutOverlapping()
+->everyTenMinutes();

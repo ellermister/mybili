@@ -19,6 +19,7 @@ class SettingsController extends Controller
             SettingKey::DANMAKU_DOWNLOAD_ENABLED->value         => 'off',
             SettingKey::VIDEO_DOWNLOAD_ENABLED->value           => 'off',
             SettingKey::FAVORITE_SYNC_ENABLED->value            => 'off',
+            SettingKey::HUMAN_READABLE_NAME_ENABLED->value      => 'off',
             SettingKey::FAVORITE_EXCLUDE->value                 => [
                 'enabled'  => false,
                 'selected' => [],
@@ -52,7 +53,8 @@ class SettingsController extends Controller
             SettingKey::DANMAKU_DOWNLOAD_ENABLED->value         => 'required|string|in:on,off',
             SettingKey::VIDEO_DOWNLOAD_ENABLED->value           => 'required|string|in:on,off',
             SettingKey::FAVORITE_SYNC_ENABLED->value            => 'required|string|in:on,off',
-
+            SettingKey::HUMAN_READABLE_NAME_ENABLED->value      => 'required|string|in:on,off',
+            
             SettingKey::NAME_EXCLUDE->value                     => 'required|array',
             SettingKey::NAME_EXCLUDE->value . '.contains'       => 'required_if:name_exclude.type,contains|string',
             SettingKey::NAME_EXCLUDE->value . '.regex'          => 'required_if:name_exclude.type,regex|string',

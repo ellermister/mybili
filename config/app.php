@@ -126,4 +126,8 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+
+    // 可读目录配置
+    'human_readable_dir' => env('HUMAN_READABLE_DIR', storage_path('app/public/medias')),
+
 ];

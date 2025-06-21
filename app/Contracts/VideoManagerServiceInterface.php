@@ -5,6 +5,7 @@ namespace App\Contracts;
 use App\Models\FavoriteList;
 use App\Models\Video;
 use App\Models\VideoPart;
+use Illuminate\Database\Eloquent\Collection;
 
 interface VideoManagerServiceInterface
 {
@@ -20,8 +21,9 @@ interface VideoManagerServiceInterface
 
     /**
      * 获取所有视频
+     * @return Collection<Video>
      */
-    public function getVideos(array $conditions = []):array;
+    public function getVideos(array $conditions = []):Collection;
 
     /**
      * 获取视频统计信息
@@ -31,8 +33,9 @@ interface VideoManagerServiceInterface
     // ==================== 视频分P相关 ====================
     /**
      * 获取视频所有分P信息
+     * @return Collection<VideoPart>
      */
-    public function getAllPartsVideo(string $id): array;
+    public function getAllPartsVideo(string $id): Collection;
 
     /**
      * 获取用户可访问的视频分P信息
