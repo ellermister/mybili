@@ -28,13 +28,10 @@ class VideoController extends Controller
 
     public function progress()
     {
-        $list = $this->videoManagerService->getVideos();
-        usort($list, function ($a, $b) {
-            if ($a['fav_time'] == $b['fav_time']) {
-                return 0;
-            }
-            return $a['fav_time'] > $b['fav_time'] ? -1 : 1;
-        });
+        $list = $this->videoManagerService->getVideos()
+            ->sortByDesc('fav_time')
+            ->values()
+            ->all();
 
         $data = [
             'data' => $list,
