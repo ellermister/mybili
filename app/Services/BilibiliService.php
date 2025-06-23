@@ -422,30 +422,39 @@ class BilibiliService
         }
         $mid = $dedeUserID->getValue();
 
+        $pn     = 1;
+        $ps     = 10;
         $client = $this->getClient();
-
-        $response = $client->request('GET', self::API_HOST . "/x/v3/fav/folder/created/list?pn=1&ps=20&up_mid={$mid}");
-
-        $result = json_decode($response->getBody()->getContents(), true);
-
         $favorites = [];
-        if ($result && $result['code'] == 0) {
+        while(true){
+            $response = $client->request('GET', self::API_HOST . "/x/v3/fav/folder/created/list?pn={$pn}&ps={$ps}&up_mid={$mid}");
 
-            if ($result['data'] == null) {
-                Log::error(sprintf("Account cookie is invalid when accessing the get fav folder api."));
-                return [];
+            $result = json_decode($response->getBody()->getContents(), true);
+
+            if ($result && $result['code'] == 0) {
+    
+                if ($result['data'] == null) {
+                    Log::error(sprintf("Account cookie is invalid when accessing the get fav folder api."));
+                    return [];
+                }
+                foreach ($result['data']['list'] as $value) {
+                    $favorites[] = [
+                        'title'       => $value['title'],
+                        'cover'       => $value['cover'],
+                        'ctime'       => $value['ctime'],
+                        'mtime'       => $value['mtime'],
+                        'media_count' => $value['media_count'],
+                        'id'          => $value['id'],
+                    ];
+                }
             }
-            foreach ($result['data']['list'] as $value) {
-                $favorites[] = [
-                    'title'       => $value['title'],
-                    'cover'       => $value['cover'],
-                    'ctime'       => $value['ctime'],
-                    'mtime'       => $value['mtime'],
-                    'media_count' => $value['media_count'],
-                    'id'          => $value['id'],
-                ];
+            if (isset($result['data']['has_more']) && $result['data']['has_more']) {
+                $pn++;
+            } else {
+                break;
             }
         }
+
         return $favorites;
     }
 
