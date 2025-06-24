@@ -1,7 +1,7 @@
 let options = {
     // root: document.querySelector('#app'),
     rootMargin: "0px",
-    threshold: 1.0,
+    threshold: 0.1,
 };
 let observer = new IntersectionObserver((entries) => {
     entries.forEach(i => {
