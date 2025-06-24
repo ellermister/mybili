@@ -109,6 +109,7 @@ class HumanReadableNameService
      */
     protected function processTvSeries(Video $video, $parts, string $sanitizedName): void
     {
+        $successCount = 0;
         foreach ($parts as $part) {
             $videoPath = $this->videoDownloadService->getVideoPartValidFilePath($part);
             
@@ -116,12 +117,15 @@ class HumanReadableNameService
                 continue;
             }
 
-            $episodeName = $this->formatEpisodeName($sanitizedName, $part->page);
+            $episodeName = trim($this->formatEpisodeName($part->part ?? '', $part->page));
             $this->createVideoLink($videoPath, 'tvs', $sanitizedName, $episodeName . '.mp4');
             $this->createCoverLink($video, 'tvs', $sanitizedName, $episodeName . '.jpg');
+            $successCount++;
         }
         
-        $this->createCoverLink($video, 'tvs', $sanitizedName,  $sanitizedName.'.jpg');
+        if($successCount >= 1){
+            $this->createCoverLink($video, 'tvs', $sanitizedName,  $sanitizedName.'.jpg');
+        }
     }
 
     /**
@@ -135,9 +139,7 @@ class HumanReadableNameService
             unlink($targetPath);
         }
         
-        if (link($sourcePath, $targetPath)) {
-            Log::info("Created video link: {$targetPath}");
-        }
+        $this->createLink($sourcePath, $targetPath);
     }
 
     /**
@@ -157,8 +159,30 @@ class HumanReadableNameService
             unlink($targetPath);
         }
         
-        if (link($coverPath, $targetPath)) {
-            Log::info("Created cover link: {$targetPath}");
+        $this->createLink($coverPath, $targetPath);
+    }
+
+    protected function createLink(string $sourcePath, string $targetPath): void
+    {
+        try{
+            if (link($sourcePath, $targetPath)) {
+                Log::info("Created link: {$targetPath}");
+            }
+        }catch(\Throwable $e){
+            // php link(): No error information
+            // 很奇怪的一种错误，尝试用过 shell 创建硬链接
+            $sourcePath = escapeshellarg($sourcePath);
+            $targetPath = escapeshellarg($targetPath);
+            exec("ln {$sourcePath} {$targetPath}", $output, $returnCode);
+            
+            if($returnCode === 0 && is_file($targetPath)){
+                Log::info("Created link: {$targetPath}");
+            }else{
+                Log::error("createLink error: {$e->getMessage()}", [
+                    'output' => $output,
+                    'returnCode' => $returnCode
+                ]);
+            }
         }
     }
 

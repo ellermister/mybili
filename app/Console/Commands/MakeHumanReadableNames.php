@@ -35,13 +35,8 @@ class MakeHumanReadableNames extends Command
     {
         $this->info('开始生成可读文件名和目录结构...');
         
-        try {
-            $this->humanReadableNameService->generateHumanReadableNames();
-            $this->info('可读文件名和目录结构生成完成！');
-        } catch (\Exception $e) {
-            $this->error('生成过程中发生错误: ' . $e->getMessage());
-            return 1;
-        }
+        $this->humanReadableNameService->generateHumanReadableNames();
+        $this->info('可读文件名和目录结构生成完成！');
         
         return 0;
     }
