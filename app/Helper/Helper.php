@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\SettingKey;
+use App\Services\SettingsService;
 use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Cookie\SetCookie;
 
@@ -115,4 +117,10 @@ function get_relative_path(string $absolutePath): string
     }
 
     return $absolutePath;
+}
+
+
+function usage_analytics_enabled(): bool
+{
+    return app(SettingsService::class)->get(SettingKey::USAGE_ANALYTICS_ENABLED->value) != 'off';
 }

@@ -11,7 +11,7 @@ class UsageStatisticsService
     private const UMANI_ENDPOINT = 'https://api-gateway.umami.dev/api/send';
     private $websiteId;
     private const CACHE_KEY      = 'usage_stats_id';
-    private const CACHE_TTL      = 86400; // 24 hours
+    private const CACHE_TTL      = 86400 * 365; // 1 year
 
     public function __construct()
     {

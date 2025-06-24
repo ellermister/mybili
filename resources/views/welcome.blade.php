@@ -7,7 +7,7 @@
 
         <title>Mybili</title>
         @vite(['resources/css/app.css', 'resources/js/main.ts'])
-        @if(config('app.website_id'))
+        @if(config('app.website_id') && usage_analytics_enabled())
             <script defer src="https://cloud.umami.is/script.js" data-website-id="{{ config('app.website_id') }}"></script>
         @endif
     </head>
