@@ -1,206 +1,235 @@
 <template>
     <div class="min-h-screen bg-gray-100 p-6">
-        <div class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
-            <h1 class="text-2xl font-bold mb-6 text-gray-800">Settings</h1>
+        
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-3xl font-bold mb-8 text-gray-800 text-center">{{ t('settings.title') }}</h1>
 
-            <!-- Filter by Name -->
-            <div class="mb-6" v-if="availableCollections">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Exclude by Name</label>
-                <div class="space-y-2">
-                    <!-- Off (Default) -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="nameExclude.type" type="radio" value="off"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Off (Default)</span>
-                    </label>
-
-                    <!-- Name Contains -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="nameExclude.type" type="radio" value="contains"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Name Contains</span>
-                        <input v-if="nameExclude.type === 'contains'" v-model="nameExclude.contains" type="text"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
-                            placeholder="Enter text" />
-                    </label>
-
-                    <!-- Name Matches Regex -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="nameExclude.type" type="radio" value="regex"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Name Matches Regex</span>
-                        <input v-if="nameExclude.type === 'regex'" v-model="nameExclude.regex" type="text"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
-                            placeholder="Enter regex" />
-                    </label>
-                </div>
-            </div>
-
-            <!-- Filter by Video Size -->
-            <div class="mb-6" v-if="availableCollections">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Exclude by Size</label>
-                <div class="space-y-2">
-                    <!-- Off (Default) -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="sizeExclude.type" type="radio" value="off"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Off (Default)</span>
-                    </label>
-
-                    <!-- Videos Larger Than 1GB -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="sizeExclude.type" type="radio" value="1GB"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Videos Larger Than 1GB</span>
-                    </label>
-
-                    <!-- Videos Larger Than 2GB -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="sizeExclude.type" type="radio" value="2GB"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Videos Larger Than 2GB</span>
-                    </label>
-
-                    <!-- Custom Size -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="sizeExclude.type" type="radio" value="custom"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Custom</span>
-                        <input v-if="sizeExclude.type === 'custom'" v-model="sizeExclude.custom_size" type="number"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
-                            placeholder="Enter size in MB" />
-                    </label>
-                </div>
-            </div>
-
-            <!-- Filter by Collections -->
-            <div class="mb-6" v-if="availableCollections">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Exclude by Favorites</label>
-                <div class="space-y-2">
-                    <!-- Off (Default) -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="favExclude.enabled" type="checkbox"
-                            class="form-checkbox h-5 w-5 text-purple-600 rounded border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Enable Favorites Filter</span>
-                    </label>
-
-                    <!-- Collection Selection -->
-                    <div v-if="favExclude.enabled" class="pl-8 space-y-2">
-                        <div class="flex flex-wrap gap-2">
-                            <label v-for="collection in availableCollections" :key="collection.id"
-                                class="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full cursor-pointer transition duration-200">
-                                <input type="checkbox" v-model="favExclude.selected" :value="collection.id"
-                                    class="form-checkbox h-4 w-4 text-purple-600 rounded border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                                <span class="ml-2 text-sm text-gray-700">{{ collection.name }}</span>
+            <!-- 功能开关分组 -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-6 text-gray-800 border-b border-gray-200 pb-3">
+                    <span class="inline-flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        {{ t('settings.featureSwitches') }}
+                    </span>
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Favorite Sync -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.features.favoriteSync') }}</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-3">
+                                <input v-model="favoriteSyncEnabled" type="radio" value="off"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.off') }}</span>
                             </label>
+                            <label class="flex items-center space-x-3">
+                                <input v-model="favoriteSyncEnabled" type="radio" value="on"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.on') }}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Video Download -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.features.videoDownload') }}</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-3">
+                                <input v-model="videoDownloadEnabled" type="radio" value="off"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.off') }}</span>
+                            </label>
+                            <label class="flex items-center space-x-3">
+                                <input v-model="videoDownloadEnabled" type="radio" value="on"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.on') }}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Danmaku Download -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.features.danmakuDownload') }}</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-3">
+                                <input v-model="danmakuDownloadEnabled" type="radio" value="off"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.off') }}</span>
+                            </label>
+                            <label class="flex items-center space-x-3">
+                                <input v-model="danmakuDownloadEnabled" type="radio" value="on"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.on') }}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Multi-Partition Download -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.features.multiPartitionDownload') }}</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-3">
+                                <input v-model="multiPartitionDownloadEnabled" type="radio" value="off"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.off') }}</span>
+                            </label>
+                            <label class="flex items-center space-x-3">
+                                <input v-model="multiPartitionDownloadEnabled" type="radio" value="on"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.on') }}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Human Readable Name -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.features.humanReadableName') }}</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-3">
+                                <input v-model="humanReadableNameEnabled" type="radio" value="off"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.off') }}</span>
+                            </label>
+                            <label class="flex items-center space-x-3">
+                                <input v-model="humanReadableNameEnabled" type="radio" value="on"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.on') }}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Usage Analytics -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.features.usageAnalytics') }}</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-3">
+                                <input v-model="usageAnalyticsEnabled" type="radio" value="on"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.on') }}</span>
+                            </label>
+                            <label class="flex items-center space-x-3">
+                                <input v-model="usageAnalyticsEnabled" type="radio" value="off"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.off') }}</span>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">{{ t('settings.features.usageAnalyticsDescription') }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 过滤设置分组 -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6" v-if="availableCollections">
+                <h2 class="text-xl font-semibold mb-6 text-gray-800 border-b border-gray-200 pb-3">
+                    <span class="inline-flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                        </svg>
+                        {{ t('settings.filterSettings') }}
+                    </span>
+                </h2>
+
+                <div class="space-y-6">
+                    <!-- Filter by Name -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.filters.byName') }}</label>
+                        <div class="space-y-3">
+                            <label class="flex items-center space-x-3">
+                                <input v-model="nameExclude.type" type="radio" value="off"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.noFilter') }}</span>
+                            </label>
+
+                            <label class="flex items-center space-x-3">
+                                <input v-model="nameExclude.type" type="radio" value="contains"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.containsKeyword') }}</span>
+                            </label>
+                            <input v-if="nameExclude.type === 'contains'" v-model="nameExclude.contains" type="text"
+                                class="ml-8 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+                                :placeholder="t('settings.placeholders.enterKeyword')" />
+
+                            <label class="flex items-center space-x-3">
+                                <input v-model="nameExclude.type" type="radio" value="regex"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.regexPattern') }}</span>
+                            </label>
+                            <input v-if="nameExclude.type === 'regex'" v-model="nameExclude.regex" type="text"
+                                class="ml-8 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+                                :placeholder="t('settings.placeholders.enterRegex')" />
+                        </div>
+                    </div>
+
+                    <!-- Filter by Video Size -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.filters.bySize') }}</label>
+                        <div class="space-y-3">
+                            <label class="flex items-center space-x-3">
+                                <input v-model="sizeExclude.type" type="radio" value="off"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.noFilter') }}</span>
+                            </label>
+
+                            <label class="flex items-center space-x-3">
+                                <input v-model="sizeExclude.type" type="radio" value="1GB"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.largerThan1GB') }}</span>
+                            </label>
+
+                            <label class="flex items-center space-x-3">
+                                <input v-model="sizeExclude.type" type="radio" value="2GB"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.largerThan2GB') }}</span>
+                            </label>
+
+                            <label class="flex items-center space-x-3">
+                                <input v-model="sizeExclude.type" type="radio" value="custom"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.customSize') }}</span>
+                            </label>
+                            <input v-if="sizeExclude.type === 'custom'" v-model="sizeExclude.custom_size" type="number"
+                                class="ml-8 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+                                :placeholder="t('settings.placeholders.enterSizeMB')" />
+                        </div>
+                    </div>
+
+                    <!-- Filter by Collections -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.filters.byFavorites') }}</label>
+                        <div class="space-y-3">
+                            <label class="flex items-center space-x-3">
+                                <input v-model="favExclude.enabled" type="checkbox"
+                                    class="form-checkbox h-5 w-5 text-purple-600 rounded border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.enableFavoritesFilter') }}</span>
+                            </label>
+
+                            <div v-if="favExclude.enabled" class="ml-8">
+                                <p class="text-sm text-gray-600 mb-3">{{ t('settings.filters.selectExcludedFavorites') }}</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <label v-for="collection in availableCollections" :key="collection.id"
+                                        class="inline-flex items-center px-3 py-1.5 bg-white hover:bg-gray-50 rounded-full cursor-pointer transition duration-200 border border-gray-200">
+                                        <input type="checkbox" v-model="favExclude.selected" :value="collection.id"
+                                            class="form-checkbox h-4 w-4 text-purple-600 rounded border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                        <span class="ml-2 text-sm text-gray-700">{{ collection.name }}</span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Favorite Sync -->
-            <div class="mb-6" v-if="availableCollections">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Favorite Sync</label>
-                <div class="space-y-2">
-                    <!-- Off (Default) -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="favoriteSyncEnabled" type="radio" value="off"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Off (Default)</span>
-                    </label>
-                    
-                         <!-- On (Default) -->
-                         <label class="flex items-center space-x-3">
-                        <input v-model="favoriteSyncEnabled" type="radio" value="on"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">On </span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Multi-Partition Download -->
-            <div class="mb-6" v-if="availableCollections">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Multi-Partition Download</label>
-                <div class="space-y-2">
-                    <!-- Off -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="multiPartitionDownloadEnabled" type="radio" value="off"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Off (Default)</span>
-                    </label>
-
-                    <!-- On (Default) -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="multiPartitionDownloadEnabled" type="radio" value="on"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">On </span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Danmaku Download -->
-            <div class="mb-6" v-if="availableCollections">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Danmaku Download</label>
-                <div class="space-y-2">
-                    <!-- Off (Default) -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="danmakuDownloadEnabled" type="radio" value="off"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Off (Default)</span>
-                    </label>
-
-                    <!-- On -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="danmakuDownloadEnabled" type="radio" value="on"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">On</span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Video Download -->
-            <div class="mb-6" v-if="availableCollections">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Video Download</label>
-                <div class="space-y-2">
-                    <!-- Off (Default) -->
-                    <label class="flex items-center space-x-3">
-                        <input v-model="videoDownloadEnabled" type="radio" value="off"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Off (Default)</span>
-                    </label>
-                </div>
-
-                <!-- On -->
-                <label class="flex items-center space-x-3">
-                    <input v-model="videoDownloadEnabled" type="radio" value="on"
-                        class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                    <span class="text-gray-700">On</span>
-                </label>
-            </div>
-
-
-            <!-- Human Readable Name -->
-            <div class="mb-6" v-if="availableCollections">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Human Readable Name</label>
-                <div class="space-y-2">
-                    <label class="flex items-center space-x-3">
-                        <input v-model="humanReadableNameEnabled" type="radio" value="off"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">Off (Default)</span>
-                    </label>
-                    <label class="flex items-center space-x-3">
-                        <input v-model="humanReadableNameEnabled" type="radio" value="on"
-                            class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                        <span class="text-gray-700">On</span>
-                    </label>
-                </div>
-            </div>
-
             <!-- Save Button -->
-            <button @click="saveSettingHandler"
-                class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-4 rounded-lg hover:from-purple-600 hover:to-pink-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition duration-200">
-                Save Settings
-            </button>
+            <div class="text-center">
+                <button @click="saveSettingHandler"
+                    class="bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-8 rounded-lg hover:from-purple-600 hover:to-pink-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition duration-200 text-lg font-medium shadow-lg">
+                    {{ t('settings.saveSettings') }}
+                </button>
+            </div>
         </div>
     </div>
 </template>
@@ -209,6 +238,14 @@
 import { getFavList } from '@/api/fav';
 import { getSettings, saveSettings } from '@/api/settings';
 import { onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+
+interface Collection {
+    id: number;
+    name: string;
+}
 
 const nameExclude = ref({
     type: 'off',
@@ -226,14 +263,15 @@ const danmakuDownloadEnabled = ref('off'); // off, on
 const videoDownloadEnabled = ref('off'); // off, on
 const favoriteSyncEnabled = ref('off'); // off, on
 const humanReadableNameEnabled = ref('off'); // off, on
+const usageAnalyticsEnabled = ref('on'); // on, off
 
 // 添加合集过滤相关的响应式数据
 const favExclude = ref({
     enabled: false,
-    selected: []
+    selected: [] as number[]
 });
 
-const availableCollections = ref([]);
+const availableCollections = ref<Collection[]>([]);
 
 const saveSettingHandler = () => {
     console.log('Settings saved:', {
@@ -245,6 +283,7 @@ const saveSettingHandler = () => {
         video_download_enabled: videoDownloadEnabled.value,
         favorite_sync_enabled: favoriteSyncEnabled.value,
         human_readable_name_enabled: humanReadableNameEnabled.value,
+        usage_analytics_enabled: usageAnalyticsEnabled.value,
     });
 
     saveSettings({
@@ -256,8 +295,9 @@ const saveSettingHandler = () => {
         video_download_enabled: videoDownloadEnabled.value,
         favorite_sync_enabled: favoriteSyncEnabled.value,
         human_readable_name_enabled: humanReadableNameEnabled.value,
+        usage_analytics_enabled: usageAnalyticsEnabled.value,
     }).then(()=>{
-        alert('Settings saved successfully!');
+        alert(t('settings.settingsSaved'));
     });
 };
 
@@ -279,6 +319,7 @@ onMounted(()=>{
         videoDownloadEnabled.value = data.video_download_enabled;
         favoriteSyncEnabled.value = data.favorite_sync_enabled;
         humanReadableNameEnabled.value = data.human_readable_name_enabled;
+        usageAnalyticsEnabled.value = data.usage_analytics_enabled;
     })
 })
 

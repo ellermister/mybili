@@ -1,0 +1,545 @@
+import { getLocale } from "./lib/helper";
+
+const messages = {
+    'zh-CN': {
+        // 公共翻译
+        common: {
+            hello: '你好',
+            save: '保存',
+            cancel: '取消',
+            confirm: '确认',
+            delete: '删除',
+            edit: '编辑',
+            add: '添加',
+            search: '搜索',
+            loading: '加载中...',
+            success: '成功',
+            error: '错误',
+            warning: '警告',
+            info: '信息',
+            on: '开启',
+            off: '关闭',
+            enable: '启用',
+            disable: '禁用',
+            yes: '是',
+            no: '否',
+            ok: '确定',
+            close: '关闭',
+            back: '返回',
+            next: '下一步',
+            previous: '上一步',
+            submit: '提交',
+            reset: '重置',
+            refresh: '刷新',
+            download: '下载',
+            upload: '上传',
+            copy: '复制',
+            paste: '粘贴',
+            cut: '剪切',
+            select: '选择',
+            all: '全部',
+            none: '无',
+            custom: '自定义',
+            default: '默认',
+            optional: '可选',
+            required: '必填',
+            unknown: '未知',
+            noData: '暂无数据',
+            noResults: '暂无结果',
+            networkError: '网络错误',
+            serverError: '服务器错误',
+            timeout: '请求超时',
+            unauthorized: '未授权',
+            forbidden: '禁止访问',
+            notFound: '页面不存在',
+            internalError: '内部错误'
+        },
+
+        // 导航
+        navigation: {
+            home: '首页',
+            progress: '进度',
+            cookie: '会话',
+            settings: '设置',
+            about: '关于',
+            menu: '菜单'
+        },
+
+        // 首页
+        home: {
+            title: '首页',
+            welcome: '欢迎使用',
+            description: '这是一个功能强大的B站视频管理工具',
+            favoriteList: '收藏夹列表',
+            created: '创建',
+            updated: '更新'
+        },
+
+        // 关于页面
+        about: {
+            title: '关于',
+            subtitle: 'bilibili 收藏夹下载工具',
+            description: '主要用于解决收藏夹视频消失的问题，帮助用户备份重要的收藏内容。',
+            mainFeatures: '主要功能：',
+            features: {
+                syncFavorites: '定时同步收藏夹视频信息',
+                autoDownload: '自动下载高画质视频备份',
+                onlinePlayback: '提供在线播放和管理界面',
+                danmakuDownload: '自动下载视频弹幕数据'
+            },
+            viewOnGitHub: '在 GitHub 上查看',
+            systemInfo: '系统信息',
+            versionInfo: '版本信息',
+            timeInfo: '时间信息',
+            databaseUsage: '数据库使用情况',
+            appVersion: '应用版本',
+            phpVersion: 'PHP 版本',
+            laravelVersion: 'Laravel 版本',
+            databaseVersion: '数据库版本',
+            timezone: '时区',
+            currentTime: '当前时间',
+            favoriteLists: '收藏夹列表',
+            videos: '视频数量',
+            videoParts: '视频分片',
+            danmaku: '弹幕数量',
+            databaseSize: '数据库大小',
+            units: {
+                count: '个',
+                danmaku: '条',
+                mb: 'MB'
+            }
+        },
+
+        // 进度页面
+        progress: {
+            title: '进度',
+            viewTasks: '查看任务',
+            cacheRate: '缓存的视频率',
+            cacheRateDescription: '如果你的收藏夹中出现了无效视频那么就会低于100%',
+            showCachedOnly: '只显示本地缓存的视频',
+            allVideos: '所有视频',
+            allVideosDescription: '你所有收藏的视频数',
+            validVideos: '有效视频',
+            validVideosDescription: '目前仍可以在线观看的视频',
+            invalidVideos: '无效视频',
+            invalidVideosDescription: '收藏的视频无效被下架',
+            frozenVideos: '冻结视频',
+            frozenVideosDescription: '当你收藏的视频缓存了之后, 如果视频被删除下架那么就会将该视频归纳为冻结',
+            published: '发布',
+            favorited: '收藏'
+        },
+
+        // 收藏夹页面
+        favorites: {
+            title: '收藏夹',
+            sync: '同步收藏夹',
+            syncSuccess: '收藏夹同步成功',
+            syncError: '收藏夹同步失败',
+            empty: '暂无收藏内容',
+            loading: '正在加载收藏夹...',
+            valid: '有效',
+            published: '发布',
+            favorited: '收藏'
+        },
+
+        // 视频页面
+        video: {
+            title: '视频',
+            videoParts: '视频选集',
+            videoDescription: '视频简介',
+            publishTime: '发布时间',
+            favoriteTime: '收藏时间',
+            danmakuCount: '弹幕数量',
+            watchOnBilibili: '在哔哩哔哩观看',
+            videoNotFound: '视频未找到',
+            videoNotFoundDescription: '抱歉，您要查找的视频不存在或已被删除',
+            backToHome: '返回首页',
+            loading: '加载中...',
+            favorite: '收藏夹'
+        },
+
+        // 设置页面
+        settings: {
+            // 页面标题
+            title: '设置',
+            saveSettings: '保存设置',
+            settingsSaved: '设置保存成功！',
+            
+            // 分组标题
+            featureSwitches: '功能开关',
+            filterSettings: '过滤设置',
+            
+            // 功能开关
+            features: {
+                favoriteSync: '收藏夹同步',
+                videoDownload: '视频下载',
+                danmakuDownload: '弹幕下载',
+                multiPartitionDownload: '多分P下载',
+                humanReadableName: '可读文件名',
+                usageAnalytics: '使用情况统计',
+                usageAnalyticsDescription: '帮助我们了解功能使用情况，改进产品体验（完全匿名）'
+            },
+            
+            // 过滤设置
+            filters: {
+                byName: '按名称过滤',
+                bySize: '按大小过滤',
+                byFavorites: '按收藏夹过滤',
+                noFilter: '不过滤',
+                containsKeyword: '包含关键词',
+                regexPattern: '正则表达式',
+                largerThan1GB: '大于 1GB',
+                largerThan2GB: '大于 2GB',
+                customSize: '自定义大小',
+                enableFavoritesFilter: '启用收藏夹过滤',
+                selectExcludedFavorites: '选择要排除的收藏夹：'
+            },
+            
+            // 输入框占位符
+            placeholders: {
+                enterKeyword: '输入要过滤的关键词',
+                enterRegex: '输入正则表达式',
+                enterSizeMB: '输入大小（MB）'
+            }
+        },
+
+        // 会话页面
+        cookie: {
+            title: '会话',
+            fileStatus: '文件状态',
+            exist: '存在',
+            notExist: '不存在',
+            cookieStatus: 'COOKIE 状态',
+            valid: '有效',
+            invalid: '无效',
+            check: '检查',
+            upload: '上传'
+        },
+
+        // 下载页面
+        download: {
+            title: '下载管理',
+            queue: '下载队列',
+            completed: '已完成',
+            failed: '下载失败',
+            pause: '暂停',
+            resume: '继续',
+            cancel: '取消下载',
+            retry: '重试',
+            clear: '清空队列',
+            downloadAll: '下载全部',
+            downloadSelected: '下载选中',
+            downloadProgress: '下载进度',
+            downloadSpeed: '下载速度',
+            remainingTime: '剩余时间',
+            fileSize: '文件大小',
+            downloadPath: '下载路径',
+            openFolder: '打开文件夹'
+        },
+
+        // 用户相关
+        user: {
+            profile: '个人资料',
+            login: '登录',
+            logout: '退出登录',
+            register: '注册',
+            username: '用户名',
+            password: '密码',
+            email: '邮箱',
+            avatar: '头像',
+            settings: '个人设置',
+            changePassword: '修改密码',
+            forgotPassword: '忘记密码',
+            rememberMe: '记住我',
+            loginSuccess: '登录成功',
+            loginFailed: '登录失败',
+            logoutSuccess: '退出成功'
+        },
+
+        // 错误页面
+        error: {
+            notFound: '页面不存在',
+            unauthorized: '未授权访问',
+            forbidden: '禁止访问',
+            serverError: '服务器错误',
+            networkError: '网络错误',
+            goHome: '返回首页',
+            goBack: '返回上页',
+            retry: '重试'
+        }
+    },
+
+    'en-US': {
+        // 公共翻译
+        common: {
+            hello: 'Hello',
+            save: 'Save',
+            cancel: 'Cancel',
+            confirm: 'Confirm',
+            delete: 'Delete',
+            edit: 'Edit',
+            add: 'Add',
+            search: 'Search',
+            loading: 'Loading...',
+            success: 'Success',
+            error: 'Error',
+            warning: 'Warning',
+            info: 'Info',
+            on: 'On',
+            off: 'Off',
+            enable: 'Enable',
+            disable: 'Disable',
+            yes: 'Yes',
+            no: 'No',
+            ok: 'OK',
+            close: 'Close',
+            back: 'Back',
+            next: 'Next',
+            previous: 'Previous',
+            submit: 'Submit',
+            reset: 'Reset',
+            refresh: 'Refresh',
+            download: 'Download',
+            upload: 'Upload',
+            copy: 'Copy',
+            paste: 'Paste',
+            cut: 'Cut',
+            select: 'Select',
+            all: 'All',
+            none: 'None',
+            custom: 'Custom',
+            default: 'Default',
+            optional: 'Optional',
+            required: 'Required',
+            unknown: 'Unknown',
+            noData: 'No Data',
+            noResults: 'No Results',
+            networkError: 'Network Error',
+            serverError: 'Server Error',
+            timeout: 'Request Timeout',
+            unauthorized: 'Unauthorized',
+            forbidden: 'Forbidden',
+            notFound: 'Page Not Found',
+            internalError: 'Internal Error'
+        },
+
+        // 导航
+        navigation: {
+            home: 'Home',
+            progress: 'Progress',
+            cookie: 'Cookie',
+            settings: 'Settings',
+            about: 'About',
+            menu: 'Menu'
+        },
+
+        // 首页
+        home: {
+            title: 'Home',
+            welcome: 'Welcome',
+            description: 'A powerful Bilibili video management tool',
+            favoriteList: 'Favorite List',
+            created: 'Created',
+            updated: 'Updated'
+        },
+
+        // 关于页面
+        about: {
+            title: 'About',
+            subtitle: 'Bilibili Favorite Download Tool',
+            description: 'Mainly used to solve the problem of disappearing favorite videos and help users backup important favorite content.',
+            mainFeatures: 'Main Features:',
+            features: {
+                syncFavorites: 'Scheduled synchronization of favorite video information',
+                autoDownload: 'Automatic download of high-quality video backups',
+                onlinePlayback: 'Provide online playback and management interface',
+                danmakuDownload: 'Automatic download of video danmaku data'
+            },
+            viewOnGitHub: 'View on GitHub',
+            systemInfo: 'System Information',
+            versionInfo: 'Version Information',
+            timeInfo: 'Time Information',
+            databaseUsage: 'Database Usage',
+            appVersion: 'App Version',
+            phpVersion: 'PHP Version',
+            laravelVersion: 'Laravel Version',
+            databaseVersion: 'Database Version',
+            timezone: 'Timezone',
+            currentTime: 'Current Time',
+            favoriteLists: 'Favorite Lists',
+            videos: 'Videos',
+            videoParts: 'Video Parts',
+            danmaku: 'Danmaku',
+            databaseSize: 'Database Size',
+            units: {
+                count: '',
+                danmaku: '',
+                mb: 'MB'
+            }
+        },
+
+        // 进度页面
+        progress: {
+            title: 'Progress',
+            viewTasks: 'View Tasks',
+            cacheRate: 'Cached Video Rate',
+            cacheRateDescription: 'If invalid videos appear in your favorites, it will be below 100%',
+            showCachedOnly: 'Show only locally cached videos',
+            allVideos: 'All Videos',
+            allVideosDescription: 'Total number of videos in your favorites',
+            validVideos: 'Valid Videos',
+            validVideosDescription: 'Videos that can still be watched online',
+            invalidVideos: 'Invalid Videos',
+            invalidVideosDescription: 'Favorited videos that have been taken down',
+            frozenVideos: 'Frozen Videos',
+            frozenVideosDescription: 'When your favorited videos are cached, if the video is deleted or taken down, it will be categorized as frozen',
+            published: 'Published',
+            favorited: 'Favorited'
+        },
+
+        // 收藏夹页面
+        favorites: {
+            title: 'Favorites',
+            sync: 'Sync Favorites',
+            syncSuccess: 'Favorites synced successfully',
+            syncError: 'Failed to sync favorites',
+            empty: 'No favorites yet',
+            loading: 'Loading favorites...',
+            valid: 'Valid',
+            published: 'Published',
+            favorited: 'Favorited'
+        },
+
+        // 视频页面
+        video: {
+            title: 'Video',
+            videoParts: 'Video Parts',
+            videoDescription: 'Video Description',
+            publishTime: 'Publish Time',
+            favoriteTime: 'Favorite Time',
+            danmakuCount: 'Danmaku Count',
+            watchOnBilibili: 'Watch on Bilibili',
+            videoNotFound: 'Video Not Found',
+            videoNotFoundDescription: 'Sorry, the video you are looking for does not exist or has been deleted',
+            backToHome: 'Back to Home',
+            loading: 'Loading...',
+            favorite: 'Favorite'
+        },
+
+        // 设置页面
+        settings: {
+            // 页面标题
+            title: 'Settings',
+            saveSettings: 'Save Settings',
+            settingsSaved: 'Settings saved successfully!',
+            
+            // 分组标题
+            featureSwitches: 'Feature Switches',
+            filterSettings: 'Filter Settings',
+            
+            // 功能开关
+            features: {
+                favoriteSync: 'Favorite Sync',
+                videoDownload: 'Video Download',
+                danmakuDownload: 'Danmaku Download',
+                multiPartitionDownload: 'Multi-Partition Download',
+                humanReadableName: 'Human Readable Name',
+                usageAnalytics: 'Usage Analytics',
+                usageAnalyticsDescription: 'Help us understand feature usage and improve product experience (completely anonymous)'
+            },
+            
+            // 过滤设置
+            filters: {
+                byName: 'Filter by Name',
+                bySize: 'Filter by Size',
+                byFavorites: 'Filter by Favorites',
+                noFilter: 'No Filter',
+                containsKeyword: 'Contains Keyword',
+                regexPattern: 'Regex Pattern',
+                largerThan1GB: 'Larger than 1GB',
+                largerThan2GB: 'Larger than 2GB',
+                customSize: 'Custom Size',
+                enableFavoritesFilter: 'Enable Favorites Filter',
+                selectExcludedFavorites: 'Select favorites to exclude:'
+            },
+            
+            // 输入框占位符
+            placeholders: {
+                enterKeyword: 'Enter keyword to filter',
+                enterRegex: 'Enter regex pattern',
+                enterSizeMB: 'Enter size in MB'
+            }
+        },
+
+        // 会话页面
+        cookie: {
+            title: 'Cookie',
+            fileStatus: 'File Status',
+            exist: 'Exist',
+            notExist: 'Not Exist',
+            cookieStatus: 'Cookie Status',
+            valid: 'Valid',
+            invalid: 'Invalid',
+            check: 'Check',
+            upload: 'Upload'
+        },
+
+        // 下载页面
+        download: {
+            title: 'Download Manager',
+            queue: 'Download Queue',
+            completed: 'Completed',
+            failed: 'Failed',
+            pause: 'Pause',
+            resume: 'Resume',
+            cancel: 'Cancel Download',
+            retry: 'Retry',
+            clear: 'Clear Queue',
+            downloadAll: 'Download All',
+            downloadSelected: 'Download Selected',
+            downloadProgress: 'Download Progress',
+            downloadSpeed: 'Download Speed',
+            remainingTime: 'Remaining Time',
+            fileSize: 'File Size',
+            downloadPath: 'Download Path',
+            openFolder: 'Open Folder'
+        },
+
+        // 用户相关
+        user: {
+            profile: 'Profile',
+            login: 'Login',
+            logout: 'Logout',
+            register: 'Register',
+            username: 'Username',
+            password: 'Password',
+            email: 'Email',
+            avatar: 'Avatar',
+            settings: 'Settings',
+            changePassword: 'Change Password',
+            forgotPassword: 'Forgot Password',
+            rememberMe: 'Remember Me',
+            loginSuccess: 'Login Successful',
+            loginFailed: 'Login Failed',
+            logoutSuccess: 'Logout Successful'
+        },
+
+        // 错误页面
+        error: {
+            notFound: 'Page Not Found',
+            unauthorized: 'Unauthorized',
+            forbidden: 'Forbidden',
+            serverError: 'Server Error',
+            networkError: 'Network Error',
+            goHome: 'Go Home',
+            goBack: 'Go Back',
+            retry: 'Retry'
+        }
+    }
+};
+
+export default {
+    locale: getLocale(), // 默认语言
+    fallbackLocale: 'zh-CN', // 回退语言
+    messages
+};

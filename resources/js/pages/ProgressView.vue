@@ -5,15 +5,15 @@
 
                 <div class="flex justify-between">
                     <h1 class="my-8 text-2xl">
-                        <RouterLink to="/">🌸</RouterLink> progress {{ $route.params.id }}
+                        <RouterLink to="/">🌸</RouterLink> {{ t('progress.title') }} {{ $route.params.id }}
                     </h1>
                     <h1 class="my-8 text-2xl">
-                        <RouterLink to="/horizon" target="_blank">🔭 查看任务</RouterLink> 
+                        <RouterLink to="/horizon" target="_blank">🔭 {{ t('progress.viewTasks') }}</RouterLink> 
                     </h1>
                 </div>
 
                 <div class="flex justify-between">
-                    <h2 class="text-xl" title="如果你的收藏夹中出现了无效视频那么就会低于100%">缓存的视频率 {{ progress }}% ({{ stat.downloaded
+                    <h2 class="text-xl" :title="t('progress.cacheRateDescription')">{{ t('progress.cacheRate') }} {{ progress }}% ({{ stat.downloaded
                     }}/{{ stat.count }})</h2>
 
                     <div class="flex items-center gap-2">
@@ -34,7 +34,7 @@
                             />
                         </button>
                         <label class="text-sm text-gray-700 cursor-pointer" @click="showCachedOnly = !showCachedOnly">
-                            只显示本地缓存的视频
+                            {{ t('progress.showCachedOnly') }}
                         </label>
                     </div>
 
@@ -49,22 +49,22 @@
                 <div class="grid grid-cols-1 md:grid-cols-4 w-full my-4 ">
                     <div class="flex flex-col text-center text-white bg-blue-400 hover:bg-gradient-to-r from-purple-500 to-pink-500  py-4 rounded-l-lg"
                         :class="{ 'bg-gradient-to-r': filter.class == null }" @click="setFilter(null)">
-                        <span class="text-2xl" title="你所有收藏的视频数">所有视频</span>
+                        <span class="text-2xl" :title="t('progress.allVideosDescription')">{{ t('progress.allVideos') }}</span>
                         <span class="text-xl font-semibold">{{ stat.count }}</span>
                     </div>
                     <div class="flex flex-col text-center text-white bg-blue-400 hover:bg-gradient-to-r from-purple-500 to-pink-500 py-4"
                         :class="{ 'bg-gradient-to-r': filter.class == 'valid' }" @click="setFilter('valid')">
-                        <span class="text-2xl" title="目前仍可以在线观看的视频">有效视频</span>
+                        <span class="text-2xl" :title="t('progress.validVideosDescription')">{{ t('progress.validVideos') }}</span>
                         <span class="text-xl font-semibold">{{ stat.valid }}</span>
                     </div>
                     <div class="flex flex-col text-center text-white bg-blue-400 hover:bg-gradient-to-r from-purple-500 to-pink-500 py-4"
                         :class="{ 'bg-gradient-to-r': filter.class == 'invalid' }" @click="setFilter('invalid')">
-                        <span class="text-2xl" title="收藏的视频无效被下架">无效视频</span>
+                        <span class="text-2xl" :title="t('progress.invalidVideosDescription')">{{ t('progress.invalidVideos') }}</span>
                         <span class="text-xl font-semibold">{{ stat.invalid }}</span>
                     </div>
                     <div class="flex flex-col text-center text-white bg-blue-400 hover:bg-gradient-to-r from-purple-500 to-pink-500 py-4 rounded-r-lg"
                         :class="{ 'bg-gradient-to-r': filter.class == 'frozen' }" @click="setFilter('frozen')">
-                        <span class="text-2xl" title="当你收藏的视频缓存了之后, 如果视频被删除下架那么就会将该视频归纳为冻结">冻结视频</span>
+                        <span class="text-2xl" :title="t('progress.frozenVideosDescription')">{{ t('progress.frozenVideos') }}</span>
                         <span class="text-xl font-semibold">{{ stat.frozen }}</span>
                     </div>
                 </div>
@@ -78,8 +78,8 @@
                         </RouterLink>
                         <span class="mt-4 text-center h-12 line-clamp-2" :title="item.title">{{ item.title }}</span>
                         <div class="mt-2 flex justify-between text-xs text-gray-400 px-1">
-                            <span>发布: {{ formatTimestamp(item.pubtime, "yyyy.mm.dd") }}</span>
-                            <span>收藏: {{ formatTimestamp(item.fav_time, "yyyy.mm.dd") }}</span>
+                            <span>{{ t('progress.published') }}: {{ formatTimestamp(item.pubtime, "yyyy.mm.dd") }}</span>
+                            <span>{{ t('progress.favorited') }}: {{ formatTimestamp(item.fav_time, "yyyy.mm.dd") }}</span>
                         </div>
                         <span v-if="item.page > 1"
                             class="text-sm text-white bg-gray-600 rounded-lg w-10 text-center  absolute top-2 right-2">{{
@@ -94,9 +94,11 @@
 <script lang="ts" setup>
 import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import Image from '@/components/Image.vue';
 import { formatTimestamp, image } from "../lib/helper"
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const videoGridRef = ref<HTMLElement>();

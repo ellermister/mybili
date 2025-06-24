@@ -25,7 +25,7 @@
                     <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-3 flex flex-col" :style="{ height: sidebarHeight }">
                         <h3 class="text-xl font-semibold mb-3 text-gray-800 flex items-center flex-shrink-0">
                             <span class="w-2 h-2 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full mr-2"></span>
-                            视频选集&nbsp;<span class="text-gray-500 text-sm font-normal">({{ videoInfo.video_parts.findIndex(part => part.id === currentPart?.id) + 1 }}/{{ videoInfo.video_parts.length }})</span>
+                            {{ t('video.videoParts') }}&nbsp;<span class="text-gray-500 text-sm font-normal">({{ videoInfo.video_parts.findIndex(part => part.id === currentPart?.id) + 1 }}/{{ videoInfo.video_parts.length }})</span>
                         </h3>
                         <div class="space-y-1 overflow-y-auto flex-1 min-h-0 pr-1 custom-scrollbar">
                             <button v-for="part in videoInfo?.video_parts" :key="part.id" @click="playPart(part.id)"
@@ -58,7 +58,7 @@
                     <div v-if="videoInfo.intro" class="bg-gray-50 rounded-lg p-4">
                         <h3 class="text-lg font-semibold text-gray-700 mb-2 flex items-center">
                             <span class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2"></span>
-                            视频简介
+                            {{ t('video.videoDescription') }}
                         </h3>
                         <p class="text-gray-600 leading-relaxed">{{ videoInfo.intro }}</p>
                     </div>
@@ -69,7 +69,7 @@
                             class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200/50">
                             <div class="flex items-center space-x-2">
                                 <span class="text-blue-500">📅</span>
-                                <span class="text-sm text-gray-600">发布时间</span>
+                                <span class="text-sm text-gray-600">{{ t('video.publishTime') }}</span>
                             </div>
                             <div class="text-base font-semibold text-gray-800 mt-1">
                                 {{ formatTimestamp(videoInfo.pubtime, "yyyy-mm-dd hh:ii") }}
@@ -80,7 +80,7 @@
                             class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200/50">
                             <div class="flex items-center space-x-2">
                                 <span class="text-green-500">⭐</span>
-                                <span class="text-sm text-gray-600">收藏时间</span>
+                                <span class="text-sm text-gray-600">{{ t('video.favoriteTime') }}</span>
                             </div>
                             <div class="text-base font-semibold text-gray-800 mt-1">
                                 {{ formatTimestamp(videoInfo.fav_time, "yyyy-mm-dd hh:ii") }}
@@ -91,7 +91,7 @@
                             class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-200/50">
                             <div class="flex items-center space-x-2">
                                 <span class="text-purple-500">💬</span>
-                                <span class="text-sm text-gray-600">弹幕数量</span>
+                                <span class="text-sm text-gray-600">{{ t('video.danmakuCount') }}</span>
                             </div>
                             <div class="text-base font-semibold text-gray-800 mt-1">
                                 {{ videoInfo.danmaku_count.toLocaleString() }}
@@ -104,7 +104,7 @@
                         <a class="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow hover:shadow-lg transform hover:-translate-y-0.5"
                             :href="bilibiliUrl(videoInfo.bvid)" target="_blank" rel="noopener noreferrer">
                             <span class="text-lg">📺</span>
-                            <span class="font-semibold">在哔哩哔哩观看</span>
+                            <span class="font-semibold">{{ t('video.watchOnBilibili') }}</span>
                             <span class="text-white/80">↗</span>
                         </a>
                     </div>
@@ -115,11 +115,11 @@
         <!-- Not Found State -->
         <div v-if="notfound" class="text-center py-16">
             <div class="text-6xl mb-4">😢</div>
-            <div class="text-3xl font-semibold text-gray-700 mb-2">视频未找到</div>
-            <div class="text-gray-500">抱歉，您要查找的视频不存在或已被删除</div>
+            <div class="text-3xl font-semibold text-gray-700 mb-2">{{ t('video.videoNotFound') }}</div>
+            <div class="text-gray-500">{{ t('video.videoNotFoundDescription') }}</div>
             <RouterLink to="/"
                 class="inline-block mt-6 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl">
-                返回首页
+                {{ t('video.backToHome') }}
             </RouterLink>
         </div>
     </div>
@@ -127,11 +127,13 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, nextTick, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { formatTimestamp } from '../lib/helper';
 import Player from '../components/Player.vue';
 import Breadcrumbs from '../components/Breadcrumbs.vue';
 import type { Video, VideoPartType } from '@/api/fav';
 
+const { t } = useI18n();
 const playerRef = ref()
 const playerContainer = ref()
 const playerReady = ref(false)
@@ -142,9 +144,9 @@ const id = route.params.id
 
 const breadcrumbItems = computed(() => {
     return [
-        { text: '首页', to: '/' },
-        { text: (videoInfo.value?.favorite?.[0]?.title ?? '收藏夹'), to: '/fav/' + (videoInfo.value?.favorite?.[0]?.id ?? '') },
-        { text: videoInfo.value?.title ?? '加载中...' }
+        { text: t('navigation.home'), to: '/' },
+        { text: (videoInfo.value?.favorite?.[0]?.title ?? t('video.favorite')), to: '/fav/' + (videoInfo.value?.favorite?.[0]?.id ?? '') },
+        { text: videoInfo.value?.title ?? t('video.loading') }
     ]
 })
 

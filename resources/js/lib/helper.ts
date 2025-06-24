@@ -16,3 +16,13 @@ export const formatTimestamp = (timestamp: number, format: string) => {
 
     return format.replace(/yyyy|mm|dd|hh|ii|ss/g, matched => map[matched]);
 }
+
+
+
+export const getLocale = () => {
+    const locale = localStorage.getItem('locale');
+    if (locale && ['zh-CN', 'en-US'].includes(locale)) {
+        return locale;
+    }
+    return navigator.language;
+}

@@ -2,10 +2,10 @@
 
     <div class="flex justify-between">
         <h1 class="my-8 text-2xl">
-            <RouterLink to="/">🌸</RouterLink> 收藏夹列表
+            <RouterLink to="/">🌸</RouterLink> {{ t('home.favoriteList') }}
         </h1>
         <h1 class="my-8 text-2xl">
-            <RouterLink to="/progress">🌸</RouterLink> progress
+            <RouterLink to="/progress">🌸</RouterLink> {{ t('navigation.progress') }}
         </h1>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-4 w-full gap-4">
@@ -16,8 +16,8 @@
             </RouterLink>
             <span class="mt-4 text-center font-sans" :title="item.title">{{ item.title }}</span>
             <div class="mt-2 flex justify-between text-xs text-gray-400 px-1">
-                <span>创建: {{ formatTimestamp(item.ctime, "yyyy.mm.dd") }}</span>
-                <span>更新: {{ formatTimestamp(item.mtime, "yyyy.mm.dd") }}</span>
+                <span>{{ t('home.created') }}: {{ formatTimestamp(item.ctime, "yyyy.mm.dd") }}</span>
+                <span>{{ t('home.updated') }}: {{ formatTimestamp(item.mtime, "yyyy.mm.dd") }}</span>
             </div>
             <span class="text-sm text-white bg-gray-600 rounded-lg w-10 text-center  absolute top-2 right-2">{{
                 item.media_count }}</span>
@@ -27,7 +27,10 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { Favorite } from '@/api/fav';
+
+const { t } = useI18n();
 
 const favList = ref<Favorite[]>([]);
 

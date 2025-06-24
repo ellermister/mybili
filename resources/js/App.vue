@@ -17,12 +17,66 @@
               :to="link.path"
               class="nav-link px-3 py-2 rounded-md transition-all duration-300 hover:bg-white/20"
             >
-              {{ link.name }}
+              {{ t(`navigation.${link.key}`) }}
             </router-link>
+            
+            <!-- Language Selector -->
+            <div class="relative">
+              <button 
+                @click="isLanguageDropdownOpen = !isLanguageDropdownOpen"
+                class="nav-link px-3 py-2 rounded-md transition-all duration-300 hover:bg-white/20 flex items-center"
+              >
+                <span class="mr-1">🌐</span>
+                {{ currentLanguageName }}
+                <svg class="w-4 h-4 ml-1 transition-transform" :class="{ 'rotate-180': isLanguageDropdownOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              
+              <!-- Language Dropdown -->
+              <div v-if="isLanguageDropdownOpen" class="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg z-50">
+                <div class="py-1">
+                  <button 
+                    v-for="lang in availableLanguages" 
+                    :key="lang.code"
+                    @click="changeLanguage(lang.code)"
+                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    :class="{ 'bg-purple-100 text-purple-700': currentLocale === lang.code }"
+                  >
+                    {{ lang.name }}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Mobile Menu Button -->
-          <div class="md:hidden">
+          <div class="md:hidden flex items-center space-x-2">
+            <!-- Mobile Language Selector -->
+            <div class="relative">
+              <button 
+                @click="isMobileLanguageDropdownOpen = !isMobileLanguageDropdownOpen"
+                class="text-white p-2 rounded-md hover:bg-white/20 transition-all duration-300"
+              >
+                <span class="text-lg">🌐</span>
+              </button>
+              
+              <!-- Mobile Language Dropdown -->
+              <div v-if="isMobileLanguageDropdownOpen" class="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg z-50">
+                <div class="py-1">
+                  <button 
+                    v-for="lang in availableLanguages" 
+                    :key="lang.code"
+                    @click="changeLanguage(lang.code)"
+                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    :class="{ 'bg-purple-100 text-purple-700': currentLocale === lang.code }"
+                  >
+                    {{ lang.name }}
+                  </button>
+                </div>
+              </div>
+            </div>
+            
             <button @click="isDrawerOpen = true">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
@@ -38,7 +92,7 @@
       <!-- Drawer Menu -->
       <transition name="slide">
         <div v-if="isDrawerOpen" class="fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 md:hidden">
-          <h2 class="text-xl font-bold mb-6">Menu</h2>
+          <h2 class="text-xl font-bold mb-6">{{ t('navigation.menu') }}</h2>
           <nav class="flex flex-col space-y-4">
             <router-link
               v-for="(link, index) in navLinks"
@@ -47,7 +101,7 @@
               @click="isDrawerOpen = false"
               class="drawer-link text-gray-700 hover:text-purple-600 p-2 rounded-md"
             >
-              {{ link.name }}
+              {{ t(`navigation.${link.key}`) }}
             </router-link>
           </nav>
         </div>
@@ -61,17 +115,62 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 
+const { t, locale } = useI18n();
 const isDrawerOpen = ref(false);
+const isLanguageDropdownOpen = ref(false);
+const isMobileLanguageDropdownOpen = ref(false);
 
 const navLinks = [
-  { name: 'Home', path: '/' },
-  { name: 'Progress', path: '/progress' },
-  { name: 'Cookie', path: '/cookie' },
-  { name: 'Settings', path: '/settings' },
-  { name: 'About', path: '/about' }
-]
+  { key: 'home', path: '/' },
+  { key: 'progress', path: '/progress' },
+  { key: 'cookie', path: '/cookie' },
+  { key: 'settings', path: '/settings' },
+  { key: 'about', path: '/about' }
+];
+
+const availableLanguages = [
+  { code: 'zh-CN', name: '中文' },
+  { code: 'en-US', name: 'English' }
+];
+
+const currentLocale = computed(() => locale.value);
+
+const currentLanguageName = computed(() => {
+  const lang = availableLanguages.find(l => l.code === currentLocale.value);
+  return lang ? lang.name : '中文';
+});
+
+const changeLanguage = (langCode: string) => {
+  locale.value = langCode;
+  localStorage.setItem('locale', langCode);
+  isLanguageDropdownOpen.value = false;
+  isMobileLanguageDropdownOpen.value = false;
+};
+
+// 点击外部关闭下拉菜单
+const handleClickOutside = (event: Event) => {
+  const target = event.target as HTMLElement;
+  if (!target.closest('.relative')) {
+    isLanguageDropdownOpen.value = false;
+    isMobileLanguageDropdownOpen.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+  // 从localStorage恢复语言设置
+  const savedLocale = localStorage.getItem('locale');
+  if (savedLocale && availableLanguages.some(lang => lang.code === savedLocale)) {
+    locale.value = savedLocale;
+  }
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <style scoped>
