@@ -120,6 +120,8 @@ class HumanReadableNameService
             $this->createVideoLink($videoPath, 'tvs', $sanitizedName, $episodeName . '.mp4');
             $this->createCoverLink($video, 'tvs', $sanitizedName, $episodeName . '.jpg');
         }
+        
+        $this->createCoverLink($video, 'tvs', $sanitizedName,  $sanitizedName.'.jpg');
     }
 
     /**
