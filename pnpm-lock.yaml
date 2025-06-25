@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       dplayer:
-        specifier: https://github.com/ellermister/DPlayer#v1.27.2
-        version: https://codeload.github.com/ellermister/DPlayer/tar.gz/b1677836117751dc8de75a0b66e6f438cadfa55a
+        specifier: https://github.com/ellermister/DPlayer#v1.27.3
+        version: https://codeload.github.com/ellermister/DPlayer/tar.gz/61fa58571b8ac1a3515df060bfb4035d35c9c82b
       vue-i18n:
         specifier: ^11.1.7
         version: 11.1.7(vue@3.4.38(typescript@5.8.3))
@@ -672,9 +672,9 @@ packages:
   dlv@1.1.3:
     resolution: {integrity: sha512-+HlytyjlPKnIG8XuRG8WvmBP8xs8P71y+SKKS6ZXWoEgLuePxtDoUEiH7WkdePWrQ5JBpE6aoVqfZfJUQkjXwA==}
 
-  dplayer@https://codeload.github.com/ellermister/DPlayer/tar.gz/b1677836117751dc8de75a0b66e6f438cadfa55a:
-    resolution: {tarball: https://codeload.github.com/ellermister/DPlayer/tar.gz/b1677836117751dc8de75a0b66e6f438cadfa55a}
-    version: 1.27.2
+  dplayer@https://codeload.github.com/ellermister/DPlayer/tar.gz/61fa58571b8ac1a3515df060bfb4035d35c9c82b:
+    resolution: {tarball: https://codeload.github.com/ellermister/DPlayer/tar.gz/61fa58571b8ac1a3515df060bfb4035d35c9c82b}
+    version: 1.27.3
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -1893,7 +1893,7 @@ snapshots:
 
   dlv@1.1.3: {}
 
-  dplayer@https://codeload.github.com/ellermister/DPlayer/tar.gz/b1677836117751dc8de75a0b66e6f438cadfa55a:
+  dplayer@https://codeload.github.com/ellermister/DPlayer/tar.gz/61fa58571b8ac1a3515df060bfb4035d35c9c82b:
     dependencies:
       axios: 1.4.0
       balloon-css: 1.2.0
