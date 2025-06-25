@@ -137,9 +137,9 @@ const messages = {
             syncError: '收藏夹同步失败',
             empty: '暂无收藏内容',
             loading: '正在加载收藏夹...',
-            valid: '有效',
             published: '发布',
-            favorited: '收藏'
+            favorited: '收藏',
+            downloaded: '已下载'
         },
 
         // 视频页面
@@ -384,7 +384,7 @@ const messages = {
             viewTasks: 'View Tasks',
             cacheRate: 'Cached Video Rate',
             cacheRateDescription: 'If invalid videos appear in your favorites, it will be below 100%',
-            showCachedOnly: 'Show only locally cached videos',
+            showCachedOnly: 'Downloaded',
             allVideos: 'All Videos',
             allVideosDescription: 'Total number of videos in your favorites',
             validVideos: 'Valid Videos',
@@ -405,9 +405,9 @@ const messages = {
             syncError: 'Failed to sync favorites',
             empty: 'No favorites yet',
             loading: 'Loading favorites...',
-            valid: 'Valid',
             published: 'Published',
-            favorited: 'Favorited'
+            favorited: 'Favorited',
+            downloaded: 'Downloaded'
         },
 
         // 视频页面

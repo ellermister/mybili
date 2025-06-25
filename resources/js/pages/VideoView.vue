@@ -2,7 +2,7 @@
     <div>
         <Breadcrumbs :items="breadcrumbItems">
             <template #actions>
-                <div class="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                <div class="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full hidden md:block">
                     {{ $route.params.id }}
                 </div>
             </template>
@@ -60,7 +60,7 @@
                             <span class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2"></span>
                             {{ t('video.videoDescription') }}
                         </h3>
-                        <p class="text-gray-600 leading-relaxed">{{ videoInfo.intro }}</p>
+                        <p class="text-gray-600 leading-relaxed break-words">{{ videoInfo.intro }}</p>
                     </div>
 
                     <!-- Meta Information -->

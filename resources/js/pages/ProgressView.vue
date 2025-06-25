@@ -12,7 +12,7 @@
                     </h1>
                 </div>
 
-                <div class="flex justify-between">
+                <div class="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                     <h2 class="text-xl" :title="t('progress.cacheRateDescription')">{{ t('progress.cacheRate') }} {{ progress }}% ({{ stat.downloaded
                     }}/{{ stat.count }})</h2>
 
@@ -37,7 +37,6 @@
                             {{ t('progress.showCachedOnly') }}
                         </label>
                     </div>
-
                 </div>
 
           

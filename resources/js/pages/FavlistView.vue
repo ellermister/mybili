@@ -2,9 +2,9 @@
     <Breadcrumbs :items="breadcrumbItems">
         <template #actions>
             <div class="flex items-center  gap-2">
-                <label class="text-slate-500">{{ t('favorites.valid') }}</label>
+                <label class="text-slate-500">{{ t('favorites.downloaded') }}</label>
                 <div class="checkbox-wrapper-7">
-                    <input class="tgl tgl-ios" id="cb2-7" type="checkbox" v-model="isFilterValid" />
+                    <input class="tgl tgl-ios" id="cb2-7" type="checkbox" v-model="isFilterDownloaded" />
                     <label class="tgl-btn" for="cb2-7"></label>
                 </div>
             </div>
@@ -44,7 +44,7 @@ const route = useRoute()
 const id = route.params.id
 const favorite = ref<Favorite | null>(null)
 
-const isFilterValid = ref(false)
+const isFilterDownloaded = ref(false)
 
 const breadcrumbItems = computed(() => {
     return [
@@ -55,8 +55,9 @@ const breadcrumbItems = computed(() => {
 
 const showVideoList = computed(() => {
     return (favorite.value?.videos ?? []).filter((value: Video) => {
-        if (isFilterValid.value) {
-            return value.invalid == 0;
+        if (isFilterDownloaded.value) {
+            console.log(value.video_downloaded_num)
+            return value.video_downloaded_num > 0;
         }
         return true;
     })
