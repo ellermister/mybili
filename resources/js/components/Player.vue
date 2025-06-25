@@ -14,9 +14,11 @@ import DPlayer from 'dplayer';
 interface DPlayerInstance {
     switchVideo: (video: any, danmaku: any) => void;
     play: () => void;
-    on: (event: string, callback: () => void) => void;
+    on: (event: string, callback: (e: any|null) => void) => void;
     danmaku: {
         draw: (options: any) => void;
+        speed: (rate: number) => void;
+        dan: any[];
     };
 }
 
@@ -93,9 +95,21 @@ onMounted(async () => {
             //     type: 'right'
             // });
 
+
+            // 设置弹幕速度
+            dp.value.danmaku.speed(0.5)
+
             // 输出调试信息
             console.log('容器宽度:', containerWidth);
             console.log('弹幕容器:', danmakuContainer);
+        });
+
+        dp.value.on('danmaku_load_start', (e:any) => {
+            console.log('弹幕加载开始:', e);
+        });
+
+        dp.value.on('danmaku_load_end', () => {
+            console.log('弹幕加载完成, 数量：', dp.value.danmaku.dan.length);
         });
 
         isReady.value = true
@@ -124,11 +138,5 @@ defineExpose({
     #dplayer {
         height: 300px;
     }
-}
-</style>
-<style scoped>
-/* 弹幕速度 通过css控制，dplayer 的js初始化参数控制不了，默认5s, 这里设置为10s */
-:deep(.dplayer-danmaku .dplayer-danmaku-right.dplayer-danmaku-move) {
-    animation-duration: 10s !important;
 }
 </style>

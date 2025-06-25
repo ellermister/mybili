@@ -24,7 +24,7 @@
         "vue-tsc": "^2.0.21"
     },
     "dependencies": {
-        "dplayer": "^1.26.0",
+        "dplayer": "https://github.com/ellermister/DPlayer#v1.27.2",
         "vue-i18n": "^11.1.7"
     }
 }
