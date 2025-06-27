@@ -45,7 +45,8 @@
                     <div class="bg-blue-600 h-2.5 rounded-full" :style="{ width: progress + '%' }"></div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 w-full my-4 ">
+                <!-- 桌面端筛选器 -->
+                <div class="hidden md:grid grid-cols-4 w-full my-4">
                     <div class="flex flex-col text-center text-white bg-blue-400 hover:bg-gradient-to-r from-purple-500 to-pink-500  py-4 rounded-l-lg"
                         :class="{ 'bg-gradient-to-r': filter.class == null }" @click="setFilter(null)">
                         <span class="text-2xl" :title="t('progress.allVideosDescription')">{{ t('progress.allVideos') }}</span>
@@ -68,6 +69,63 @@
                     </div>
                 </div>
 
+                <!-- 移动端筛选器 -->
+                <div class="md:hidden w-full my-4">
+                    <!-- 当前选中的筛选器显示 -->
+                    <div class="mb-4 p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg text-white shadow-lg">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-3 h-3 bg-white rounded-full"></div>
+                            <div>
+                                <div class="text-lg font-semibold">
+                                    {{ getCurrentFilterLabel() }}
+                                </div>
+                                <div class="text-sm opacity-90">
+                                    {{ getCurrentFilterCount() }} 个视频
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 筛选器选项卡片 -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-white rounded-lg p-4 shadow-sm border-2 transition-all"
+                             :class="filter.class == null ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'"
+                             @click="setFilter(null)">
+                            <div class="text-center">
+                                <div class="text-2xl mb-1">📺</div>
+                                <div class="text-sm font-medium text-gray-700">{{ t('progress.allVideos') }}</div>
+                                <div class="text-lg font-bold text-gray-900">{{ stat.count }}</div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 shadow-sm border-2 transition-all"
+                             :class="filter.class == 'valid' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'"
+                             @click="setFilter('valid')">
+                            <div class="text-center">
+                                <div class="text-2xl mb-1">✅</div>
+                                <div class="text-sm font-medium text-gray-700">{{ t('progress.validVideos') }}</div>
+                                <div class="text-lg font-bold text-gray-900">{{ stat.valid }}</div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 shadow-sm border-2 transition-all"
+                             :class="filter.class == 'invalid' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-gray-300'"
+                             @click="setFilter('invalid')">
+                            <div class="text-center">
+                                <div class="text-2xl mb-1">❌</div>
+                                <div class="text-sm font-medium text-gray-700">{{ t('progress.invalidVideos') }}</div>
+                                <div class="text-lg font-bold text-gray-900">{{ stat.invalid }}</div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 shadow-sm border-2 transition-all"
+                             :class="filter.class == 'frozen' ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-gray-300'"
+                             @click="setFilter('frozen')">
+                            <div class="text-center">
+                                <div class="text-2xl mb-1">🧊</div>
+                                <div class="text-sm font-medium text-gray-700">{{ t('progress.frozenVideos') }}</div>
+                                <div class="text-lg font-bold text-gray-900">{{ stat.frozen }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-4 w-full gap-4" ref="videoGridRef">
                     <div class="flex flex-col relative" v-for="item in dataList">
@@ -259,6 +317,34 @@ watch(dataLoaded, (newValue) => {
         restoreScrollPosition();
     }
 });
+
+// 获取当前筛选器标签
+const getCurrentFilterLabel = () => {
+    switch (filter.value.class) {
+        case 'valid':
+            return t('progress.validVideos')
+        case 'invalid':
+            return t('progress.invalidVideos')
+        case 'frozen':
+            return t('progress.frozenVideos')
+        default:
+            return t('progress.allVideos')
+    }
+}
+
+// 获取当前筛选器数量
+const getCurrentFilterCount = () => {
+    switch (filter.value.class) {
+        case 'valid':
+            return stat.value.valid
+        case 'invalid':
+            return stat.value.invalid
+        case 'frozen':
+            return stat.value.frozen
+        default:
+            return stat.value.count
+    }
+}
 </script>
 
 <style scoped>

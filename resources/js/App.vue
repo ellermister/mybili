@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <div class="container mx-auto px-4 py-4">
-      <nav class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg mb-6">
+    <div class="container mx-auto md:px-4 md:py-4">
+      <nav class="bg-gradient-to-r from-purple-500 to-pink-500 md:rounded-lg shadow-lg md:mb-6">
         <div class="flex items-center justify-between p-4">
           <!-- Logo -->
           <router-link to="/" class="flex items-center">
