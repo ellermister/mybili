@@ -89,6 +89,25 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         Log::info('Update fav list success');
     }
 
+    public function getFavoriteVideo(int $favoriteId): array
+    {
+        $videos = redis()->get(sprintf('favorite_video_saving:%s', $favoriteId));
+        if ($videos === null) {
+            return [];
+        }
+        $decoded = json_decode($videos, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    public function saveFavoriteVideo(int $favoriteId, array $videos): void
+    {
+        $existVideos = $this->getFavoriteVideo($favoriteId);
+        if (is_array($existVideos) && count($existVideos) > 0) {
+            $videos = array_merge($existVideos, $videos);
+        }
+        redis()->set(sprintf('favorite_video_saving:%s', $favoriteId), json_encode($videos));
+    }
+
 
     public function updateFavVideos(array $fav, ?int $page = null): void
     {
@@ -136,6 +155,9 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             ];
         }, $videos);
 
+        // 暂存视频数据
+        $this->saveFavoriteVideo($favId, $videos);
+
         $remoteVideoIds = array_column($videos, 'id');
         $localVideoIds  = DB::table('favorite_list_videos')
             ->where('favorite_list_id', $favId)
@@ -143,13 +165,6 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             ->toArray();
 
         $addVideoIds    = array_diff($remoteVideoIds, $localVideoIds);
-        $deleteVideoIds = array_diff($localVideoIds, $remoteVideoIds);
-
-        // 删除收藏夹与视频的关系，但不删除视频表数据
-        if (! empty($deleteVideoIds)) {
-            FavoriteList::query()->where('id', $favId)->first()->videos()->detach($deleteVideoIds);
-            Log::info('Detached videos from favorite list', ['favId' => $favId, 'videoIds' => $deleteVideoIds]);
-        }
 
         // 添加新的视频关联关系
         if (! empty($addVideoIds)) {
@@ -210,6 +225,16 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             }
 
             Log::info('Update video success', ['id' => $item['id'], 'title' => $item['title']]);
+        }
+
+        $savedVideos = $this->getFavoriteVideo($favId);
+        if(intval($fav['media_count']) == count($savedVideos)){
+            $remoteCacheVideoIds = array_column($savedVideos, 'id');
+            $deleteVideoIds = array_diff($localVideoIds, $remoteCacheVideoIds);
+            if(!empty($deleteVideoIds)){
+                FavoriteList::query()->where('id', $favId)->first()->videos()->detach($deleteVideoIds);
+                Log::info('Detached videos from favorite list', ['favId' => $favId, 'videoIds' => $deleteVideoIds]);
+            }
         }
     }
 

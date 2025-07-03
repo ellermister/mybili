@@ -49,7 +49,6 @@ class ScheduledRateLimiterService
         $now = time();
         $baseTime = $this->getBaseTime();
 
-        Log::info('debug schedule next available time', ['baseTime' => $baseTime, 'date' => date('Y-m-d H:i:s', $baseTime)]);
         try {
             $retry = 0;
             while (true) {
@@ -81,8 +80,6 @@ class ScheduledRateLimiterService
                     // 没有空隙，获取最后一个任务的时间并加上间隔
                     $nextTime = $this->calculateNextTimeFromLastTask($key, $interval, $baseTime);
                 }
-
-                Log::info('debug schedule next available time', ['nextTime' => $nextTime, 'date' => date('Y-m-d H:i:s', $nextTime)]);
 
                 // 记录这个执行计划
                 Redis::zadd($scheduleKey, $nextTime, $nextTime . ':' . uniqid());
