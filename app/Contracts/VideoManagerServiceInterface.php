@@ -30,6 +30,9 @@ interface VideoManagerServiceInterface
      */
     public function getVideosStat(array $conditions = []): array;
 
+
+    public function countVideos(): int;
+
     // ==================== 视频分P相关 ====================
     /**
      * 获取视频所有分P信息
@@ -66,7 +69,7 @@ interface VideoManagerServiceInterface
     /**
      * 更新收藏夹视频列表
      */
-    public function updateFavVideos(int $favId): void;
+    public function updateFavVideos(array $fav): void;
 
     /**
      * 更新视频分P信息

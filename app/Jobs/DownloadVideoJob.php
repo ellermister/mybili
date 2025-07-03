@@ -34,8 +34,9 @@ class DownloadVideoJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(VideoDownloadServiceInterface $videoDownloadService): void
+    public function handle(): void
     {
+        $videoDownloadService = app(VideoDownloadServiceInterface::class);
         $videoDownloadService->downloadVideoPartFileQueue($this->videoPart);
     }
 }

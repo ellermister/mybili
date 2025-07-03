@@ -12,8 +12,13 @@ class BilibiliService
 
     const API_HOST = 'https://api.bilibili.com';
 
-    public function __construct(public SettingsService $settingsService)
-    {
+    protected $favVideosPageSize;
+
+    public function __construct(
+        public SettingsService $settingsService,
+        public BilibiliSuspendService $bilibiliSuspendService
+    ) {
+        $this->favVideosPageSize = intval(config('services.bilibili.fav_videos_page_size'));
     }
 
     private function getClient()
@@ -423,7 +428,7 @@ class BilibiliService
         $mid = $dedeUserID->getValue();
 
         $pn     = 1;
-        $ps     = 10;
+        $ps     = 20;
         $client = $this->getClient();
         $favorites = [];
         while(true){
@@ -458,29 +463,46 @@ class BilibiliService
         return $favorites;
     }
 
-    public function pullFavVideoList(int $favId)
+    public function pullFavVideoList(int $favId, ?int $page = null)
     {
         $client = $this->getClient();
-        $pn     = 1;
-
+        $pn = $page ?? 1;
         $videos = [];
+
         while (true) {
-            $url = self::API_HOST . "/x/v3/fav/resource/list?media_id=$favId&pn=$pn&ps=20&keyword=&order=mtime&type=0&tid=0&platform=web";
-            echo "fetch $url\n";
-            $response = $client->request('GET', $url);
-            $result   = json_decode($response->getBody()->getContents(), true);
+            $url = self::API_HOST . "/x/v3/fav/resource/list?media_id=$favId&pn=$pn&ps={$this->favVideosPageSize}&keyword=&order=mtime&type=0&tid=0&platform=web";
+            Log::info("pullFavVideoList fetch $url");
+            
+            try {
+                $response = $client->request('GET', $url);
+                $result   = json_decode($response->getBody()->getContents(), true);
 
-            if (isset($result['data']) && is_array($result['data']['medias'])) {
-                foreach ($result['data']['medias'] as $value) {
-
-                    $videos[] = $value;
+                if (isset($result['data']) && is_array($result['data']['medias'])) {
+                    foreach ($result['data']['medias'] as $value) {
+                        $videos[] = $value;
+                    }
                 }
-            }
 
-            if (isset($result['data']['has_more']) && $result['data']['has_more']) {
-                $pn++;
-            } else {
-                break;
+                // 如果指定了页码,只获取该页数据
+                if ($page !== null) {
+                    break;
+                }
+
+                if (isset($result['data']['has_more']) && $result['data']['has_more']) {
+                    $pn++;
+                } else {
+                    break;
+                }
+            } catch (\Exception $e) {
+                Log::error("API request failed: " . $e->getMessage());
+                // 如果是频率限制错误，等待更长时间
+                // 检查接口响应是否包含429 或者412，如果包含则通过redis记录2个小时。
+                if (strpos($e->getMessage(), '429') !== false || strpos($e->getMessage(), '412') !== false) {
+                    Log::warning("Rate limit detected, waiting 60 seconds before retry");
+                    $this->bilibiliSuspendService->setSuspend();
+                    continue;
+                }
+                throw $e;
             }
         }
         return $videos;

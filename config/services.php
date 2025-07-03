@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'bilibili' => [
+        // 每页视频数量，最大40
+        'fav_videos_page_size' => env('BILIBILI_FAV_VIDEOS_PAGE_SIZE', 40),
+    ],
+
 ];

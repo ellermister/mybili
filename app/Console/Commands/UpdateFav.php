@@ -1,8 +1,8 @@
 <?php
 namespace App\Console\Commands;
 
-use App\Contracts\VideoManagerServiceInterface;
 use App\Contracts\VideoDownloadServiceInterface;
+use App\Contracts\VideoManagerServiceInterface;
 use App\Jobs\UpdateFavListJob;
 use App\Jobs\UpdateFavVideosJob;
 use App\Models\Video;
@@ -16,7 +16,12 @@ class UpdateFav extends Command
      *
      * @var string
      */
-    protected $signature = 'app:update-fav {--update-fav} {--update-fav-videos} {--update-video-parts} {--download-video-part}';
+    protected $signature = 'app:update-fav 
+    {--update-fav} 
+    {--update-fav-videos} 
+    {--update-video-parts} 
+    {--download-video-part}
+    {--update-fav-videos-page= : 更新指定收藏夹的指定页码}';
 
     /**
      * The console command description.
@@ -36,8 +41,12 @@ class UpdateFav extends Command
         }
 
         if ($this->option('update-fav-videos')) {
-            $job = new UpdateFavVideosJob();
-            dispatch($job);
+            $page = $this->option('update-fav-videos-page');
+            $favList = $videoManagerService->getFavList();
+            foreach ($favList as $item) {
+                $this->info('dispatch update fav videos: ' . $item['title'] . ' id: ' . $item['id']);
+                $this->dispatchUpdateFavVideosJob($item, $page);
+            }
         }
 
         if ($this->option('update-video-parts')) {
@@ -54,6 +63,20 @@ class UpdateFav extends Command
                     $videoDownloadService->downloadVideoPartFile($videoPart, true);
                 }
             });
+        }
+    }
+
+    protected function dispatchUpdateFavVideosJob(array $fav, ?int $page = null){
+        $pageSize = intval(config('services.bilibili.fav_videos_page_size'));
+        if($page === null){
+            $maxPage = ceil($fav['media_count'] / $pageSize);
+            $targetPage = 1;
+            while($targetPage <= $maxPage){
+                UpdateFavVideosJob::dispatchWithRateLimit($fav, $targetPage);
+                $targetPage++;
+            }
+        }else{
+            UpdateFavVideosJob::dispatchWithRateLimit($fav, intval($page));
         }
     }
 

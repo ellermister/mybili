@@ -89,9 +89,17 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         Log::info('Update fav list success');
     }
 
-    public function updateFavVideos(int $favId): void
+
+    public function updateFavVideos(array $fav, ?int $page = null): void
     {
-        $videos = $this->bilibiliService->pullFavVideoList($favId);
+        $favId = $fav['id'];
+        $videos = $this->bilibiliService->pullFavVideoList($favId, $page);
+
+        if(count($videos) === 0){
+            Log::info('No videos found in fav', ['favId' => $favId]);
+            return;
+        }
+
         $videos = array_map(function ($item) {
             $videoInvalid = $this->videoIsInvalid($item);
 
@@ -407,5 +415,10 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             'frozen'     => Video::where('frozen', 1)->count(),
         ];
         return $stat;
+    }
+
+    public function countVideos(): int
+    {
+        return Video::count();
     }
 }
