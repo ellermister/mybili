@@ -168,6 +168,7 @@ const messages = {
             // 分组标题
             featureSwitches: '功能开关',
             filterSettings: '过滤设置',
+            notificationSettings: '通知设置',
             
             // 功能开关
             features: {
@@ -199,7 +200,26 @@ const messages = {
             placeholders: {
                 enterKeyword: '输入要过滤的关键词',
                 enterRegex: '输入正则表达式',
-                enterSizeMB: '输入大小（MB）'
+                enterSizeMB: '输入大小（MB）',
+                enterBotToken: '请输入 Bot Token',
+                enterChatId: '请输入聊天 ID'
+            },
+            
+            // 通知设置
+            notifications: {
+                telegramBot: 'Telegram Bot 通知',
+                botToken: 'Bot Token',
+                chatId: '聊天 ID',
+                connectionTest: '连接测试',
+                testConnection: '测试连接',
+                enableDescription: '启用后可通过 Telegram Bot 接收系统通知',
+                botTokenDescription: '从 @BotFather 获取的 Bot Token',
+                chatIdDescription: '接收通知的聊天 ID（个人或群组）',
+                testConnectionDescription: '测试 Telegram Bot 连接是否正常',
+                connectionSuccess: '✅ 连接成功！Telegram Bot 配置正确',
+                connectionFailed: '❌ 连接失败！请检查 Bot Token 和聊天 ID 是否正确',
+                connectionError: '❌ 连接测试失败！请检查网络连接或稍后重试',
+                fillRequiredFields: '请先填写 Bot Token 和聊天 ID'
             }
         },
 
@@ -436,6 +456,7 @@ const messages = {
             // 分组标题
             featureSwitches: 'Feature Switches',
             filterSettings: 'Filter Settings',
+            notificationSettings: 'Notification Settings',
             
             // 功能开关
             features: {
@@ -467,7 +488,26 @@ const messages = {
             placeholders: {
                 enterKeyword: 'Enter keyword to filter',
                 enterRegex: 'Enter regex pattern',
-                enterSizeMB: 'Enter size in MB'
+                enterSizeMB: 'Enter size in MB',
+                enterBotToken: 'Enter Bot Token',
+                enterChatId: 'Enter Chat ID'
+            },
+            
+            // 通知设置
+            notifications: {
+                telegramBot: 'Telegram Bot Notifications',
+                botToken: 'Bot Token',
+                chatId: 'Chat ID',
+                connectionTest: 'Connection Test',
+                testConnection: 'Test Connection',
+                enableDescription: 'Enable to receive system notifications via Telegram Bot',
+                botTokenDescription: 'Bot Token obtained from @BotFather',
+                chatIdDescription: 'Chat ID to receive notifications (personal or group)',
+                testConnectionDescription: 'Test if Telegram Bot connection is working properly',
+                connectionSuccess: '✅ Connection successful! Telegram Bot configuration is correct',
+                connectionFailed: '❌ Connection failed! Please check if Bot Token and Chat ID are correct',
+                connectionError: '❌ Connection test failed! Please check network connection or try again later',
+                fillRequiredFields: 'Please fill in Bot Token and Chat ID first'
             }
         },
 

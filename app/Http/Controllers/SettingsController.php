@@ -3,12 +3,13 @@ namespace App\Http\Controllers;
 
 use App\Enums\SettingKey;
 use App\Services\SettingsService;
+use App\Services\TelegramBotService;
 use Illuminate\Http\Request;
 
 class SettingsController extends Controller
 {
 
-    public function __construct(public SettingsService $settings)
+    public function __construct(public SettingsService $settings, public TelegramBotService $telegramBot)
     {
 
     }
@@ -35,6 +36,9 @@ class SettingsController extends Controller
                 'custom_size' => 0,
                 'type'        => 'off',
             ],
+            SettingKey::TELEGRAM_BOT_ENABLED->value             => 'off',
+            SettingKey::TELEGRAM_BOT_TOKEN->value               => '',
+            SettingKey::TELEGRAM_CHAT_ID->value                 => '',
         ];
 
         foreach ($presets as $key => $value) {
@@ -69,6 +73,10 @@ class SettingsController extends Controller
             SettingKey::FAVORITE_EXCLUDE->value                 => 'required|array',
             SettingKey::FAVORITE_EXCLUDE->value . '.enabled'    => 'required|boolean',
             SettingKey::FAVORITE_EXCLUDE->value . '.selected'   => 'required_if:fav_exclude.enabled,true|array',
+
+            SettingKey::TELEGRAM_BOT_ENABLED->value             => 'required|string|in:on,off',
+            SettingKey::TELEGRAM_BOT_TOKEN->value               => 'required|string',
+            SettingKey::TELEGRAM_CHAT_ID->value                 => 'required|string',
         ]);
 
         foreach ($data as $key => $value) {
@@ -76,5 +84,20 @@ class SettingsController extends Controller
         }
 
         return response()->json(['message' => 'Settings saved successfully']);
+    }
+
+    public function testTelegramConnection(Request $request)
+    {
+        $data = $request->validate([
+            SettingKey::TELEGRAM_BOT_TOKEN->value => 'required|string',
+            SettingKey::TELEGRAM_CHAT_ID->value   => 'required|string',
+        ]);
+
+        $result = $this->telegramBot->testConnection([
+            'bot_token' => $data[SettingKey::TELEGRAM_BOT_TOKEN->value],
+            'chat_id'   => $data[SettingKey::TELEGRAM_CHAT_ID->value],
+        ]);
+
+        return response()->json(['message' => 'Telegram connection test successful', 'result' => $result]);
     }
 }

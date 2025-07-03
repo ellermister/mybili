@@ -17,6 +17,7 @@ Route::get('/cookie/status', [CookieController::class, 'checkCookieValid']);
 Route::post('/cookie/upload', [CookieController::class, 'uploadCookieFile']);
 Route::get('/settings', [SettingsController::class, 'getSettings']);
 Route::post('/settings', [SettingsController::class, 'saveSettings']);
+Route::post('/settings/test-telegram', [SettingsController::class, 'testTelegramConnection']);
 
 // 显示系统校准信息
 Route::get('/system/info', [SystemController::class, 'getSystemInfo']);

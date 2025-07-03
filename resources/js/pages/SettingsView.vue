@@ -107,14 +107,14 @@
                         <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.features.usageAnalytics') }}</label>
                         <div class="space-y-2">
                             <label class="flex items-center space-x-3">
-                                <input v-model="usageAnalyticsEnabled" type="radio" value="on"
-                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
-                                <span class="text-gray-700">{{ t('common.on') }}</span>
-                            </label>
-                            <label class="flex items-center space-x-3">
                                 <input v-model="usageAnalyticsEnabled" type="radio" value="off"
                                     class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
                                 <span class="text-gray-700">{{ t('common.off') }}</span>
+                            </label>
+                            <label class="flex items-center space-x-3">
+                                <input v-model="usageAnalyticsEnabled" type="radio" value="on"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.on') }}</span>
                             </label>
                         </div>
                         <p class="text-xs text-gray-500 mt-2">{{ t('settings.features.usageAnalyticsDescription') }}</p>
@@ -223,6 +223,69 @@
                 </div>
             </div>
 
+
+            <!-- 通知设置分组 -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-6 text-gray-800 border-b border-gray-200 pb-3">
+                    <span class="inline-flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        {{ t('settings.notificationSettings') }}
+                    </span>
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Telegram Bot 启用 -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.notifications.telegramBot') }}</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-3">
+                                <input v-model="telegramBotEnabled" type="radio" value="off"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.off') }}</span>
+                            </label>
+                            <label class="flex items-center space-x-3">
+                                <input v-model="telegramBotEnabled" type="radio" value="on"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('common.on') }}</span>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">{{ t('settings.notifications.enableDescription') }}</p>
+                    </div>
+
+                    <!-- Telegram Bot Token -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.notifications.botToken') }}</label>
+                        <input v-model="telegramBotToken" type="text"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+                            :placeholder="t('settings.placeholders.enterBotToken')" />
+                        <p class="text-xs text-gray-500 mt-2">{{ t('settings.notifications.botTokenDescription') }}</p>
+                    </div>
+
+                    <!-- Telegram Chat ID -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.notifications.chatId') }}</label>
+                        <input v-model="telegramChatId" type="text"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+                            :placeholder="t('settings.placeholders.enterChatId')" />
+                        <p class="text-xs text-gray-500 mt-2">{{ t('settings.notifications.chatIdDescription') }}</p>
+                    </div>
+
+                    <!-- 测试连接按钮 -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.notifications.connectionTest') }}</label>
+                        <button @click="testTelegramConnection"
+                            class="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200">
+                            {{ t('settings.notifications.testConnection') }}
+                        </button>
+                        <p class="text-xs text-gray-500 mt-2">{{ t('settings.notifications.testConnectionDescription') }}</p>
+                    </div>
+                </div>
+            </div>
+
+
             <!-- Save Button -->
             <div class="text-center">
                 <button @click="saveSettingHandler"
@@ -236,7 +299,7 @@
 
 <script lang="ts" setup>
 import { getFavList } from '@/api/fav';
-import { getSettings, saveSettings } from '@/api/settings';
+import { getSettings, saveSettings, testTelegramConnection as testTelegramAPI } from '@/api/settings';
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -265,6 +328,11 @@ const favoriteSyncEnabled = ref('off'); // off, on
 const humanReadableNameEnabled = ref('off'); // off, on
 const usageAnalyticsEnabled = ref('on'); // on, off
 
+// Telegram Bot 设置相关的响应式数据
+const telegramBotEnabled = ref('off'); // off, on
+const telegramBotToken = ref('');
+const telegramChatId = ref('');
+
 // 添加合集过滤相关的响应式数据
 const favExclude = ref({
     enabled: false,
@@ -284,6 +352,9 @@ const saveSettingHandler = () => {
         favorite_sync_enabled: favoriteSyncEnabled.value,
         human_readable_name_enabled: humanReadableNameEnabled.value,
         usage_analytics_enabled: usageAnalyticsEnabled.value,
+        telegram_bot_enabled: telegramBotEnabled.value,
+        telegram_bot_token: telegramBotToken.value,
+        telegram_chat_id: telegramChatId.value,
     });
 
     saveSettings({
@@ -296,9 +367,32 @@ const saveSettingHandler = () => {
         favorite_sync_enabled: favoriteSyncEnabled.value,
         human_readable_name_enabled: humanReadableNameEnabled.value,
         usage_analytics_enabled: usageAnalyticsEnabled.value,
+        telegram_bot_enabled: telegramBotEnabled.value,
+        telegram_bot_token: telegramBotToken.value,
+        telegram_chat_id: telegramChatId.value,
     }).then(()=>{
         alert(t('settings.settingsSaved'));
     });
+};
+
+const testTelegramConnection = async () => {
+    if (!telegramBotToken.value || !telegramChatId.value) {
+        alert(t('settings.notifications.fillRequiredFields'));
+        return;
+    }
+
+    try {
+        const response = await testTelegramAPI(telegramBotToken.value, telegramChatId.value);
+        
+        if (response.result === true) {
+            alert(t('settings.notifications.connectionSuccess'));
+        } else {
+            alert(t('settings.notifications.connectionFailed'));
+        }
+    } catch (error) {
+        console.error('Connect Telegram Bot failed:', error);
+        alert(t('settings.notifications.connectionError'));
+    }
 };
 
 onMounted(()=>{
@@ -320,6 +414,11 @@ onMounted(()=>{
         favoriteSyncEnabled.value = data.favorite_sync_enabled;
         humanReadableNameEnabled.value = data.human_readable_name_enabled;
         usageAnalyticsEnabled.value = data.usage_analytics_enabled;
+        
+        // 加载 Telegram Bot 设置
+        telegramBotEnabled.value = data.telegram_bot_enabled || 'off';
+        telegramBotToken.value = data.telegram_bot_token || '';
+        telegramChatId.value = data.telegram_chat_id || '';
     })
 })
 

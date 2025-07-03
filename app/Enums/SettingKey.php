@@ -18,6 +18,11 @@ enum SettingKey: string {
     case INSTALLED_DATETIME = 'installed_datetime';
     case COOKIES_CONTENT = 'cookies_content';
 
+    // Telegram Bot 设置
+    case TELEGRAM_BOT_ENABLED = 'telegram_bot_enabled';
+    case TELEGRAM_BOT_TOKEN = 'telegram_bot_token';
+    case TELEGRAM_CHAT_ID = 'telegram_chat_id';
+
     public function label(): string
     {
         return match ($this) {
@@ -34,6 +39,11 @@ enum SettingKey: string {
 
             self::INSTALLED_DATETIME => '安装日期时间',
             self::COOKIES_CONTENT => 'Cookies 内容',
+            
+            // Telegram Bot 设置
+            self::TELEGRAM_BOT_ENABLED => 'Telegram Bot 启用',
+            self::TELEGRAM_BOT_TOKEN => 'Telegram Bot Token',
+            self::TELEGRAM_CHAT_ID => 'Telegram 聊天 ID',
         };
     }
 }

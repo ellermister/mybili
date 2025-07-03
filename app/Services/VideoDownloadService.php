@@ -3,6 +3,7 @@ namespace App\Services;
 
 use App\Contracts\VideoDownloadServiceInterface;
 use App\Enums\SettingKey;
+use App\Events\VideoPartDownloaded;
 use App\Jobs\DownloadVideoJob;
 use App\Models\Video;
 use App\Models\VideoPart;
@@ -267,6 +268,8 @@ class VideoDownloadService implements VideoDownloadServiceInterface
                     Log::info('download video output', ['video_id' => $video->id, 'part' => $partNum, 'output' => $output]);
                     Log::info('download video success', ['video_id' => $video->id, 'part' => $partNum, 'savePath' => $savePath]);
                     $this->updateVideoPartDownloaded($videoPart, $savePath);
+
+                    event(new VideoPartDownloaded($videoPart));
                 }
             }
         }
