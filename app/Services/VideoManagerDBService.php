@@ -103,7 +103,24 @@ class VideoManagerDBService implements VideoManagerServiceInterface
     {
         $existVideos = $this->getFavoriteVideo($favoriteId);
         if (is_array($existVideos) && count($existVideos) > 0) {
-            $videos = array_merge($existVideos, $videos);
+            // 使用id作为键进行去重合并，新数据会覆盖旧数据
+            $mergedVideos = [];
+            
+            // 先添加已存在的视频
+            foreach ($existVideos as $video) {
+                if (isset($video['id'])) {
+                    $mergedVideos[$video['id']] = $video;
+                }
+            }
+            
+            // 再添加新视频，会覆盖相同id的旧数据
+            foreach ($videos as $video) {
+                if (isset($video['id'])) {
+                    $mergedVideos[$video['id']] = $video;
+                }
+            }
+            
+            $videos = array_values($mergedVideos);
         }
         redis()->set(sprintf('favorite_video_saving:%s', $favoriteId), json_encode($videos));
     }
