@@ -70,21 +70,24 @@ class VideoManagerDBService implements VideoManagerServiceInterface
     {
         Log::info('Update fav list start');
         $favList = $this->bilibiliService->pullFav();
-        array_map(function ($item) {
-            $favorite = FavoriteList::query()->where('id', $item['id'])->first();
-            if (! $favorite) {
-                $favorite = new FavoriteList();
-            }
 
-            $oldFav = $favorite->toArray();
-
-            $favorite->fill($item);
-            $favorite->save();
-
-            event(new FavoriteUpdated($oldFav, $item));
-
-            return $item;
-        }, $favList);
+        DB::transaction(function() use ($favList){
+            array_map(function ($item) {
+                $favorite = FavoriteList::query()->where('id', $item['id'])->first();
+                if (! $favorite) {
+                    $favorite = new FavoriteList();
+                }
+    
+                $oldFav = $favorite->toArray();
+    
+                $favorite->fill($item);
+                $favorite->save();
+    
+                event(new FavoriteUpdated($oldFav, $item));
+    
+                return $item;
+            }, $favList);            
+        });
 
         Log::info('Update fav list success');
     }
@@ -175,84 +178,87 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         // 暂存视频数据
         $this->saveFavoriteVideo($favId, $videos);
 
-        $remoteVideoIds = array_column($videos, 'id');
-        $localVideoIds  = DB::table('favorite_list_videos')
-            ->where('favorite_list_id', $favId)
-            ->pluck('video_id')
-            ->toArray();
+        DB::transaction(function() use ($videos, $favId, $fav){
+            $remoteVideoIds = array_column($videos, 'id');
+            $localVideoIds  = DB::table('favorite_list_videos')
+                ->where('favorite_list_id', $favId)
+                ->pluck('video_id')
+                ->toArray();
+    
+            $addVideoIds    = array_diff($remoteVideoIds, $localVideoIds);
 
-        $addVideoIds    = array_diff($remoteVideoIds, $localVideoIds);
-
-        // 添加新的视频关联关系
-        if (! empty($addVideoIds)) {
-            $attachData = [];
-            foreach ($videos as $video) {
-                if (in_array($video['id'], $addVideoIds)) {
-                    $attachData[$video['id']] = [
-                        'created_at' => date('Y-m-d H:i:s', $video['fav_time']),
-                        'updated_at' => date('Y-m-d H:i:s'),
-                    ];
+            // 添加新的视频关联关系
+            if (! empty($addVideoIds)) {
+                $attachData = [];
+                foreach ($videos as $video) {
+                    if (in_array($video['id'], $addVideoIds)) {
+                        $attachData[$video['id']] = [
+                            'created_at' => date('Y-m-d H:i:s', $video['fav_time']),
+                            'updated_at' => date('Y-m-d H:i:s'),
+                        ];
+                    }
                 }
-            }
-            if (! empty($attachData)) {
-                $favoriteList = FavoriteList::query()->where('id', $favId)->first();
-                $favoriteList->videos()->attach($attachData);
-                Log::info('Attached videos to favorite list', ['favId' => $favId, 'videoIds' => array_keys($attachData)]);
-            }
-        }
-
-        foreach ($videos as $key => $item) {
-            $video = Video::query()->where('id', $item['id'])->first();
-            if (! $video) {
-                $video = new Video();
-            }
-
-            $oldVideoData = $video->toArray();
-
-            // 检查视频数据是否真正发生了变化
-            $hasChanges = false;
-            $changedFields = [];
-            
-            foreach ($item as $field => $value) {
-                if (!isset($oldVideoData[$field]) || $oldVideoData[$field] != $value) {
-                    $hasChanges = true;
-                    $changedFields[$field] = [
-                        'old' => $oldVideoData[$field] ?? null,
-                        'new' => $value
-                    ];
+                if (! empty($attachData)) {
+                    $favoriteList = FavoriteList::query()->where('id', $favId)->first();
+                    $favoriteList->videos()->attach($attachData);
+                    Log::info('Attached videos to favorite list', ['favId' => $favId, 'videoIds' => array_keys($attachData)]);
                 }
             }
 
-            $video->fill($item);
-            $video->save();
 
-            // 只有在数据真正发生变化时才触发事件
-            if ($hasChanges) {
-                Log::info('Video data changed, triggering VideoUpdated event', [
-                    'id' => $item['id'], 
-                    'title' => $item['title'],
-                    'changed_fields' => array_keys($changedFields)
-                ]);
-                event(new VideoUpdated($oldVideoData, $video->toArray()));
-            } else {
-                Log::info('Video data unchanged, skipping VideoUpdated event', [
-                    'id' => $item['id'], 
-                    'title' => $item['title']
-                ]);
+            foreach ($videos as $key => $item) {
+                $video = Video::query()->where('id', $item['id'])->first();
+                if (! $video) {
+                    $video = new Video();
+                }
+    
+                $oldVideoData = $video->toArray();
+    
+                // 检查视频数据是否真正发生了变化
+                $hasChanges = false;
+                $changedFields = [];
+                
+                foreach ($item as $field => $value) {
+                    if (!isset($oldVideoData[$field]) || $oldVideoData[$field] != $value) {
+                        $hasChanges = true;
+                        $changedFields[$field] = [
+                            'old' => $oldVideoData[$field] ?? null,
+                            'new' => $value
+                        ];
+                    }
+                }
+    
+                $video->fill($item);
+                $video->save();
+    
+                // 只有在数据真正发生变化时才触发事件
+                if ($hasChanges) {
+                    Log::info('Video data changed, triggering VideoUpdated event', [
+                        'id' => $item['id'], 
+                        'title' => $item['title'],
+                        'changed_fields' => array_keys($changedFields)
+                    ]);
+                    event(new VideoUpdated($oldVideoData, $video->toArray()));
+                } else {
+                    Log::info('Video data unchanged, skipping VideoUpdated event', [
+                        'id' => $item['id'], 
+                        'title' => $item['title']
+                    ]);
+                }
+    
+                Log::info('Update video success', ['id' => $item['id'], 'title' => $item['title']]);
             }
 
-            Log::info('Update video success', ['id' => $item['id'], 'title' => $item['title']]);
-        }
-
-        $savedVideos = $this->getFavoriteVideo($favId);
-        if(intval($fav['media_count']) == count($savedVideos)){
-            $remoteCacheVideoIds = array_column($savedVideos, 'id');
-            $deleteVideoIds = array_diff($localVideoIds, $remoteCacheVideoIds);
-            if(!empty($deleteVideoIds)){
-                FavoriteList::query()->where('id', $favId)->first()->videos()->detach($deleteVideoIds);
-                Log::info('Detached videos from favorite list', ['favId' => $favId, 'videoIds' => $deleteVideoIds]);
+            $savedVideos = $this->getFavoriteVideo($favId);
+            if(intval($fav['media_count']) == count($savedVideos)){
+                $remoteCacheVideoIds = array_column($savedVideos, 'id');
+                $deleteVideoIds = array_diff($localVideoIds, $remoteCacheVideoIds);
+                if(!empty($deleteVideoIds)){
+                    FavoriteList::query()->where('id', $favId)->first()->videos()->detach($deleteVideoIds);
+                    Log::info('Detached videos from favorite list', ['favId' => $favId, 'videoIds' => $deleteVideoIds]);
+                }
             }
-        }
+        });
     }
 
     public function updateVideoParts(Video $video): void
@@ -287,37 +293,39 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             return;
         }
 
-        foreach ($videoParts as $part) {
-            $videoPart = VideoPart::where('cid', $part['cid'])->first();
-            if (! $videoPart) {
-                $videoPart = new VideoPart();
+        DB::transaction(function() use ($videoParts, $video){
+            foreach ($videoParts as $part) {
+                $videoPart = VideoPart::where('cid', $part['cid'])->first();
+                if (! $videoPart) {
+                    $videoPart = new VideoPart();
+                }
+                $oldVideoPart = $videoPart->toArray();
+                $videoPart->fill(array_merge(
+                    [
+                        'page'        => $part['page'],
+                        'from'        => $part['from'],
+                        'part'        => $part['part'],
+                        'duration'    => $part['duration'],
+                        'vid'         => $part['vid'],
+                        'weblink'     => $part['weblink'],
+                        'width'       => $part['dimension']['width'] ?? 0,
+                        'height'      => $part['dimension']['height'] ?? 0,
+                        'rotate'      => $part['dimension']['rotate'] ?? 0,
+                        'first_frame' => $part['first_frame'] ?? '',
+                        'cid'         => $part['cid'],
+                    ],
+                    [
+                        'video_id' => $video->id,
+                    ]
+                ));
+                $videoPart->save();
+    
+                event(new VideoPartUpdated($oldVideoPart, $videoPart->toArray()));
             }
-            $oldVideoPart = $videoPart->toArray();
-            $videoPart->fill(array_merge(
-                [
-                    'page'        => $part['page'],
-                    'from'        => $part['from'],
-                    'part'        => $part['part'],
-                    'duration'    => $part['duration'],
-                    'vid'         => $part['vid'],
-                    'weblink'     => $part['weblink'],
-                    'width'       => $part['dimension']['width'] ?? 0,
-                    'height'      => $part['dimension']['height'] ?? 0,
-                    'rotate'      => $part['dimension']['rotate'] ?? 0,
-                    'first_frame' => $part['first_frame'] ?? '',
-                    'cid'         => $part['cid'],
-                ],
-                [
-                    'video_id' => $video->id,
-                ]
-            ));
-            $videoPart->save();
-
-            event(new VideoPartUpdated($oldVideoPart, $videoPart->toArray()));
-        }
-
-        $video->video_downloaded_at = now();
-        $video->save();
+    
+            $video->video_downloaded_at = now();
+            $video->save();
+        });
 
         Log::info('Update video parts success', ['id' => $video->id, 'bvid' => $video->bvid, 'title' => $video->title]);
     }
@@ -380,18 +388,21 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         }, $insertData);
 
         // 分批插入数据，每批1000条
-        foreach (array_chunk($insertData, 1000) as $chunk) {
-            $videoPart->danmakus()->createMany($chunk);
-            unset($chunk);
-        }
-        // 释放原始数据
-        unset($insertData);
+        DB::transaction(function() use (&$insertData, &$videoPart){
+            foreach (array_chunk($insertData, 1000) as $chunk) {
+                $videoPart->danmakus()->createMany($chunk);
+                unset($chunk);
+            }
 
-        $videoPart->danmakus()->update([
-            'video_id' => $videoPart->video_id,
-        ]);
+            // 释放原始数据
+            unset($insertData);
 
-        unset($videoPart);
+            $videoPart->danmakus()->update([
+                'video_id' => $videoPart->video_id,
+            ]);
+
+            unset($videoPart);
+        });
     }
 
     public function getDanmaku(string $cid): array
