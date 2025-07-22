@@ -372,6 +372,8 @@ const saveSettingHandler = () => {
         telegram_chat_id: telegramChatId.value,
     }).then(()=>{
         alert(t('settings.settingsSaved'));
+    }).catch((err)=>{
+        alert(t('settings.settingsSaveFailed') + ' ' + err.message);
     });
 };
 

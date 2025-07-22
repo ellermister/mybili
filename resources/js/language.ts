@@ -164,6 +164,7 @@ const messages = {
             title: '设置',
             saveSettings: '保存设置',
             settingsSaved: '设置保存成功！',
+            settingsSaveFailed: '设置保存失败！',
             
             // 分组标题
             featureSwitches: '功能开关',
@@ -452,6 +453,7 @@ const messages = {
             title: 'Settings',
             saveSettings: 'Save Settings',
             settingsSaved: 'Settings saved successfully!',
+            settingsSaveFailed: 'Settings save failed!',
             
             // 分组标题
             featureSwitches: 'Feature Switches',
