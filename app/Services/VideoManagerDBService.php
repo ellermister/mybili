@@ -250,6 +250,8 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             }
 
             $savedVideos = $this->getFavoriteVideo($favId);
+            // media_count 是不准确的，可能是用户手动取消收藏视频系统没更新、也可能是哔哩哔哩自己故意把用户视频搞丢失
+            // 经过测试，用户收藏夹的视频获取没有错误，但收藏夹的media_count 是错误的，目前没有合适的方法更新
             if(intval($fav['media_count']) == count($savedVideos)){
                 $remoteCacheVideoIds = array_column($savedVideos, 'id');
                 $deleteVideoIds = array_diff($localVideoIds, $remoteCacheVideoIds);
@@ -381,12 +383,15 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         // 释放内存
         unset($danmakuIds);
 
+        $start_time = microtime(true);
         $videoPart  = VideoPart::where('cid', $cid)->first();
         $insertData = array_map(function ($item) use ($videoPart) {
             $item['video_id'] = $videoPart->video_id;
             return $item;
         }, $insertData);
+        Log::info('Save danmaku count, array_map time', ['time' => microtime(true) - $start_time]);
 
+        $start_time = microtime(true);
         // 分批插入数据，每批1000条
         DB::transaction(function() use (&$insertData, &$videoPart){
             foreach (array_chunk($insertData, 1000) as $chunk) {
@@ -403,6 +408,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
 
             unset($videoPart);
         });
+        Log::info('Save danmaku count, DB transaction time', ['time' => microtime(true) - $start_time]);
     }
 
     public function getDanmaku(string $cid): array
@@ -421,9 +427,12 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         redis()->expire(sprintf('danmaku_downloading:%s', $videoPart->cid), 3600 * 8);
 
         try {
+            Log::info('Download danmaku start', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
             $video = Video::where('id', $videoPart->video_id)->first();
 
+            $start_time = microtime(true);
             $partDanmakus = $this->bilibiliService->getDanmaku($videoPart->cid, intval($videoPart->duration));
+            Log::info('Download danmaku time', ['time' => microtime(true) - $start_time]);
 
             Log::info('Download danmaku success', [
                 'id'       => $videoPart->cid,
@@ -434,15 +443,17 @@ class VideoManagerDBService implements VideoManagerServiceInterface
                 'title'    => $video->title,
             ]);
             $this->saveDanmaku($videoPart->cid, $partDanmakus);
-
+            Log::info('Save danmaku time', ['time' => microtime(true) - $start_time]);
             $videoPart->danmaku_downloaded_at = Carbon::now();
             $videoPart->save();
+            
         } catch (\Throwable $e) {
             Log::error('Download danmaku failed', ['id' => $videoPart->cid, 'title' => $videoPart->part, 'error' => $e->getMessage()]);
             return;
         } finally {
             // 移除下载锁
             redis()->del(sprintf('danmaku_downloading:%s', $videoPart->cid));
+            Log::info('Download danmaku end, take time', ['time' => microtime(true) - $start_time, 'id' => $videoPart->cid, 'title' => $videoPart->part]);
         }
     }
 

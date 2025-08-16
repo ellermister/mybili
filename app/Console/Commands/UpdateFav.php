@@ -7,7 +7,10 @@ use App\Jobs\UpdateFavListJob;
 use App\Jobs\UpdateFavVideosJob;
 use App\Models\Video;
 use App\Models\VideoPart;
+use App\Services\DownloadFilterService;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Collection;
+use Log;
 
 class UpdateFav extends Command
 {
@@ -16,11 +19,11 @@ class UpdateFav extends Command
      *
      * @var string
      */
-    protected $signature = 'app:update-fav 
-    {--update-fav} 
-    {--update-fav-videos} 
-    {--update-video-parts} 
-    {--download-video-part}
+    protected $signature = 'app:update-fav
+    {--update-fav= : 触发收藏夹自身更新}
+    {--update-fav-videos= : 触发收藏夹列表中视频更新，发现新视频}
+    {--update-video-parts= : 触发拉取更新现有视频分P资料}
+    {--download-video-part= : 触发下载现有视频分P}
     {--update-fav-videos-page= : 更新指定收藏夹的指定页码}';
 
     /**
@@ -33,8 +36,10 @@ class UpdateFav extends Command
     /**
      * Execute the console command.
      */
-    public function handle(VideoManagerServiceInterface $videoManagerService, VideoDownloadServiceInterface $videoDownloadService)
-    {
+    public function handle(
+        VideoManagerServiceInterface $videoManagerService,
+        VideoDownloadServiceInterface $videoDownloadService
+    ) {
         if ($this->option('update-fav')) {
             $job = new UpdateFavListJob();
             dispatch($job);
@@ -52,6 +57,15 @@ class UpdateFav extends Command
         if ($this->option('update-video-parts')) {
             Video::chunk(100, function ($videos) use ($videoManagerService) {
                 foreach ($videos as $video) {
+                    $currentFav = $video->favorite;
+                    if ($this->shouldExcludeByFavForMultiFav($currentFav)) {
+                        $message = sprintf('in update video parts command, exclude fav: %s id: %s', $video['title'], $video['id']);
+                        $this->info(
+                            $message
+                        );
+                        Log::info($message, ['favs' => collect($currentFav->pluck('id'))->toArray()]);
+                        continue;
+                    }
                     $videoManagerService->updateVideoParts($video);
                 }
             });
@@ -60,22 +74,51 @@ class UpdateFav extends Command
         if ($this->option('download-video-part')) {
             VideoPart::chunk(100, function ($videoParts) use ($videoDownloadService) {
                 foreach ($videoParts as $videoPart) {
+                    if($this->shouldExcludeByFavForMultiFav($videoPart->video->favorite)){
+                        $message = sprintf('in download video part command, exclude fav: %s id: %s', $videoPart->video['title'], $videoPart->video['id']);
+                        $this->info($message);
+                        Log::info($message, ['favs' => collect($videoPart->video->favorite->pluck('id'))->toArray()]);
+                        continue;
+                    }
                     $videoDownloadService->downloadVideoPartFile($videoPart, true);
                 }
             });
         }
     }
 
-    protected function dispatchUpdateFavVideosJob(array $fav, ?int $page = null){
+    private function shouldExcludeByFavForMultiFav(Collection $favs)
+    {
+        $downloadFilterService = app(DownloadFilterService::class);
+
+        $favIds = $favs->pluck('id')->unique();
+        foreach ($favIds as $favId) {
+            if (! $downloadFilterService->shouldExcludeByFav($favId)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    protected function dispatchUpdateFavVideosJob(array $fav, ?int $page = null)
+    {
+
+        $downloadFilterService = app(DownloadFilterService::class);
+        if ($downloadFilterService->shouldExcludeByFav($fav['id'])) {
+            $message = sprintf('in update fav command, exclude fav: %s id: %s', $fav['title'], $fav['id']);
+            $this->info($message);
+            Log::info($message, ['favs' => collect($fav['id'])]);
+            return;
+        }
+
         $pageSize = intval(config('services.bilibili.fav_videos_page_size'));
-        if($page === null){
-            $maxPage = ceil($fav['media_count'] / $pageSize);
+        if ($page === null) {
+            $maxPage    = ceil($fav['media_count'] / $pageSize);
             $targetPage = 1;
-            while($targetPage <= $maxPage){
+            while ($targetPage <= $maxPage) {
                 UpdateFavVideosJob::dispatchWithRateLimit($fav, $targetPage);
                 $targetPage++;
             }
-        }else{
+        } else {
             UpdateFavVideosJob::dispatchWithRateLimit($fav, intval($page));
         }
     }
