@@ -32,41 +32,13 @@ class SendVideoDownloadedMessage implements ShouldQueue
             $videoFileSize = filesize($filePath);
         }
 
-        $readableFileSize = $this->formatFileSize($videoFileSize);
-        $formattedDuration = $this->formatDuration($videoPart->duration);
+        $readableFileSize = format_file_size($videoFileSize);
+        $formattedDuration = format_duration($videoPart->duration);
 
         $telegramBotService = app(TelegramBotServiceInterface::class);
         $htmlMessage = $this->buildNotificationMessage($video, $videoPart, $readableFileSize, $formattedDuration);
 
         $telegramBotService->sendHtmlMessage($htmlMessage);
-    }
-
-    /**
-     * Convert bytes to human readable file size
-     * Maximum unit is GB, minimum unit is MB
-     */
-    private function formatFileSize(int $bytes): string
-    {
-        if ($bytes === 0) {
-            return '0 MB';
-        }
-
-        $gb = $bytes / (1024 * 1024 * 1024);
-        if ($gb >= 1) {
-            return round($gb, 2) . ' GB';
-        }
-
-        $mb = $bytes / (1024 * 1024);
-        return round($mb, 2) . ' MB';
-    }
-
-    /**
-     * Format duration from seconds to readable format (HH:MM:SS or MM:SS)
-     */
-    private function formatDuration(string $duration): string
-    {
-        // Convert duration to integer (assuming it's in seconds)
-        return gmdate('H:i:s', intval($duration));
     }
 
     /**
