@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use App\Contracts\VideoManagerServiceInterface;
 use App\Services\DPlayerDanmakuService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class VideoController extends Controller
@@ -29,7 +30,10 @@ class VideoController extends Controller
     public function progress()
     {
         $list = $this->videoManagerService->getVideos()
-            ->sortByDesc('fav_time')
+            ->sortBy(function ($video) {
+                // 优先使用 fav_time，如果不存在或为 null 则使用 created_at
+                return Carbon::parse($video->fav_time ?? $video->created_at)->timestamp;
+            }, SORT_REGULAR, true) // true 表示降序排序
             ->values()
             ->all();
 

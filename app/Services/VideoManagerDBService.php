@@ -485,4 +485,43 @@ class VideoManagerDBService implements VideoManagerServiceInterface
     {
         return Video::count();
     }
+
+    public function pullVideoInfo(string $bvid): void
+    {
+        try{
+            $videoInfo = app(BilibiliService::class)->getVideoInfo($bvid);
+            $aid       = $videoInfo['aid'];
+            $video     = Video::query()->firstOrNew(['id' => $aid]);
+            //  ['id', 'link', 'title', 'intro', 'cover', 'bvid', 'pubtime', 'attr', 'invalid', 'frozen', 'cache_image', 'page', 'fav_time', 'danmaku_downloaded_at', 'video_downloaded_at'];
+            $video->fill([
+                'link'                  => sprintf('bilibili://video/%s', $aid),
+                'title'                 => $videoInfo['title'],
+                'intro'                 => $videoInfo['desc'],
+                'cover'                 => $videoInfo['pic'],
+                'bvid'                  => $videoInfo['bvid'],
+                'pubtime'               => Carbon::createFromTimestamp($videoInfo['pubdate']),
+                'attr'                  => 0,
+                'invalid'               => $videoInfo['state'] == 0 ? false : true,
+                'frozen'                => $videoInfo['state'] == 0 ? false : true,
+                'cache_image'           => '',
+                'page'                  => count($videoInfo['pages']),
+                'fav_time'              => null,
+            ]);
+            $video->save();
+            event(new VideoUpdated([], $video->toArray()));
+        }catch(\Exception $e){
+            Log::error("PullVideoInfoJob failed: " . $e->getMessage());
+            if($e->getCode() == -404){
+                $video = Video::where('bvid', $bvid)->first();
+                if($video && !$video->invalid){
+                    $oldVideo = $video->toArray();
+                    $video->invalid = true;
+                    $video->frozen = true;
+                    $video->save();
+                    event(new VideoUpdated($oldVideo, $video->toArray()));
+                }
+            }
+            throw $e;
+        }
+    }
 }

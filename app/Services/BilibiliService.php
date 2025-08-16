@@ -6,11 +6,13 @@ use App\Services\SettingsService;
 use Arr;
 use GuzzleHttp\Client;
 use Log;
+use PDO;
 
 class BilibiliService
 {
 
     const API_HOST = 'https://api.bilibili.com';
+    const APP_API_HOST = 'https://app.biliapi.com';
 
     protected $favVideosPageSize;
 
@@ -506,5 +508,95 @@ class BilibiliService
             }
         }
         return $videos;
+    }
+
+    public function getSeasonsList(int $mid, int $seasonId, int $page = 1)
+    {
+        try{
+            $pageSize = 30;
+            $client = $this->getClient();
+            $url = self::API_HOST . "/x/polymer/web-space/seasons_archives_list?mid={$mid}&season_id={$seasonId}&sort_reverse=false&page_size={$pageSize}&page_num={$page}";
+            $response = $client->request('GET', $url);
+            $result = json_decode($response->getBody()->getContents(), true);
+            return $result;
+        }catch(\Exception $e){
+            Log::error("API request failed: " . $e->getMessage());
+            if (strpos($e->getMessage(), '429') !== false || strpos($e->getMessage(), '412') !== false) {
+                Log::warning("Rate limit detected, waiting 60 seconds before retry");
+                $this->bilibiliSuspendService->setSuspend();
+            }
+            throw $e;
+        }
+    }
+
+    public function getUpVideos(int $mid, ?int $offsetAid)
+    {
+        $client = $this->getClient();
+        if($offsetAid === null){
+            $url = self::APP_API_HOST . "/x/v2/space/archive/cursor?vmid={$mid}&order=pubdate&ps=20";
+        }else{
+            $url = self::APP_API_HOST . "/x/v2/space/archive/cursor?vmid={$mid}&order=pubdate&ps=20&aid={$offsetAid}";
+        }
+        try{
+            $response = $client->request('GET', $url);
+            $result = json_decode($response->getBody()->getContents(), true);
+            if($result['code'] !== 0){
+                throw new \Exception("get up videos failed: " . $result['message']);
+            }
+            if(is_array($result['data']['item']) && count($result['data']['item']) > 0){
+                $lastAid = intval(end($result['data']['item'])['param']);
+            }else{
+                $lastAid = null;
+            }
+
+            return [
+                'has_next' => $result['data']['has_next'],
+                'list' => $result['data']['item'] ?? [],
+                'last_aid' => $lastAid,
+            ];
+        }catch(\Exception $e){
+            Log::error("API request failed: " . $e->getMessage());
+            if (strpos($e->getMessage(), '429') !== false || strpos($e->getMessage(), '412') !== false) {
+                Log::warning("Rate limit detected, waiting 60 seconds before retry");
+                $this->bilibiliSuspendService->setSuspend();
+            }
+            throw $e;
+        }
+    }
+
+    public function getVideoInfo(string $bvid): array
+    {
+        try{
+            $client = $this->getClient();
+            $url = self::API_HOST . "/x/web-interface/view?bvid={$bvid}";
+            $response = $client->request('GET', $url);
+            $result = json_decode($response->getBody()->getContents(), true);
+            if($result['code'] !== 0){
+                throw new \Exception("get video info failed: " . $result['message'], $result['code']);
+            }
+            return $result['data'];
+        }catch(\Exception $e){
+            Log::error("API request failed: " . $e->getMessage());
+            if (strpos($e->getMessage(), '429') !== false || strpos($e->getMessage(), '412') !== false) {
+                Log::warning("Rate limit detected, waiting 60 seconds before retry");
+                $this->bilibiliSuspendService->setSuspend();
+            }
+            throw $e;
+        }
+    }
+
+    public function getUperCard(int $mid): array
+    {
+        $client = $this->getClient();
+        $url = self::API_HOST . "/x/web-interface/card?mid={$mid}";
+        $response = $client->request('GET', $url);
+        $result = json_decode($response->getBody()->getContents(), true);
+        if($result['code'] !== 0){
+            throw new \Exception("get uper card failed: " . $result['message'], $result['code']);
+        }
+        if(isset($result['data']) && isset($result['data']['card'])){
+            return $result['data']['card'];
+        }
+        return [];
     }
 }

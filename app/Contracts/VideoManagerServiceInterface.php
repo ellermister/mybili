@@ -33,6 +33,8 @@ interface VideoManagerServiceInterface
 
     public function countVideos(): int;
 
+    public function pullVideoInfo(string $bvid): void;
+
     // ==================== 视频分P相关 ====================
     /**
      * 获取视频所有分P信息
