@@ -6,6 +6,8 @@ import VideoView from './pages/VideoView.vue';
 import ProgressView from './pages/ProgressView.vue';
 import CookieView from './pages/CookieView.vue';
 import SettingsView from './pages/SettingsView.vue';
+import SubscriptionView from './pages/Subscription.vue';
+import SubscriptionVideoView from './pages/SubscriptionVideo.vue';
 
 const routes = [
   { path: '/', component: Home },
@@ -15,6 +17,8 @@ const routes = [
   { path: '/progress', component: ProgressView, name: 'progress' },
   { path: '/cookie', component: CookieView },
   { path: '/settings', component: SettingsView },
+  { path: '/subscription', component: SubscriptionView, name: 'subscription' },
+  { path: '/subscription/:id', component: SubscriptionVideoView, name: 'subscription-id' },
 ];
 
 const router = createRouter({

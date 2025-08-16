@@ -126,6 +126,7 @@ const isMobileLanguageDropdownOpen = ref(false);
 const navLinks = [
   { key: 'home', path: '/' },
   { key: 'progress', path: '/progress' },
+  { key: 'subscription', path: '/subscription' },
   { key: 'cookie', path: '/cookie' },
   { key: 'settings', path: '/settings' },
   { key: 'about', path: '/about' }

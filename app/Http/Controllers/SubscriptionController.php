@@ -42,4 +42,14 @@ class SubscriptionController extends Controller
         $this->subscriptionService->deleteSubscription($subscription);
         return response()->json(['message' => 'Subscription deleted successfully']);
     }
+
+    public function show(int $id)
+    {
+        $subscription = Subscription::find($id);
+        if (!$subscription) {
+            return response()->json(['message' => 'Subscription not found'], 404);
+        }
+        $subscription->load('videos');
+        return response()->json($subscription);
+    }
 }

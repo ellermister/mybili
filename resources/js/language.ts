@@ -59,6 +59,7 @@ const messages = {
         navigation: {
             home: '首页',
             progress: '进度',
+            subscription: '订阅',
             cookie: '会话',
             settings: '设置',
             about: '关于',
@@ -289,6 +290,52 @@ const messages = {
             goHome: '返回首页',
             goBack: '返回上页',
             retry: '重试'
+        },
+
+        // 订阅管理页面
+        subscription: {
+            title: '订阅',
+            createSubscription: '创建订阅',
+            viewSwitch: '视图',
+            unifiedView: '统一',
+            categorizedView: '分类',
+            mixedView: '混合',
+            unifiedCardStyle: '统一卡片样式',
+            categorizedDisplay: '分类分区展示',
+            mixedViewTitle: '混合视图',
+            allSubscriptionsOverview: '所有订阅概览',
+            seriesSubscriptions: '系列订阅',
+            upSubscriptions: 'UP主订阅',
+            subscriptionType: '订阅类型',
+            subscriptionLink: '订阅链接',
+            enterSubscriptionLink: '请输入订阅链接',
+            upMaster: 'UP主',
+            series: '系列',
+            status: '状态',
+            enabled: '启用',
+            disabled: '关闭',
+            videoCount: '个视频',
+            upMasterId: 'UP主ID',
+            lastCheck: '最后检查',
+            lastUpdate: '最后更新',
+            description: '描述',
+            actions: '操作',
+            delete: '删除',
+            cannotDelete: '不可删除',
+            confirmDelete: '确定要删除这个订阅吗？',
+            createNewSubscription: '创建新订阅',
+            subscriptionCreated: '订阅创建成功',
+            subscriptionDeleted: '订阅删除成功',
+            deleteSubscriptionFailed: '删除订阅失败',
+            statusToggleSuccess: '状态切换成功',
+            statusToggleFailed: '状态切换失败',
+            createSubscriptionFailed: '创建订阅失败',
+            // 视图相关
+            view: {
+                unified: '统一视图',
+                categorized: '分类视图',
+                mixed: '混合视图'
+            },
         }
     },
 
@@ -350,6 +397,7 @@ const messages = {
         navigation: {
             home: 'Home',
             progress: 'Progress',
+            subscription: 'Subscription',
             cookie: 'Cookie',
             settings: 'Settings',
             about: 'About',
@@ -580,6 +628,52 @@ const messages = {
             goHome: 'Go Home',
             goBack: 'Go Back',
             retry: 'Retry'
+        },
+
+        // 订阅管理页面
+        subscription: {
+            title: 'Subscription',
+            createSubscription: 'Create Subscription',
+            viewSwitch: 'View',
+            unifiedView: 'Unified',
+            categorizedView: 'Categorized',
+            mixedView: 'Mixed',
+            unifiedCardStyle: 'Unified Card Style',
+            categorizedDisplay: 'Categorized Partition Display',
+            mixedViewTitle: 'Mixed View',
+            allSubscriptionsOverview: 'All Subscriptions Overview',
+            seriesSubscriptions: 'Series Subscriptions',
+            upSubscriptions: 'UP Master Subscriptions',
+            subscriptionType: 'Subscription Type',
+            subscriptionLink: 'Subscription Link',
+            enterSubscriptionLink: 'Please enter the subscription link',
+            upMaster: 'UP Master',
+            series: 'Series',
+            status: 'Status',
+            enabled: 'Enabled',
+            disabled: 'Disabled',
+            videoCount: 'videos',
+            upMasterId: 'UP Master ID',
+            lastCheck: 'Last Check',
+            lastUpdate: 'Last Update',
+            description: 'Description',
+            actions: 'Actions',
+            delete: 'Delete',
+            cannotDelete: 'Cannot Delete',
+            confirmDelete: 'Are you sure you want to delete this subscription?',
+            createNewSubscription: 'Create New Subscription',
+            subscriptionCreated: 'Subscription created successfully',
+            subscriptionDeleted: 'Subscription deleted successfully',
+            deleteSubscriptionFailed: 'Delete subscription failed',
+            statusToggleSuccess: 'Status toggled successfully',
+            statusToggleFailed: 'Status toggled failed',
+            createSubscriptionFailed: 'Create subscription failed',
+            // View related
+            view: {
+                unified: 'Unified View',
+                categorized: 'Categorized View',
+                mixed: 'Mixed View'
+            },
         }
     }
 };

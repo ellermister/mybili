@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\SubscriptionVideo;
+use Storage;
 
 class Subscription extends Model
 {
@@ -15,8 +16,21 @@ class Subscription extends Model
     const STATUS_ACTIVE = 1;
     const STATUS_DISABLED = 0;
 
+    protected $casts = [
+        'last_check_at' => 'datetime:Y-m-d H:i',
+    ];
+
+    protected $appends = [
+        'cache_image_url',
+    ];
+
     public function videos()
     {
-        return $this->hasMany(SubscriptionVideo::class, 'subscription_id', 'id');
+        return $this->belongsToMany(Video::class, 'subscription_videos', 'subscription_id', 'video_id');
+    }
+
+    public function getCacheImageUrlAttribute()
+    {
+        return $this->cache_image ? Storage::url($this->cache_image) : null;
     }
 }

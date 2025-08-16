@@ -3,6 +3,7 @@
 use App\Contracts\VideoManagerServiceInterface;
 use App\Enums\SettingKey;
 use App\Services\SettingsService;
+use App\Services\SubscriptionService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
@@ -61,5 +62,13 @@ Schedule::call(function () {
     }
 })
 ->name('make-human-readable-names')
+->withoutOverlapping()
+->everyTenMinutes();
+
+
+Schedule::call(function () {
+    app(SubscriptionService::class)->updateSubscription();
+})
+->name('update-subscription')
 ->withoutOverlapping()
 ->everyTenMinutes();

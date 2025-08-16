@@ -186,9 +186,10 @@ class SubscriptionService
         $subscription->save();
         $oldSubscription = $subscription->toArray();
 
-        $uperCard            = $this->bilibiliService->getUperCard($mid);
-        $subscription->name  = $uperCard['name'] ?? '';
-        $subscription->cover = $uperCard['face'] ?? '';
+        $uperCard                  = $this->bilibiliService->getUperCard($mid);
+        $subscription->name        = $uperCard['name'] ?? '';
+        $subscription->cover       = $uperCard['face'] ?? '';
+        $subscription->description = $uperCard['sign'] ?? '';
         $subscription->save();
 
         $offsetAid = null;
