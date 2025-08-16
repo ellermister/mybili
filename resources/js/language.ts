@@ -103,6 +103,8 @@ const messages = {
             videoParts: '视频分片',
             danmaku: '弹幕数量',
             databaseSize: '数据库大小',
+            mediaVideosUsage: '媒体视频使用情况',
+            mediaImagesUsage: '媒体图片使用情况',
             units: {
                 count: '个',
                 danmaku: '条',
@@ -392,6 +394,8 @@ const messages = {
             videoParts: 'Video Parts',
             danmaku: 'Danmaku',
             databaseSize: 'Database Size',
+            mediaVideosUsage: 'Media Videos Usage',
+            mediaImagesUsage: 'Media Images Usage',
             units: {
                 count: '',
                 danmaku: '',

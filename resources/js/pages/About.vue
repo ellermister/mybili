@@ -70,6 +70,8 @@
               <p>{{ t('about.videoParts') }}：{{ systemInfo.database_usage.video_parts }} {{ t('about.units.count') }}</p>
               <p>{{ t('about.danmaku') }}：{{ systemInfo.database_usage.danmaku.toLocaleString() }} {{ t('about.units.danmaku') }}</p>
               <p>{{ t('about.databaseSize') }}：{{ (systemInfo.database_usage.db_size / 1024).toFixed(2) }} {{ t('about.units.mb') }}</p>
+              <p>{{ t('about.mediaVideosUsage') }}：{{ systemInfo.media_usage.videos_size }}</p>
+              <p>{{ t('about.mediaImagesUsage') }}：{{ systemInfo.media_usage.images_size }}</p>
             </div>
           </div>
         </div>
@@ -93,6 +95,11 @@ interface DatabaseUsage {
   db_size: number
 }
 
+interface MediaUsage {
+  videos_size: string
+  images_size: string
+}
+
 interface SystemInfo {
   app_version: string
   php_version: string
@@ -101,6 +108,7 @@ interface SystemInfo {
   timezone: string
   time_now: string
   database_usage: DatabaseUsage
+  media_usage: MediaUsage
 }
 
 const loading = ref(true)
@@ -117,6 +125,10 @@ const systemInfo = ref<SystemInfo>({
     video_parts: 0,
     danmaku: 0,
     db_size: 0
+  },
+  media_usage:{
+    videos_size: '',
+    images_size: ''
   }
 })
 
