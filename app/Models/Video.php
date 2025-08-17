@@ -37,4 +37,9 @@ class Video extends Model
     {
         return $this->belongsToMany(FavoriteList::class, 'favorite_list_videos', 'video_id', 'favorite_list_id');
     }
+
+    public function subscriptions()
+    {
+        return $this->belongsToMany(Subscription::class, 'subscription_videos', 'video_id', 'subscription_id');
+    }
 }

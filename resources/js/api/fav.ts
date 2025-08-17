@@ -1,3 +1,5 @@
+import type { Subscription } from "./subscription";
+
 export interface Favorite {
     id: number;
     title: string;
@@ -40,6 +42,7 @@ export interface Video {
     favorite: Favorite[]|null;
     video_parts: VideoPartType[]|null;
     danmaku_count: number
+    subscriptions: Subscription[]|null;
 }
 
 

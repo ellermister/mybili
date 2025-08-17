@@ -21,11 +21,15 @@
                 </div>
 
                 <!-- Parts Sidebar -->
-                <div class="w-full lg:w-72 lg:shrink-0" v-if="videoInfo && videoInfo.video_parts && videoInfo.video_parts.length > 1">
-                    <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-3 flex flex-col" :style="{ height: sidebarHeight }">
+                <div class="w-full lg:w-72 lg:shrink-0"
+                    v-if="videoInfo && videoInfo.video_parts && videoInfo.video_parts.length > 1">
+                    <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-3 flex flex-col"
+                        :style="{ height: sidebarHeight }">
                         <h3 class="text-xl font-semibold mb-3 text-gray-800 flex items-center flex-shrink-0">
                             <span class="w-2 h-2 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full mr-2"></span>
-                            {{ t('video.videoParts') }}&nbsp;<span class="text-gray-500 text-sm font-normal">({{ videoInfo.video_parts.findIndex(part => part.id === currentPart?.id) + 1 }}/{{ videoInfo.video_parts.length }})</span>
+                            {{ t('video.videoParts') }}&nbsp;<span class="text-gray-500 text-sm font-normal">({{
+                                videoInfo.video_parts.findIndex(part => part.id === currentPart?.id) + 1 }}/{{
+                                videoInfo.video_parts.length }})</span>
                         </h3>
                         <div class="space-y-1 overflow-y-auto flex-1 min-h-0 pr-1 custom-scrollbar">
                             <button v-for="part in videoInfo?.video_parts" :key="part.id" @click="playPart(part.id)"
@@ -83,7 +87,7 @@
                                 <span class="text-sm text-gray-600">{{ t('video.favoriteTime') }}</span>
                             </div>
                             <div class="text-base font-semibold text-gray-800 mt-1">
-                                {{ formatTimestamp(videoInfo.fav_time, "yyyy-mm-dd hh:ii") }}
+                                {{ videoInfo.fav_time ? formatTimestamp(videoInfo.fav_time, "yyyy-mm-dd hh:ii") : '-' }}
                             </div>
                         </div>
 
@@ -140,14 +144,29 @@ const playerReady = ref(false)
 const sidebarHeight = ref('auto')
 
 const route = useRoute()
-const id = route.params.id
+
+let id = route.params.id
+
+if (route.name == "subscription-video-id") {
+    id = route.params.video_id
+}
 
 const breadcrumbItems = computed(() => {
-    return [
-        { text: t('navigation.home'), to: '/' },
-        { text: (videoInfo.value?.favorite?.[0]?.title ?? t('video.favorite')), to: '/fav/' + (videoInfo.value?.favorite?.[0]?.id ?? '') },
-        { text: videoInfo.value?.title ?? t('video.loading') }
-    ]
+    if (route.name == "subscription-video-id") {
+        let subscriptionId = route.params.id
+        console.log( videoInfo.value?.subscriptions?.[0]?.name ?? t('video.loading'))
+        return [
+            { text: t('navigation.home'), to: '/' },
+            { text: videoInfo.value?.subscriptions?.[0]?.name ?? t('video.loading'), to: '/subscription/' + subscriptionId },
+            { text: videoInfo.value?.title ?? t('video.loading') }
+        ]
+    } else {
+        return [
+            { text: t('navigation.home'), to: '/' },
+            { text: (videoInfo.value?.favorite?.[0]?.title ?? t('video.favorite')), to: '/fav/' + (videoInfo.value?.favorite?.[0]?.id ?? '') },
+            { text: videoInfo.value?.title ?? t('video.loading') }
+        ]
+    }
 })
 
 const bilibiliUrl = (bvid: string) => {
@@ -222,11 +241,11 @@ onMounted(() => {
                 const firstVideo = jsonData.video_parts[0]
                 playFirstVideo(firstVideo)
             }
-            
+
             // 等待DOM更新后设置高度监听
             nextTick(() => {
                 updateSidebarHeight()
-                
+
                 // 使用ResizeObserver监听播放器容器大小变化
                 if (playerContainer.value && window.ResizeObserver) {
                     resizeObserver = new ResizeObserver(() => {

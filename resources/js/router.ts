@@ -19,6 +19,7 @@ const routes = [
   { path: '/settings', component: SettingsView },
   { path: '/subscription', component: SubscriptionView, name: 'subscription' },
   { path: '/subscription/:id', component: SubscriptionVideoView, name: 'subscription-id' },
+  { path: '/subscription/:id/video/:video_id', component: VideoView, name: 'subscription-video-id' },
 ];
 
 const router = createRouter({
