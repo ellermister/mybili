@@ -41,7 +41,7 @@ class SubscriptionService
 
     public function getSubscriptions()
     {
-        return Subscription::where('status', Subscription::STATUS_ACTIVE)->get();
+        return Subscription::query()->get();
     }
 
     public function disableSubscription(Subscription $subscription)
