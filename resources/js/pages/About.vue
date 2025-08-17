@@ -69,7 +69,7 @@
               <p>{{ t('about.videos') }}：{{ systemInfo.database_usage.videos }} {{ t('about.units.count') }}</p>
               <p>{{ t('about.videoParts') }}：{{ systemInfo.database_usage.video_parts }} {{ t('about.units.count') }}</p>
               <p>{{ t('about.danmaku') }}：{{ systemInfo.database_usage.danmaku.toLocaleString() }} {{ t('about.units.danmaku') }}</p>
-              <p>{{ t('about.databaseSize') }}：{{ (systemInfo.database_usage.db_size / 1024).toFixed(2) }} {{ t('about.units.mb') }}</p>
+              <p>{{ t('about.databaseSize') }}：{{ (systemInfo.database_usage.db_size / 1024 / 1024).toFixed(2) }} {{ t('about.units.mb') }}</p>
               <p>{{ t('about.mediaVideosUsage') }}：{{ systemInfo.media_usage.videos_size }}</p>
               <p>{{ t('about.mediaImagesUsage') }}：{{ systemInfo.media_usage.images_size }}</p>
             </div>
