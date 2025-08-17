@@ -25,7 +25,7 @@ class SubscriptionImageDownload
 
         $oldCover = $oldSubscription['cover'] ?? '';
         $newCover = $newSubscription['cover'] ?? '';
-        if ($oldCover != $newCover ) {
+        if ($oldCover != $newCover  || ($newCover != '' && $newSubscription['cache_image'] == '')) {
             Log::info('Download subscription image', ['cover' => $newSubscription['cover']]);
             if (empty($newCover)) {
                 Log::info('Cover is empty, skip download');
