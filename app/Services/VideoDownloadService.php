@@ -224,72 +224,44 @@ class VideoDownloadService implements VideoDownloadServiceInterface
         $cookiePath = storage_path('app/cookie.txt');
         file_put_contents($cookiePath, $this->settingsService->get(SettingKey::COOKIES_CONTENT));
 
-        // 获取视频信息
-        if(config('services.bilibili.id_type') == 'bv'){
-            $url     = sprintf('https://www.bilibili.com/video/%s/', $video->bvid);
-        }else{
-            $url     = sprintf('https://www.bilibili.com/video/av%s/', $video->id);
-        }
-        $command = sprintf('yt-dlp_linux -j %s', escapeshellarg($url));
-        exec($command, $output, $result);
+        $url = config('services.bilibili.id_type') == 'bv' ? sprintf('https://www.bilibili.com/video/%s/', $video->bvid) : sprintf('https://www.bilibili.com/video/av%s/', $video->id);
 
-        if ($result !== 0) {
-            Log::error('获取视频信息失败', ['video_id' => $video->id, 'output' => $output]);
-
-            $festivalJumpUrl = $this->bilibiliService->getVideoFestivalJumpUrl($video->bvid);
-            if($festivalJumpUrl){
-                $url = $festivalJumpUrl;
-                $command = sprintf('yt-dlp_linux -j %s', escapeshellarg($url));
-                exec($command, $output, $result);
-                if($result !== 0) {
-                    Log::error('获取视频信息失败', ['video_id' => $video->id, 'output' => $output,'url' => $festivalJumpUrl]);
-                    throw new \Exception("获取视频信息失败");
-                }
-                Log::info('获取视频信息成功', ['video_id' => $video->id, 'output' => $output,'url' => $festivalJumpUrl, 'festival_jump_url' => true]);
-            }else{
-                throw new \Exception("获取视频信息失败");
-            }
-
+        // 获取音乐节特辑类的链接
+        $festivalJumpUrl = $this->bilibiliService->getVideoFestivalJumpUrl($video->id);
+        if($festivalJumpUrl){
+            $url = $festivalJumpUrl;
         }
 
-        // $totalParts = count($output);
-        // $output 多个分集的视频就会有多个数组，默认单集只有一个
+        $filePath = $this->getVideoPartValidFilePath($videoPart);
+        if ($filePath) {
+            $this->updateVideoPartDownloaded($videoPart, $filePath);
+            Log::info('video file already exists', ['video_id' => $video->id, 'part' => $videoPart->page, 'filePath' => $filePath]);
+            return;
+        } else {
+            // 如果不存在就去下载
+            $this->createVideoDirectory();
+            $binPath = base_path('download-video.sh');
 
-        foreach ($output as $key => $item) {
-            $partNum = $key + 1;
-            if (intval($partNum) === intval($videoPart->page)) {
-                $filePath = $this->getVideoPartValidFilePath($videoPart);
-                if ($filePath) {
-                    $this->updateVideoPartDownloaded($videoPart, $filePath);
-                    Log::info('video file already exists', ['video_id' => $video->id, 'part' => $partNum, 'filePath' => $filePath]);
-                    continue;
-                } else {
-                    // 如果不存在就去下载
-                    $this->createVideoDirectory();
-                    $binPath = base_path('download-video.sh');
+            $savePath = $this->buildVideoPartFilePath($videoPart);
+            Log::info('download video', [
+                'video_id' => $video->id,
+                'part'     => $videoPart->page,
+                'url'      => escapeshellarg($url),
+                'savePath' => escapeshellarg($savePath),
+                'binPath'  => escapeshellarg($binPath),
+            ]);
 
-                    $savePath = $this->buildVideoPartFilePath($videoPart);
-                    Log::info('download video', [
-                        'video_id' => $video->id,
-                        'part'     => $partNum,
-                        'url'      => escapeshellarg($url),
-                        'savePath' => escapeshellarg($savePath),
-                        'binPath'  => escapeshellarg($binPath),
-                    ]);
-
-                    $command = sprintf('%s %s %s %s', $binPath, escapeshellarg($url), escapeshellarg($savePath), escapeshellarg($partNum));
-                    exec($command, $output, $result);
-                    if ($result != 0) {
-                        $msg = implode('', $output);
-                        throw new \Exception("下载异常:\n" . $msg);
-                    }
-                    Log::info('download video output', ['video_id' => $video->id, 'part' => $partNum, 'output' => $output]);
-                    Log::info('download video success', ['video_id' => $video->id, 'part' => $partNum, 'savePath' => $savePath]);
-                    $this->updateVideoPartDownloaded($videoPart, $savePath);
-
-                    event(new VideoPartDownloaded($videoPart));
-                }
+            $command = sprintf('%s %s %s %s', $binPath, escapeshellarg($url), escapeshellarg($savePath), escapeshellarg($videoPart->page));
+            exec($command, $output, $result);
+            if ($result != 0) {
+                $msg = implode('', $output);
+                throw new \Exception("下载异常:\n" . $msg);
             }
+            Log::info('download video output', ['video_id' => $video->id, 'part' => $videoPart->page, 'output' => $output]);
+            Log::info('download video success', ['video_id' => $video->id, 'part' => $videoPart->page, 'savePath' => $savePath]);
+            $this->updateVideoPartDownloaded($videoPart, $savePath);
+
+            event(new VideoPartDownloaded($videoPart));
         }
     }
 }

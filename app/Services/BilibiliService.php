@@ -573,11 +573,15 @@ class BilibiliService
         }
     }
 
-    public function getVideoInfo(string $bvid): array
+    public function getVideoInfo(string $strId): array
     {
         try{
             $client = $this->getClient();
-            $url = self::API_HOST . "/x/web-interface/view?bvid={$bvid}";
+            if(str_starts_with(strtolower($strId), 'bv')){
+                $url = self::API_HOST . "/x/web-interface/view?bvid={$strId}";
+            }else{
+                $url = self::API_HOST . "/x/web-interface/view?aid={$strId}";
+            }
             $response = $client->request('GET', $url);
             $result = json_decode($response->getBody()->getContents(), true);
             if($result['code'] !== 0){
@@ -609,9 +613,9 @@ class BilibiliService
         return [];
     }
 
-    public function getVideoFestivalJumpUrl(string $bvid): ?string
+    public function getVideoFestivalJumpUrl(string $strId): ?string
     {
-        $data = $this->getVideoInfo($bvid); 
+        $data = $this->getVideoInfo($strId); 
         if(isset($data['festival_jump_url'])){
             return $data['festival_jump_url'];
         }
