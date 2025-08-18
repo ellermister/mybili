@@ -39,4 +39,9 @@ class DownloadVideoJob implements ShouldQueue
         $videoDownloadService = app(VideoDownloadServiceInterface::class);
         $videoDownloadService->downloadVideoPartFileQueue($this->videoPart);
     }
+
+    public function displayName(): string
+    {
+        return sprintf('DownloadVideoJob %s-%s %s', $this->videoPart->video_id, $this->videoPart->page, $this->videoPart->part);
+    }
 }

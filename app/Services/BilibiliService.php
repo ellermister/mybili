@@ -402,7 +402,7 @@ class BilibiliService
                 $bvid = $strId;
                 $parsedParts = $this->getVideoPartFromWebpage($bvid);
             }else{
-                $parsedParts = $this->getVideoPartFromApi('av'.$strId);
+                $parsedParts = $this->getVideoPartFromWebpage('av'.$strId);
             }
         } catch (\Exception $e) {
             Log::error("通过网页获取视频分P信息失败: " . $e->getMessage());
