@@ -16,7 +16,7 @@ use Str;
 class VideoDownloadService implements VideoDownloadServiceInterface
 {
 
-    public function __construct(public DownloadFilterService $downloadFilterService, public SettingsService $settingsService)
+    public function __construct(public DownloadFilterService $downloadFilterService, public SettingsService $settingsService, public BilibiliService $bilibiliService)
     {
     }
 
@@ -225,14 +225,18 @@ class VideoDownloadService implements VideoDownloadServiceInterface
         file_put_contents($cookiePath, $this->settingsService->get(SettingKey::COOKIES_CONTENT));
 
         // 获取视频信息
-        $url     = sprintf('https://www.bilibili.com/video/%s/', $video->bvid);
+        if(config('services.bilibili.id_type') == 'bv'){
+            $url     = sprintf('https://www.bilibili.com/video/%s/', $video->bvid);
+        }else{
+            $url     = sprintf('https://www.bilibili.com/video/av%s/', $video->id);
+        }
         $command = sprintf('yt-dlp_linux -j %s', escapeshellarg($url));
         exec($command, $output, $result);
 
         if ($result !== 0) {
             Log::error('获取视频信息失败', ['video_id' => $video->id, 'output' => $output]);
 
-            $festivalJumpUrl = $this->getVideoFestivalJumpUrl($video->bvid);
+            $festivalJumpUrl = $this->bilibiliService->getVideoFestivalJumpUrl($video->bvid);
             if($festivalJumpUrl){
                 $url = $festivalJumpUrl;
                 $command = sprintf('yt-dlp_linux -j %s', escapeshellarg($url));
@@ -287,19 +291,5 @@ class VideoDownloadService implements VideoDownloadServiceInterface
                 }
             }
         }
-    }
-
-    private function getVideoFestivalJumpUrl(string $bvid): ?string
-    {
-        $url = 'https://api.bilibili.com/x/web-interface/view?bvid='.$bvid;
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        $result = curl_exec($ch);
-        $data = json_decode($result, true);
-        if(isset($data['data']['festival_jump_url'])){
-            return $data['data']['festival_jump_url'];
-        }
-        return null;
     }
 }

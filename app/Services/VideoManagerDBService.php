@@ -277,7 +277,11 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         // }
 
         try {
-            $videoParts = $this->bilibiliService->getVideoParts($video->bvid);
+            if(config('services.bilibili.id_type') == 'bv'){
+                $videoParts = $this->bilibiliService->getVideoParts($video->bvid);
+            }else{
+                $videoParts = $this->bilibiliService->getVideoParts($video->id);
+            }
         } catch (\Exception $e) {
             Log::error('Get video parts failed', ['id' => $video->id, 'bvid' => $video->bvid, 'title' => $video->title]);
             return;

@@ -389,20 +389,29 @@ class BilibiliService
         return $result['data']['View']['pages'];
     }
 
-    public function getVideoParts(string $bvid)
+    /**
+     *  获取视频分P信息
+     * 兼容av,bv
+     */
+    public function getVideoParts(string $strId)
     {
         $parsedParts = null;
         try {
             // api 接口太敏感，优先从网页获取
-            $parsedParts = $this->getVideoPartFromWebpage($bvid);
+            if(str_starts_with(strtolower($strId), 'bv')){
+                $bvid = $strId;
+                $parsedParts = $this->getVideoPartFromWebpage($bvid);
+            }else{
+                $parsedParts = $this->getVideoPartFromApi('av'.$strId);
+            }
         } catch (\Exception $e) {
             Log::error("通过网页获取视频分P信息失败: " . $e->getMessage());
-            try {
-                $parsedParts = $this->getVideoPartFromApi($bvid);
-            } catch (\Exception $e) {
-                Log::error("通过API获取视频分P信息失败: " . $e->getMessage());
-                throw new \Exception("获取视频分P信息失败");
-            }
+            // try {
+            //     $parsedParts = $this->getVideoPartFromApi($bvid);
+            // } catch (\Exception $e) {
+            //     Log::error("通过API获取视频分P信息失败: " . $e->getMessage());
+            // }
+            throw new \Exception("获取视频分P信息失败");
         }
 
         return array_map(function ($item) {
@@ -598,5 +607,14 @@ class BilibiliService
             return $result['data']['card'];
         }
         return [];
+    }
+
+    public function getVideoFestivalJumpUrl(string $bvid): ?string
+    {
+        $data = $this->getVideoInfo($bvid); 
+        if(isset($data['festival_jump_url'])){
+            return $data['festival_jump_url'];
+        }
+        return null;
     }
 }
