@@ -179,7 +179,7 @@ class VideoDownloadService implements VideoDownloadServiceInterface
                     }
                     redis()->expire(sprintf('video_downloading:%s', $videoPart->cid), 3600 * 8);
 
-                    dispatch(new DownloadVideoJob($videoPart));
+                    DownloadVideoJob::dispatchWithRateLimit($videoPart);
                 } else {
                     Log::info('Video part file not exists, download video part file disabled', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
                 }

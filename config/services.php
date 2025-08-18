@@ -39,6 +39,8 @@ return [
         // 每页视频数量，最大40
         'fav_videos_page_size' => env('BILIBILI_FAV_VIDEOS_PAGE_SIZE', 40),
         'id_type'              => env('BILIBILI_ID_TYPE', 'bv'),
+
+        'limit_download_video_job' => env('BILIBILI_LIMIT_DOWNLOAD_VIDEO_JOB', 20),
     ],
 
 ];

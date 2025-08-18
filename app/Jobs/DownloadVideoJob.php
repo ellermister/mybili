@@ -8,7 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class DownloadVideoJob implements ShouldQueue
+class DownloadVideoJob extends BaseScheduledRateLimitedJob
 {
     use Dispatchable, InteractsWithQueue, SerializesModels;
 
@@ -31,10 +31,34 @@ class DownloadVideoJob implements ShouldQueue
      */
     public $backoff = [1800, 3600, 7200];
 
+     /**
+     * 获取限流键名
+     */
+    protected function getRateLimitKey(): string
+    {
+        return 'download_video_job';
+    }
+
+    /**
+     * 获取最大处理数量 - 每分钟最多5个视频下载
+     */
+    protected function getMaxProcessCount(): int
+    {
+        return config('services.bilibili.limit_download_video_job', 20);
+    }
+
+    /**
+     * 获取时间窗口 - 1分钟
+     */
+    protected function getTimeWindow(): int
+    {
+        return 60;
+    }
+
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function process(): void
     {
         $videoDownloadService = app(VideoDownloadServiceInterface::class);
         $videoDownloadService->downloadVideoPartFileQueue($this->videoPart);
