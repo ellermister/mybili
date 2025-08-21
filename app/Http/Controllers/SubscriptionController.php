@@ -19,12 +19,18 @@ class SubscriptionController extends Controller
 
     public function store(Request $request)
     {
+        if (config('services.bilibili.setting_only')) {
+            abort(403);
+        }
         $this->subscriptionService->addSubscription($request->type, $request->url);
         return response()->json(['message' => 'Subscription added successfully']);
     }
 
     public function update(Request $request, int $id)
     {
+        if (config('services.bilibili.setting_only')) {
+            abort(403);
+        }
         $subscription = Subscription::find($id);
         if (!$subscription) {
             return response()->json(['message' => 'Subscription not found'], 404);
@@ -35,6 +41,9 @@ class SubscriptionController extends Controller
 
     public function destroy(int $id)
     {
+        if (config('services.bilibili.setting_only')) {
+            abort(403);
+        }
         $subscription = Subscription::find($id);
         if (!$subscription) {
             return response()->json(['message' => 'Subscription not found'], 404);

@@ -18,32 +18,33 @@ return [
         'token' => env('POSTMARK_TOKEN'),
     ],
 
-    'ses' => [
-        'key' => env('AWS_ACCESS_KEY_ID'),
+    'ses'      => [
+        'key'    => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'resend' => [
+    'resend'   => [
         'key' => env('RESEND_KEY'),
     ],
 
-    'slack' => [
+    'slack'    => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
-            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
+            'channel'              => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
 
     'bilibili' => [
         // 每页视频数量，最大40
-        'fav_videos_page_size' => env('BILIBILI_FAV_VIDEOS_PAGE_SIZE', 40),
-        'id_type'              => env('BILIBILI_ID_TYPE', 'bv'),
+        'fav_videos_page_size'     => env('BILIBILI_FAV_VIDEOS_PAGE_SIZE', 40),
+        'id_type'                  => env('BILIBILI_ID_TYPE', 'bv'),
 
         'limit_download_video_job' => env('BILIBILI_LIMIT_DOWNLOAD_VIDEO_JOB', 20),
 
+        'ignore_cookies'           => env('BILIBILI_IGNORE_COOKIES', false),
 
-        'ignore_cookies' => env('BILIBILI_IGNORE_COOKIES', false),
+        'setting_only'             => env('BILIBILI_SETTING_ONLY', false),
     ],
 
 ];

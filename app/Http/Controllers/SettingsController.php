@@ -53,6 +53,9 @@ class SettingsController extends Controller
 
     public function saveSettings(Request $request)
     {
+        if (config('services.bilibili.setting_only')) {
+            abort(403);
+        }
         $data = $request->validate([
             SettingKey::MULTI_PARTITION_DOWNLOAD_ENABLED->value => 'required|string|in:on,off',
             SettingKey::DANMAKU_DOWNLOAD_ENABLED->value         => 'required|string|in:on,off',
