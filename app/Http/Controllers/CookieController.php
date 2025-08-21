@@ -16,6 +16,10 @@ class CookieController extends Controller
 
     public function uploadCookieFile(Request $request)
     {
+        if (config('services.bilibili.setting_only')) {
+            abort(403);
+        }
+
         $file = $request->file('file');
         if ($file) {
             if ($file->getMimeType() == 'text/plain') {
