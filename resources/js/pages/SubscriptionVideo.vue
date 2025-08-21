@@ -21,7 +21,6 @@
             <span class="mt-4 text-center  h-12 line-clamp-2" :title="item.title">{{ item.title }}</span>
             <div class="mt-2 flex justify-between text-xs text-gray-400 px-1">
                 <span>{{ t('favorites.published') }}: {{ formatTimestamp(item.pubtime, "yyyy.mm.dd") }}</span>
-                <span>{{ t('favorites.favorited') }}: {{ formatTimestamp(item.fav_time, "yyyy.mm.dd") }}</span>
             </div>
             <span v-if="item.page > 1"
                 class="text-sm text-white bg-gray-600 rounded-lg w-10 text-center  absolute top-2 right-2">{{

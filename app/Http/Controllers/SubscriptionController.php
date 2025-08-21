@@ -49,7 +49,9 @@ class SubscriptionController extends Controller
         if (!$subscription) {
             return response()->json(['message' => 'Subscription not found'], 404);
         }
-        $subscription->load('videos');
+        $subscription->load(['videos' => function($query) {
+            $query->orderBy('pubtime', 'desc');
+        }]);
         return response()->json($subscription);
     }
 }

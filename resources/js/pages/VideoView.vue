@@ -3,7 +3,7 @@
         <Breadcrumbs :items="breadcrumbItems">
             <template #actions>
                 <div class="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full hidden md:block">
-                    {{ $route.params.id }}
+                    {{ videoId }}
                 </div>
             </template>
         </Breadcrumbs>
@@ -145,10 +145,10 @@ const sidebarHeight = ref('auto')
 
 const route = useRoute()
 
-let id = route.params.id
+const videoId = ref(route.params.id)
 
 if (route.name == "subscription-video-id") {
-    id = route.params.video_id
+    videoId.value = route.params.video_id
 }
 
 const breadcrumbItems = computed(() => {
@@ -230,7 +230,7 @@ const updateSidebarHeight = () => {
 let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
-    fetch(`/api/video/${id}`).then(async (rsp) => {
+    fetch(`/api/video/${videoId.value}`).then(async (rsp) => {
         if (!rsp.ok) {
             notfound.value = true
         } else {
