@@ -5,9 +5,17 @@ use App\Contracts\DownloadImageServiceInterface;
 use App\Events\SubscriptionUpdated;
 use App\Models\Subscription;
 use Log;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class SubscriptionImageDownload
+class SubscriptionImageDownload implements ShouldQueue
 {
+
+    public $queue = 'fast';
+    
+    public $tries = 3;
+
+    public $backoff = 30;
+
     /**
      * Create the event listener.
      */
