@@ -16,8 +16,12 @@ use Str;
 class VideoDownloadService implements VideoDownloadServiceInterface
 {
 
-    public function __construct(public DownloadFilterService $downloadFilterService, public SettingsService $settingsService, public BilibiliService $bilibiliService)
-    {
+    public function __construct(
+        public DownloadFilterService $downloadFilterService,
+        public SettingsService $settingsService,
+        public BilibiliService $bilibiliService,
+        public BilibiliSuspendService $bilibiliSuspendService
+    ) {
     }
 
     /**
@@ -153,7 +157,7 @@ class VideoDownloadService implements VideoDownloadServiceInterface
         if ($video) {
             $isDownloaded = false;
             if ($videoPart->video_download_path) {
-                $savePath     = Storage::disk('public')->path(Str::after($videoPart->video_download_path, '/storage/'));
+                $savePath = Storage::disk('public')->path(Str::after($videoPart->video_download_path, '/storage/'));
                 if (is_file($savePath)) {
                     $isDownloaded = true;
                 }
@@ -220,15 +224,11 @@ class VideoDownloadService implements VideoDownloadServiceInterface
             return;
         }
 
-        // 写入cookie到文件
-        $cookiePath = storage_path('app/cookie.txt');
-        file_put_contents($cookiePath, $this->settingsService->get(SettingKey::COOKIES_CONTENT));
-
         $url = config('services.bilibili.id_type') == 'bv' ? sprintf('https://www.bilibili.com/video/%s/', $video->bvid) : sprintf('https://www.bilibili.com/video/av%s/', $video->id);
 
         // 获取音乐节特辑类的链接
         $festivalJumpUrl = $this->bilibiliService->getVideoFestivalJumpUrl($video->id);
-        if($festivalJumpUrl){
+        if ($festivalJumpUrl) {
             $url = $festivalJumpUrl;
         }
 
@@ -251,8 +251,7 @@ class VideoDownloadService implements VideoDownloadServiceInterface
                 'binPath'  => escapeshellarg($binPath),
             ]);
 
-            $command = sprintf('%s %s %s %s', $binPath, escapeshellarg($url), escapeshellarg($savePath), escapeshellarg($videoPart->page));
-            exec($command, $output, $result);
+            list($output, $result) = $this->execDownloadVideo($url, $savePath, $videoPart->page);
             if ($result != 0) {
                 $msg = implode('', $output);
                 throw new \Exception("下载异常:\n" . $msg);
@@ -263,5 +262,27 @@ class VideoDownloadService implements VideoDownloadServiceInterface
 
             event(new VideoPartDownloaded($videoPart));
         }
+    }
+
+    protected function execDownloadVideo(string $url, string $savePath, int $page): array
+    {
+        if (config('services.bilibili.ignore_cookies')) {
+            $command = sprintf('yt-dlp_linux -f "bestvideo+bestaudio/best" --playlist-items %s -o %s %s', escapeshellarg($page), escapeshellarg($savePath), escapeshellarg($url));
+        } else {
+            // 写入cookie到文件
+            $cookiePath = storage_path('app/cookie.txt');
+            file_put_contents($cookiePath, $this->settingsService->get(SettingKey::COOKIES_CONTENT));
+            $command = sprintf('yt-dlp_linux -f "bestvideo+bestaudio/best" --playlist-items %s --cookies=%s -o %s %s', escapeshellarg($page), escapeshellarg($cookiePath), escapeshellarg($savePath), escapeshellarg($url));
+        }
+        exec($command, $output, $result);
+
+        if($result != 0){
+            $msg = implode('', $output);
+            if(strpos($msg, "412") !== false){
+                Log::error("Check 412 error, set suspend for bilibili high rate limit", ['msg' => $msg, 'url' => $url, 'page' => $page]);
+                $this->bilibiliSuspendService->setSuspend();
+            }
+        }
+        return [$output, $result];
     }
 }

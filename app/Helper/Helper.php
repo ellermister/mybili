@@ -72,6 +72,9 @@ function parse_netscape_cookie_file($filename)
 function parse_netscape_cookie_content($content)
 {
     if (empty($content)) {
+        if (config('services.bilibili.ignore_cookies')) {
+            return new CookieJar(false, []);
+        }
         throw new \InvalidArgumentException("Cookie 内容不能为空");
     }
 

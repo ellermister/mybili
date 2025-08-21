@@ -41,6 +41,9 @@ return [
         'id_type'              => env('BILIBILI_ID_TYPE', 'bv'),
 
         'limit_download_video_job' => env('BILIBILI_LIMIT_DOWNLOAD_VIDEO_JOB', 20),
+
+
+        'ignore_cookies' => env('BILIBILI_IGNORE_COOKIES', false),
     ],
 
 ];
