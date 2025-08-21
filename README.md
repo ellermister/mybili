@@ -162,3 +162,7 @@ tail -f /app/storage/logs/laravel.log
 - **LTC**: Litecoin `LdH6SxbAq3No9P4zaNR2aGgH9Kr9yfuGHi`
 
 任何形式的支持都将帮助我继续改进和维护这个项目，非常感谢！
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ellermister/mybili&type=Date)](https://www.star-history.com/#ellermister/mybili&Date)
