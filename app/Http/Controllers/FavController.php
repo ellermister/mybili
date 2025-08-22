@@ -17,7 +17,7 @@ class FavController extends Controller
      */
     public function index()
     {
-        $data = $this->videoManagerService->getFavList();
+        $data = $this->videoManagerService->getUnifiedContentList();
         if ($data) {
             return response()->json($data);
         } else {
@@ -38,10 +38,15 @@ class FavController extends Controller
      */
     public function show(string $id)
     {
-        $fav = $this->videoManagerService->getFavDetail(intval($id));
-        if ($fav) {
-            $fav->load('videos');
-            return response()->json($fav);
+        $id = intval($id);
+        $content = $this->videoManagerService->getUnifiedContentDetail($id);
+        
+        if ($content) {
+            // 确保视频关联已加载
+            if (isset($content->videos) && method_exists($content->videos, 'load')) {
+                $content->videos->load('parts');
+            }
+            return response()->json($content);
         } else {
             return response()->json([]);
         }

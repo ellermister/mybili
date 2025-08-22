@@ -147,17 +147,33 @@ const route = useRoute()
 
 const videoId = ref(route.params.id)
 
-if (route.name == "subscription-video-id") {
+if (route.name == "subscription-video-id" || route.name == "favlist-video-id") {
     videoId.value = route.params.video_id
 }
 
 const breadcrumbItems = computed(() => {
     if (route.name == "subscription-video-id") {
         let subscriptionId = route.params.id
-        console.log( videoInfo.value?.subscriptions?.[0]?.name ?? t('video.loading'))
         return [
             { text: t('navigation.home'), to: '/' },
             { text: videoInfo.value?.subscriptions?.[0]?.name ?? t('video.loading'), to: '/subscription/' + subscriptionId },
+            { text: videoInfo.value?.title ?? t('video.loading') }
+        ]
+    } else if (route.name == "favlist-video-id") {
+        let favId = route.params.id as string
+        let title = t('video.favorite')
+        let fav = videoInfo.value?.favorite?.find(fav => fav.id == parseInt(favId))
+        if (fav) {
+            title = fav.title
+        }else{
+            let subscription = videoInfo.value?.subscriptions?.find(sub => -sub.id == parseInt(favId))
+            if (subscription) {
+                title = subscription.name
+            }
+        }
+        return [
+            { text: t('navigation.home'), to: '/' },
+            { text: title, to: '/fav/' + favId },
             { text: videoInfo.value?.title ?? t('video.loading') }
         ]
     } else {

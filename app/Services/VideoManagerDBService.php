@@ -8,6 +8,7 @@ use App\Events\VideoPartUpdated;
 use App\Events\VideoUpdated;
 use App\Models\Danmaku;
 use App\Models\FavoriteList;
+use App\Models\Subscription;
 use App\Models\Video;
 use App\Models\VideoPart;
 use Arr;
@@ -30,7 +31,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
     public function getVideoInfo(string $id, bool $withParts = false): ?Video
     {
         $video = Video::query()->where('id', $id)->first();
-        
+
         if ($video && $withParts) {
             $video->load('parts');
         }
@@ -66,27 +67,32 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         return FavoriteList::query()->where('id', $favId)->first($columns);
     }
 
+    public function getSubscription(int $id, array $columns = ['*']): ?Subscription
+    {
+        return Subscription::query()->where('id', abs($id))->first($columns);
+    }
+
     public function updateFavList(): void
     {
         Log::info('Update fav list start');
         $favList = $this->bilibiliService->pullFav();
 
-        DB::transaction(function() use ($favList){
+        DB::transaction(function () use ($favList) {
             array_map(function ($item) {
                 $favorite = FavoriteList::query()->where('id', $item['id'])->first();
                 if (! $favorite) {
                     $favorite = new FavoriteList();
                 }
-    
+
                 $oldFav = $favorite->toArray();
-    
+
                 $favorite->fill($item);
                 $favorite->save();
-    
+
                 event(new FavoriteUpdated($oldFav, $item));
-    
+
                 return $item;
-            }, $favList);            
+            }, $favList);
         });
 
         Log::info('Update fav list success');
@@ -108,33 +114,32 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         if (is_array($existVideos) && count($existVideos) > 0) {
             // 使用id作为键进行去重合并，新数据会覆盖旧数据
             $mergedVideos = [];
-            
+
             // 先添加已存在的视频
             foreach ($existVideos as $video) {
                 if (isset($video['id'])) {
                     $mergedVideos[$video['id']] = $video;
                 }
             }
-            
+
             // 再添加新视频，会覆盖相同id的旧数据
             foreach ($videos as $video) {
                 if (isset($video['id'])) {
                     $mergedVideos[$video['id']] = $video;
                 }
             }
-            
+
             $videos = array_values($mergedVideos);
         }
         redis()->set(sprintf('favorite_video_saving:%s', $favoriteId), json_encode($videos));
     }
 
-
     public function updateFavVideos(array $fav, ?int $page = null): void
     {
-        $favId = $fav['id'];
+        $favId  = $fav['id'];
         $videos = $this->bilibiliService->pullFavVideoList($favId, $page);
 
-        if(count($videos) === 0){
+        if (count($videos) === 0) {
             Log::info('No videos found in fav', ['favId' => $favId]);
             return;
         }
@@ -160,32 +165,32 @@ class VideoManagerDBService implements VideoManagerServiceInterface
 
             //在此做键值对映射，避免字段未来变更
             return [
-                'id'          => $item['id'],
-                'link'        => $newValue['link'],
-                'title'       => $newValue['title'],
-                'intro'       => $newValue['intro'],
-                'cover'       => $newValue['cover'],
-                'bvid'        => $newValue['bvid'],
-                'pubtime'     => $newValue['pubtime'],
-                'attr'        => $newValue['attr'],
-                'invalid'     => $newValue['invalid'],
-                'frozen'      => $newValue['frozen'],
-                'page'        => $newValue['page'],
-                'fav_time'    => $newValue['fav_time'],
+                'id'       => $item['id'],
+                'link'     => $newValue['link'],
+                'title'    => $newValue['title'],
+                'intro'    => $newValue['intro'],
+                'cover'    => $newValue['cover'],
+                'bvid'     => $newValue['bvid'],
+                'pubtime'  => $newValue['pubtime'],
+                'attr'     => $newValue['attr'],
+                'invalid'  => $newValue['invalid'],
+                'frozen'   => $newValue['frozen'],
+                'page'     => $newValue['page'],
+                'fav_time' => $newValue['fav_time'],
             ];
         }, $videos);
 
         // 暂存视频数据
         $this->saveFavoriteVideo($favId, $videos);
 
-        DB::transaction(function() use ($videos, $favId, $fav){
+        DB::transaction(function () use ($videos, $favId, $fav) {
             $remoteVideoIds = array_column($videos, 'id');
             $localVideoIds  = DB::table('favorite_list_videos')
                 ->where('favorite_list_id', $favId)
                 ->pluck('video_id')
                 ->toArray();
-    
-            $addVideoIds    = array_diff($remoteVideoIds, $localVideoIds);
+
+            $addVideoIds = array_diff($remoteVideoIds, $localVideoIds);
 
             // 添加新的视频关联关系
             if (! empty($addVideoIds)) {
@@ -205,57 +210,56 @@ class VideoManagerDBService implements VideoManagerServiceInterface
                 }
             }
 
-
             foreach ($videos as $key => $item) {
                 $video = Video::query()->where('id', $item['id'])->first();
                 if (! $video) {
                     $video = new Video();
                 }
-    
+
                 $oldVideoData = $video->toArray();
-    
+
                 // 检查视频数据是否真正发生了变化
-                $hasChanges = false;
+                $hasChanges    = false;
                 $changedFields = [];
-                
+
                 foreach ($item as $field => $value) {
-                    if (!isset($oldVideoData[$field]) || $oldVideoData[$field] != $value) {
-                        $hasChanges = true;
+                    if (! isset($oldVideoData[$field]) || $oldVideoData[$field] != $value) {
+                        $hasChanges            = true;
                         $changedFields[$field] = [
                             'old' => $oldVideoData[$field] ?? null,
-                            'new' => $value
+                            'new' => $value,
                         ];
                     }
                 }
-    
+
                 $video->fill($item);
                 $video->save();
-    
+
                 // 只有在数据真正发生变化时才触发事件
                 if ($hasChanges) {
                     Log::info('Video data changed, triggering VideoUpdated event', [
-                        'id' => $item['id'], 
-                        'title' => $item['title'],
-                        'changed_fields' => array_keys($changedFields)
+                        'id'             => $item['id'],
+                        'title'          => $item['title'],
+                        'changed_fields' => array_keys($changedFields),
                     ]);
                     event(new VideoUpdated($oldVideoData, $video->toArray()));
                 } else {
                     Log::info('Video data unchanged, skipping VideoUpdated event', [
-                        'id' => $item['id'], 
-                        'title' => $item['title']
+                        'id'    => $item['id'],
+                        'title' => $item['title'],
                     ]);
                 }
-    
+
                 Log::info('Update video success', ['id' => $item['id'], 'title' => $item['title']]);
             }
 
             $savedVideos = $this->getFavoriteVideo($favId);
             // media_count 是不准确的，可能是用户手动取消收藏视频系统没更新、也可能是哔哩哔哩自己故意把用户视频搞丢失
             // 经过测试，用户收藏夹的视频获取没有错误，但收藏夹的media_count 是错误的，目前没有合适的方法更新
-            if(intval($fav['media_count']) == count($savedVideos)){
+            if (intval($fav['media_count']) == count($savedVideos)) {
                 $remoteCacheVideoIds = array_column($savedVideos, 'id');
-                $deleteVideoIds = array_diff($localVideoIds, $remoteCacheVideoIds);
-                if(!empty($deleteVideoIds)){
+                $deleteVideoIds      = array_diff($localVideoIds, $remoteCacheVideoIds);
+                if (! empty($deleteVideoIds)) {
                     FavoriteList::query()->where('id', $favId)->first()->videos()->detach($deleteVideoIds);
                     Log::info('Detached videos from favorite list', ['favId' => $favId, 'videoIds' => $deleteVideoIds]);
                 }
@@ -277,9 +281,9 @@ class VideoManagerDBService implements VideoManagerServiceInterface
         // }
 
         try {
-            if(config('services.bilibili.id_type') == 'bv'){
+            if (config('services.bilibili.id_type') == 'bv') {
                 $videoParts = $this->bilibiliService->getVideoParts($video->bvid);
-            }else{
+            } else {
                 $videoParts = $this->bilibiliService->getVideoParts($video->id);
             }
         } catch (\Exception $e) {
@@ -299,7 +303,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             return;
         }
 
-        DB::transaction(function() use ($videoParts, $video){
+        DB::transaction(function () use ($videoParts, $video) {
             foreach ($videoParts as $part) {
                 $videoPart = VideoPart::where('cid', $part['cid'])->first();
                 if (! $videoPart) {
@@ -325,10 +329,10 @@ class VideoManagerDBService implements VideoManagerServiceInterface
                     ]
                 ));
                 $videoPart->save();
-    
+
                 event(new VideoPartUpdated($oldVideoPart, $videoPart->toArray()));
             }
-    
+
             $video->video_downloaded_at = now();
             $video->save();
         });
@@ -397,7 +401,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
 
         $start_time = microtime(true);
         // 分批插入数据，每批1000条
-        DB::transaction(function() use (&$insertData, &$videoPart){
+        DB::transaction(function () use (&$insertData, &$videoPart) {
             foreach (array_chunk($insertData, 1000) as $chunk) {
                 $videoPart->danmakus()->createMany($chunk);
                 unset($chunk);
@@ -434,7 +438,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             Log::info('Download danmaku start', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
             $video = Video::where('id', $videoPart->video_id)->first();
 
-            $start_time = microtime(true);
+            $start_time   = microtime(true);
             $partDanmakus = $this->bilibiliService->getDanmaku($videoPart->cid, intval($videoPart->duration));
             Log::info('Download danmaku time', ['time' => microtime(true) - $start_time]);
 
@@ -450,7 +454,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             Log::info('Save danmaku time', ['time' => microtime(true) - $start_time]);
             $videoPart->danmaku_downloaded_at = Carbon::now();
             $videoPart->save();
-            
+
         } catch (\Throwable $e) {
             Log::error('Download danmaku failed', ['id' => $videoPart->cid, 'title' => $videoPart->part, 'error' => $e->getMessage()]);
             return;
@@ -492,40 +496,179 @@ class VideoManagerDBService implements VideoManagerServiceInterface
 
     public function pullVideoInfo(string $bvid): void
     {
-        try{
+        try {
             $videoInfo = app(BilibiliService::class)->getVideoInfo($bvid);
             $aid       = $videoInfo['aid'];
             $video     = Video::query()->firstOrNew(['id' => $aid]);
             //  ['id', 'link', 'title', 'intro', 'cover', 'bvid', 'pubtime', 'attr', 'invalid', 'frozen', 'cache_image', 'page', 'fav_time', 'danmaku_downloaded_at', 'video_downloaded_at'];
             $video->fill([
-                'link'                  => sprintf('bilibili://video/%s', $aid),
-                'title'                 => $videoInfo['title'],
-                'intro'                 => $videoInfo['desc'],
-                'cover'                 => $videoInfo['pic'],
-                'bvid'                  => $videoInfo['bvid'],
-                'pubtime'               => Carbon::createFromTimestamp($videoInfo['pubdate']),
-                'attr'                  => 0,
-                'invalid'               => $videoInfo['state'] == 0 ? false : true,
-                'frozen'                => $videoInfo['state'] == 0 ? false : true,
-                'cache_image'           => '',
-                'page'                  => count($videoInfo['pages']),
-                'fav_time'              => null,
+                'link'        => sprintf('bilibili://video/%s', $aid),
+                'title'       => $videoInfo['title'],
+                'intro'       => $videoInfo['desc'],
+                'cover'       => $videoInfo['pic'],
+                'bvid'        => $videoInfo['bvid'],
+                'pubtime'     => Carbon::createFromTimestamp($videoInfo['pubdate']),
+                'attr'        => 0,
+                'invalid'     => $videoInfo['state'] == 0 ? false : true,
+                'frozen'      => $videoInfo['state'] == 0 ? false : true,
+                'cache_image' => '',
+                'page'        => count($videoInfo['pages']),
+                'fav_time'    => null,
             ]);
             $video->save();
             event(new VideoUpdated([], $video->toArray()));
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             Log::error("PullVideoInfoJob failed: " . $e->getMessage());
-            if($e->getCode() == -404){
+            if ($e->getCode() == -404) {
                 $video = Video::where('bvid', $bvid)->first();
-                if($video && !$video->invalid){
-                    $oldVideo = $video->toArray();
+                if ($video && ! $video->invalid) {
+                    $oldVideo       = $video->toArray();
                     $video->invalid = true;
-                    $video->frozen = true;
+                    $video->frozen  = true;
                     $video->save();
                     event(new VideoUpdated($oldVideo, $video->toArray()));
                 }
             }
             throw $e;
         }
+    }
+
+    // ==================== 统一内容管理相关 ====================
+
+    /**
+     * 获取收藏夹或订阅的统一列表（兼容收藏夹界面）
+     * @return array
+     */
+    public function getUnifiedContentList(): array
+    {
+        $favList       = $this->getFavList();
+        $subscriptions = Subscription::query()->get()->toArray();
+
+        // 将订阅转换为负数ID，并统一格式
+        $unifiedList = [];
+
+        // 添加收藏夹（正数ID）
+        foreach ($favList as $fav) {
+            $unifiedList[] = [
+                'id'              => $fav['id'],
+                'type'            => 'favorite',
+                'title'           => $fav['title'] ?? '',
+                'description'     => $fav['intro'] ?? '',
+                'cover'           => $fav['cover'] ?? '',
+                'cache_image'     => $fav['cache_image'] ?? '',
+                'cache_image_url' => $fav['cache_image_url'] ?? '',
+                'media_count'     => $fav['media_count'] ?? 0,
+                'created_at'      => $fav['created_at'] ? strtotime($fav['created_at']) : null,
+                'updated_at'      => $fav['updated_at'] ? strtotime($fav['updated_at']) : null,
+                'ctime'           => $fav['ctime'] ? $fav['ctime'] : null,
+                'mtime'           => $fav['mtime'] ? $fav['mtime'] : null,
+            ];
+        }
+
+        // 添加订阅（负数ID）
+        foreach ($subscriptions as $subscription) {
+            $unifiedList[] = [
+                'id'              => -$subscription['id'], // 转换为负数ID
+                'type'            => 'subscription',
+                'title'           => $subscription['name'] ?? '',
+                'description'     => $subscription['description'] ?? '',
+                'cover'           => $subscription['cover'] ?? '',
+                'cache_image'     => $subscription['cache_image'] ?? '',
+                'cache_image_url' => $subscription['cache_image_url'] ?? '',
+                'media_count'     => intval($subscription['total'] ?? 0),
+                'created_at'      => $subscription['created_at'] ? strtotime($subscription['created_at']) : null,
+                'updated_at'      => $subscription['updated_at'] ? strtotime($subscription['updated_at']) : null,
+                'ctime'           => $subscription['created_at'] ? strtotime($subscription['created_at']) : null,
+                'mtime'           => $subscription['updated_at'] ? strtotime($subscription['updated_at']) : null,
+            ];
+        }
+
+        return $unifiedList;
+    }
+
+    /**
+     * 获取收藏夹或订阅的统一详情（兼容收藏夹界面）
+     * @param int $id 正数表示收藏夹ID，负数表示订阅ID
+     * @param array $columns
+     * @return object|null 返回统一格式的内容对象
+     */
+    public function getUnifiedContentDetail(int $id, array $columns = ['*']): ?object
+    {
+        if ($this->isSubscription($id)) {
+            $subscriptionId = abs($id);
+            $subscription   = $this->getSubscription($subscriptionId, $columns);
+
+            if (! $subscription) {
+                return null;
+            }
+
+            // 转换为统一格式
+            $unifiedContent = (object) [
+                'id'                => -$subscription->id, // 保持负数ID
+                'type'              => 'subscription',
+                'title'             => $subscription->name ?? '',
+                'description'       => $subscription->description ?? '',
+                'cover'             => $subscription->cover ?? '',
+                'media_count'       => intval($subscription->total ?? 0),
+                'created_at'        => $subscription->created_at ? strtotime($subscription->created_at) : null,
+                'updated_at'        => $subscription->updated_at ? strtotime($subscription->updated_at) : null,
+                'subscription_type' => $subscription->type ?? '',
+                'mid'               => $subscription->mid ?? null,
+                'season_id'         => $subscription->season_id ?? null,
+                'status'            => $subscription->status ?? null,
+                'last_check_at'     => $subscription->last_check_at ? strtotime($subscription->last_check_at) : null,
+            ];
+
+            // 加载关联的视频
+            $unifiedContent->videos = $subscription->videos ?? collect();
+
+            return $unifiedContent;
+        } else {
+            // 收藏夹
+            $fav = $this->getFavDetail($id, $columns);
+
+            if (! $fav) {
+                return null;
+            }
+
+            // 转换为统一格式
+            $unifiedContent = (object) [
+                'id'          => $fav->id,
+                'type'        => 'favorite',
+                'title'       => $fav->title ?? '',
+                'description' => $fav->intro ?? '',
+                'cover'       => $fav->cover ?? '',
+                'media_count' => $fav->media_count ?? 0,
+                'created_at'  => $fav->created_at ? strtotime($fav->created_at) : null,
+                'updated_at'  => $fav->updated_at ? strtotime($fav->updated_at) : null,
+                'fid'         => $fav->fid ?? null,
+                'mid'         => $fav->mid ?? null,
+            ];
+
+            // 加载关联的视频
+            $unifiedContent->videos = $fav->videos ?? collect();
+
+            return $unifiedContent;
+        }
+    }
+
+    /**
+     * 判断ID是否为订阅
+     * @param int $id
+     * @return bool
+     */
+    public function isSubscription(int $id): bool
+    {
+        return $id < 0;
+    }
+
+    /**
+     * 判断ID是否为收藏夹
+     * @param int $id
+     * @return bool
+     */
+    public function isFavorite(int $id): bool
+    {
+        return $id > 0;
     }
 }
