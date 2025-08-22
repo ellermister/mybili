@@ -620,7 +620,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             ];
 
             // 加载关联的视频
-            $unifiedContent->videos = $subscription->videos ?? collect();
+            $unifiedContent->videos = $subscription->videos()->orderBy('fav_time', 'desc')->orderBy('created_at', 'desc')->get();
 
             return $unifiedContent;
         } else {
@@ -646,7 +646,7 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             ];
 
             // 加载关联的视频
-            $unifiedContent->videos = $fav->videos ?? collect();
+            $unifiedContent->videos = $fav->videos()->orderBy('fav_time', 'desc')->orderBy('created_at', 'desc')->get();
 
             return $unifiedContent;
         }

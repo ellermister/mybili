@@ -107,6 +107,12 @@ class UnifiedContentTest extends TestCase
         // 验证时间字段为时间戳格式
         $this->assertIsInt($result->created_at);
         $this->assertIsInt($result->updated_at);
+        
+        // 验证视频按收藏时间倒序排列
+        $videos = $result->videos->toArray();
+        if (count($videos) >= 2) {
+            $this->assertGreaterThanOrEqual($videos[1]['fav_time'] ?? 0, $videos[0]['fav_time'] ?? 0);
+        }
     }
 
     public function test_get_unified_content_detail_subscription()
@@ -124,6 +130,12 @@ class UnifiedContentTest extends TestCase
         $this->assertIsInt($result->created_at);
         $this->assertIsInt($result->updated_at);
         $this->assertIsInt($result->last_check_at);
+        
+        // 验证视频按收藏时间倒序排列
+        $videos = $result->videos->toArray();
+        if (count($videos) >= 2) {
+            $this->assertGreaterThanOrEqual($videos[1]['fav_time'] ?? 0, $videos[0]['fav_time'] ?? 0);
+        }
     }
 
     public function test_is_subscription()
