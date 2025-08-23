@@ -129,4 +129,13 @@ interface VideoManagerServiceInterface
      * @return bool
      */
     public function isFavorite(int $id): bool;
+
+    // ==================== 修复收藏夹无效视频 ====================
+    /**
+     * 修复收藏夹无效视频
+     * @param int $favId
+     * @param int $page
+     * @return void
+     */
+    public function fixFavInvalidVideos(int $favId, int $page = 1): void;
 }

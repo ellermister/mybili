@@ -621,4 +621,19 @@ class BilibiliService
         }
         return null;
     }
+
+    public function getFavFolderResources(int $favId, int $page = 1)
+    {
+        $client = $this->getClient();
+        $url = self::API_HOST . "/x/v3/fav/folder/resources?media_id={$favId}&pn={$page}&ps={$this->favVideosPageSize}&build=85900200&c_locale=en&device=phone&disable_rcmd=0&mobi_app=iphone&platform=ios&s_locale=en";
+
+        $response = $client->request('GET', $url);
+        $result = json_decode($response->getBody()->getContents(), true);
+        $test = Arr::only($result['data'],['has_more','total','has_invalid']);
+
+        if(is_array($result) && $result['code'] == 0){
+            return $result['data']['list'] ? (array)$result['data']['list'] : [];
+        }
+        return [];
+    }
 }

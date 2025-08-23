@@ -3,6 +3,7 @@ namespace App\Console\Commands;
 
 use App\Contracts\VideoDownloadServiceInterface;
 use App\Contracts\VideoManagerServiceInterface;
+use App\Jobs\FixInvalidFavVideosJob;
 use App\Jobs\UpdateFavListJob;
 use App\Jobs\UpdateFavVideosJob;
 use App\Models\Video;
@@ -22,9 +23,12 @@ class UpdateFav extends Command
     protected $signature = 'app:update-fav
     {--update-fav= : 触发收藏夹自身更新}
     {--update-fav-videos= : 触发收藏夹列表中视频更新，发现新视频}
+    {--update-fav-videos-page= : 更新指定收藏夹的指定页码}
     {--update-video-parts= : 触发拉取更新现有视频分P资料}
     {--download-video-part= : 触发下载现有视频分P}
-    {--update-fav-videos-page= : 更新指定收藏夹的指定页码}';
+    {--fix-invalid-fav-videos= : 修复指定收藏夹的无效视频}
+    {--fix-invalid-fav-videos-page= : 修复指定收藏夹的指定页码}
+    ';
 
     /**
      * The console command description.
@@ -84,6 +88,15 @@ class UpdateFav extends Command
                 }
             });
         }
+
+        if ($this->option('fix-invalid-fav-videos')) {
+            $page = $this->option('fix-invalid-fav-videos-page');
+            $favList = $videoManagerService->getFavList();
+            foreach ($favList as $item) {
+                $this->info('dispatch fix invalid fav videos: ' . $item['title'] . ' id: ' . $item['id']);
+                $this->dispatchFixInvalidFavVideosJob($item, $page);
+            }
+        }
     }
 
     private function shouldExcludeByFavForMultiFav(Collection $favs)
@@ -114,12 +127,27 @@ class UpdateFav extends Command
         if ($page === null) {
             $maxPage    = ceil($fav['media_count'] / $pageSize);
             $targetPage = 1;
-            while ($targetPage <= $maxPage) {
+            while ($maxPage > 0 && $targetPage <= $maxPage) {
                 UpdateFavVideosJob::dispatchWithRateLimit($fav, $targetPage);
                 $targetPage++;
             }
         } else {
             UpdateFavVideosJob::dispatchWithRateLimit($fav, intval($page));
+        }
+    }
+
+    protected function dispatchFixInvalidFavVideosJob(array $fav, ?int $page = null)
+    {
+        $pageSize = intval(config('services.bilibili.fav_videos_page_size'));
+        if ($page === null) {
+            $maxPage    = ceil($fav['media_count'] / $pageSize);
+            $targetPage = 1;
+            while ($maxPage > 0 && $targetPage <= $maxPage) {
+                FixInvalidFavVideosJob::dispatchWithRateLimit($fav, $targetPage);
+                $targetPage++;
+            }
+        } else {
+            FixInvalidFavVideosJob::dispatchWithRateLimit($fav, intval($page));
         }
     }
 
