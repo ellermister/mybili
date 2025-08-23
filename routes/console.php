@@ -48,6 +48,13 @@ Schedule::call(function () {
 ->withoutOverlapping()
 ->dailyAt('04:00');
 
+Schedule::call(function () {
+    Artisan::call('app:update-fav', ['--fix-invalid-fav-videos' => true]);
+})
+->name('fix-invalid-fav-videos')
+->withoutOverlapping()
+->dailyAt('04:00');
+
 
 Schedule::command('stats:send')->daily();
 
