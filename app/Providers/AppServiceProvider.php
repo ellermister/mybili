@@ -36,14 +36,24 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-         // SQLite WAL模式优化
+        // SQLite WAL模式优化
         if (config('database.default') === 'sqlite') {
-            DB::statement('PRAGMA journal_mode=WAL');
-            DB::statement('PRAGMA synchronous=NORMAL');
-            DB::statement('PRAGMA wal_autocheckpoint=1000');
-            DB::statement('PRAGMA busy_timeout=30000');
-            DB::statement('PRAGMA cache_size=10000');
-            DB::statement('PRAGMA temp_store=MEMORY');
+            try {
+                // 检查数据库文件是否存在
+                $databasePath = config('database.connections.sqlite.database');
+                if (file_exists($databasePath)) {
+                    DB::statement('PRAGMA journal_mode=WAL');
+                    DB::statement('PRAGMA synchronous=NORMAL');
+                    DB::statement('PRAGMA wal_autocheckpoint=1000');
+                    DB::statement('PRAGMA busy_timeout=30000');
+                    DB::statement('PRAGMA cache_size=10000');
+                    DB::statement('PRAGMA temp_store=MEMORY');
+                }
+            } catch (\Exception $e) {
+                // 在构建阶段或数据库不可用时静默处理
+                // 可以记录日志但不抛出异常
+                logger()->debug('SQLite optimization skipped: ' . $e->getMessage());
+            }
         }
     }
 }
