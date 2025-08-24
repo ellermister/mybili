@@ -5,6 +5,7 @@ use App\Enums\SettingKey;
 use App\Jobs\DownloadVideoJob;
 use App\Models\Video;
 use App\Models\VideoPart;
+use App\Services\DownloadFilterService;
 use App\Services\DownloadVideoService;
 use App\Services\SettingsService;
 use Carbon\Carbon;
@@ -16,7 +17,8 @@ class CheckVideoPartFileToDownloadAction
 {
     public function __construct(
         public SettingsService $settingsService,
-        public DownloadVideoService $downloadVideoService
+        public DownloadVideoService $downloadVideoService,
+        public DownloadFilterService $downloadFilterService
     ) {
     }
 
@@ -71,6 +73,18 @@ class CheckVideoPartFileToDownloadAction
 
                 // 下载视频分P文件
                 if ($this->settingsService->get(SettingKey::VIDEO_DOWNLOAD_ENABLED) == 'on') {
+
+                    if ($this->downloadFilterService->shouldExcludeByDuration(intval($video->duration))) {
+                        Log::info('Video file not exists, download video file excluded', ['id' => $video->id, 'title' => $video->title]);
+                        return;
+                    }
+
+
+                    if ($this->downloadFilterService->shouldExcludeByDurationPart($videoPart->duration)) {
+                        Log::info('Video part file not exists, download video part file excluded', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
+                        return;
+                    }
+
                     // 加锁， 控流
                     $lock = redis()->setnx(sprintf('video_downloading:%s', $videoPart->cid), 1);
                     if (! $lock) {

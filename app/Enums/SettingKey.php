@@ -13,6 +13,8 @@ enum SettingKey: string {
     case FAVORITE_EXCLUDE = 'fav_exclude';
     case NAME_EXCLUDE     = 'name_exclude';
     case SIZE_EXCLUDE     = 'size_exclude';
+    case DURATION_VIDEO_EXCLUDE = 'duration_video_exclude';
+    case DURATION_VIDEO_PART_EXCLUDE = 'duration_video_part_exclude';
 
 
     case INSTALLED_DATETIME = 'installed_datetime';
@@ -36,6 +38,8 @@ enum SettingKey: string {
             self::FAVORITE_EXCLUDE => '收藏夹排除',
             self::NAME_EXCLUDE => '名称排除',
             self::SIZE_EXCLUDE => '大小排除',
+            self::DURATION_VIDEO_EXCLUDE => '视频时长排除',
+            self::DURATION_VIDEO_PART_EXCLUDE => '分P时长排除',
 
             self::INSTALLED_DATETIME => '安装日期时间',
             self::COOKIES_CONTENT => 'Cookies 内容',

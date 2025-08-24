@@ -197,6 +197,75 @@
                         </div>
                     </div>
 
+
+                    <!-- Filter by Video Duration -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.filters.byDuration') }}</label>
+                        <div class="space-y-3">
+                            <label class="flex items-center space-x-3">
+                                <input v-model="durationVideoExclude.type" type="radio" value="off"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.noFilter') }}</span>
+                            </label>
+
+                            <label class="flex items-center space-x-3">
+                                <input v-model="durationVideoExclude.type" type="radio" value="30min"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.largerThan30min') }}</span>
+                            </label>
+
+                            <label class="flex items-center space-x-3">
+                                <input v-model="durationVideoExclude.type" type="radio" value="60min"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.largerThan60min') }}</span>
+                            </label>
+
+                            <label class="flex items-center space-x-3">
+                                <input v-model="durationVideoExclude.type" type="radio" value="custom"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.customDuration') }}</span>
+                            </label>
+                            <input v-if="durationVideoExclude.type === 'custom'" v-model="durationVideoExclude.custom_duration" type="number"
+                                class="ml-8 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+                                :placeholder="t('settings.placeholders.enterDuration')" />
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">{{ t('settings.filters.byDurationDescription') }}</p>
+
+                    </div>
+
+                    <!-- Filter by Video Part Duration -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.filters.byDurationPart') }}</label>
+                        <div class="space-y-3">
+                            <label class="flex items-center space-x-3">
+                                <input v-model="durationVideoPartExclude.type" type="radio" value="off"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.noFilter') }}</span>
+                            </label>
+
+                            <label class="flex items-center space-x-3">
+                                <input v-model="durationVideoPartExclude.type" type="radio" value="30min"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.largerThan30min') }}</span>
+                            </label>
+
+                            <label class="flex items-center space-x-3">
+                                <input v-model="durationVideoPartExclude.type" type="radio" value="60min"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.largerThan60min') }}</span>
+                            </label>
+
+                            <label class="flex items-center space-x-3">
+                                <input v-model="durationVideoPartExclude.type" type="radio" value="custom"
+                                    class="form-radio h-5 w-5 text-purple-600 rounded-full border-2 border-gray-300 focus:ring-2 focus:ring-purple-500 transition duration-200" />
+                                <span class="text-gray-700">{{ t('settings.filters.customDuration') }}</span>
+                            </label>
+                            <input v-if="durationVideoPartExclude.type === 'custom'" v-model="durationVideoPartExclude.custom_duration" type="number"
+                                class="ml-8 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
+                                :placeholder="t('settings.placeholders.enterDuration')" />
+                        </div>
+                    </div>
+
                     <!-- Filter by Collections -->
                     <div class="bg-gray-50 rounded-lg p-4">
                         <label class="block text-sm font-medium text-gray-700 mb-3">{{ t('settings.filters.byFavorites') }}</label>
@@ -321,6 +390,16 @@ const sizeExclude = ref({
     custom_size: 0
 });
 
+const durationVideoExclude = ref({
+    type: 'off',
+    custom_duration: 0
+});
+
+const durationVideoPartExclude = ref({
+    type: 'off',
+    custom_duration: 0
+});
+
 const multiPartitionDownloadEnabled = ref('on'); // off, on
 const danmakuDownloadEnabled = ref('off'); // off, on
 const videoDownloadEnabled = ref('off'); // off, on
@@ -345,6 +424,8 @@ const saveSettingHandler = () => {
     console.log('Settings saved:', {
         name_exclude: nameExclude.value,
         size_exclude: sizeExclude.value,
+        duration_video_exclude: durationVideoExclude.value,
+        duration_video_part_exclude: durationVideoPartExclude.value,
         fav_exclude: favExclude.value,
         multi_partition_download_enabled: multiPartitionDownloadEnabled.value,
         danmaku_download_enabled: danmakuDownloadEnabled.value,
@@ -360,6 +441,8 @@ const saveSettingHandler = () => {
     saveSettings({
         name_exclude: nameExclude.value,
         size_exclude: sizeExclude.value,
+        duration_video_exclude: durationVideoExclude.value,
+        duration_video_part_exclude: durationVideoPartExclude.value,
         fav_exclude: favExclude.value,
         multi_partition_download_enabled: multiPartitionDownloadEnabled.value,
         danmaku_download_enabled: danmakuDownloadEnabled.value,
@@ -410,6 +493,8 @@ onMounted(()=>{
         nameExclude.value = data.name_exclude;
         sizeExclude.value = data.size_exclude;
         favExclude.value = data.fav_exclude;
+        durationVideoExclude.value = data.duration_video_exclude;
+        durationVideoPartExclude.value = data.duration_video_part_exclude;
         multiPartitionDownloadEnabled.value = data.multi_partition_download_enabled;
         danmakuDownloadEnabled.value = data.danmaku_download_enabled;
         videoDownloadEnabled.value = data.video_download_enabled;

@@ -60,12 +60,13 @@ class UpdateFavoriteVideosAction
                 'intro'    => $newValue['intro'],
                 'cover'    => $newValue['cover'],
                 'bvid'     => $newValue['bvid'],
-                'pubtime'  => $newValue['pubtime'],
+                'pubtime'  => date('Y-m-d H:i:s', $newValue['pubtime']),
+                'duration' => $newValue['duration'],
                 'attr'     => $newValue['attr'],
                 'invalid'  => $newValue['invalid'],
                 'frozen'   => $newValue['frozen'],
                 'page'     => $newValue['page'],
-                'fav_time' => $newValue['fav_time'],
+                'fav_time' => date('Y-m-d H:i:s', $newValue['fav_time'])
             ];
         }, $videos);
 
@@ -87,8 +88,8 @@ class UpdateFavoriteVideosAction
                 foreach ($videos as $video) {
                     if (in_array($video['id'], $addVideoIds)) {
                         $attachData[$video['id']] = [
-                            'created_at' => date('Y-m-d H:i:s', $video['fav_time']),
-                            'updated_at' => date('Y-m-d H:i:s'),
+                            'created_at' => $video['fav_time'],
+                            'updated_at' => $video['fav_time'],
                         ];
                     }
                 }
@@ -105,7 +106,7 @@ class UpdateFavoriteVideosAction
                     $video = new Video();
                 }
 
-                $oldVideoData = $video->toArray();
+                $oldVideoData = $video->getAttributes();
 
                 // 检查视频数据是否真正发生了变化
                 $hasChanges    = false;
@@ -123,7 +124,7 @@ class UpdateFavoriteVideosAction
 
                 $video->fill($item);
                 $video->save();
-
+                
                 // 只有在数据真正发生变化时才触发事件
                 if ($hasChanges) {
                     Log::info('Video data changed, triggering VideoUpdated event', [

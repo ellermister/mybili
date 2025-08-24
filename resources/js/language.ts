@@ -196,8 +196,15 @@ const messages = {
                 largerThan1GB: '大于 1GB',
                 largerThan2GB: '大于 2GB',
                 customSize: '自定义大小',
+                byDuration: '按视频时长过滤',
+                byDurationPart: '按分P时长过滤',
+                largerThan30min: '大于 30 分钟',
+                largerThan60min: '大于 60 分钟',
+                customDuration: '自定义时长(分钟)',
                 enableFavoritesFilter: '启用收藏夹过滤',
-                selectExcludedFavorites: '选择要排除的收藏夹：'
+                selectExcludedFavorites: '选择要排除的收藏夹：',
+                byDurationDescription: '是分P时长的总和',
+
             },
             
             // 输入框占位符
@@ -535,7 +542,13 @@ const messages = {
                 largerThan2GB: 'Larger than 2GB',
                 customSize: 'Custom Size',
                 enableFavoritesFilter: 'Enable Favorites Filter',
-                selectExcludedFavorites: 'Select favorites to exclude:'
+                selectExcludedFavorites: 'Select favorites to exclude:',
+                byDuration: 'Filter by Duration',
+                byDurationPart: 'Filter by Part Duration',
+                largerThan30min: 'Larger than 30 minutes',
+                largerThan60min: 'Larger than 60 minutes',
+                customDuration: 'Custom Duration (minutes)',
+                byDurationDescription: 'Total duration of all video parts',
             },
             
             // 输入框占位符

@@ -66,4 +66,40 @@ class DownloadFilterService
         $multiP = $this->settings->get(SettingKey::MULTI_PARTITION_DOWNLOAD_ENABLED);
         return $multiP === 'on';
     }
+
+    public function shouldExcludeByDuration(int $duration)
+    {
+        $durationExclude = $this->settings->get(SettingKey::DURATION_VIDEO_EXCLUDE);
+        if ($durationExclude['type'] === 'off') {
+            return false;
+        }
+        if ($durationExclude['type'] === '30min') {
+            return $duration > 30 * 60;
+        }
+        if ($durationExclude['type'] === '60min') {
+            return $duration > 60 * 60;
+        }
+        if ($durationExclude['type'] === 'custom') {
+            return $duration > $durationExclude['custom_duration'] * 60;
+        }
+        return false;
+    }
+
+    public function shouldExcludeByDurationPart(int $duration)
+    {
+        $durationPartExclude = $this->settings->get(SettingKey::DURATION_VIDEO_PART_EXCLUDE);
+        if ($durationPartExclude['type'] === 'off') {
+            return false;
+        }
+        if ($durationPartExclude['type'] === '30min') {
+            return $duration > 30 * 60;
+        }
+        if ($durationPartExclude['type'] === '60min') {
+            return $duration > 60 * 60;
+        }
+        if ($durationPartExclude['type'] === 'custom') {
+            return $duration > $durationPartExclude['custom_duration'] * 60;
+        }
+        return false;
+    }
 }

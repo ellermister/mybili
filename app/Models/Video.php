@@ -7,12 +7,11 @@ use Storage;
 class Video extends Model
 {
     protected $table      = 'videos';
-    protected $fillable   = ['id', 'link', 'title', 'intro', 'cover', 'bvid', 'pubtime', 'attr', 'invalid', 'frozen', 'cache_image', 'page', 'fav_time', 'danmaku_downloaded_at', 'video_downloaded_at'];
+    protected $fillable   = ['id', 'link', 'title', 'intro', 'cover', 'bvid', 'pubtime', 'duration', 'attr', 'invalid', 'frozen', 'cache_image', 'page', 'fav_time', 'danmaku_downloaded_at', 'video_downloaded_at'];
     protected $primaryKey = 'id';
 
     protected $casts = [
-        'pubtime'  => 'timestamp',
-        'fav_time' => 'timestamp',
+        // 移除时间字段的 cast，使用访问器代替，不能使用cast，因为写入时格式无法匹配，错误写入
     ];
 
     protected $appends = [
@@ -36,6 +35,17 @@ class Video extends Model
     public function getCacheImageUrlAttribute()
     {
         return $this->cache_image ? Storage::url($this->cache_image) : null;
+    }
+
+    // 访问器：读取时将时间戳转换为 Carbon 对象
+    public function getPubtimeAttribute($value)
+    {
+        return $value ? strtotime($value) : null;
+    }
+
+    public function getFavTimeAttribute($value)
+    {
+        return $value ? strtotime($value) : null;
     }
 
     public function favorite()
