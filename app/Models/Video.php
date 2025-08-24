@@ -21,6 +21,11 @@ class Video extends Model
 
     protected $attributes = [
         'cache_image' => '',
+        'attr'        => 0,
+        'invalid'     => false,
+        'frozen'      => false,
+        'page'        => 1,
+        'fav_time'    => null,
     ];
 
     public function parts()
