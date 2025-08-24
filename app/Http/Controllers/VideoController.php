@@ -1,28 +1,34 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Contracts\VideoManagerServiceInterface;
 use App\Services\DPlayerDanmakuService;
+use App\Services\VideoManager\Contracts\VideoServiceInterface;
+use App\Services\VideoManager\Contracts\FavoriteServiceInterface;
+use App\Services\VideoManager\Contracts\DanmakuServiceInterface;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class VideoController extends Controller
 {
 
-    public function __construct(public VideoManagerServiceInterface $videoManagerService, public DPlayerDanmakuService $dplayerDanmakuService)
-    {
+    public function __construct(
+        public VideoServiceInterface $videoService,
+        public FavoriteServiceInterface $favoriteService,
+        public DanmakuServiceInterface $danmakuService,
+        public DPlayerDanmakuService $dplayerDanmakuService
+    ) {
 
     }
 
     public function show(Request $request, int $id)
     {
-        $video = $this->videoManagerService->getVideoInfo($id, true);
+        $video = $this->videoService->getVideoInfo($id, true);
         if ($video) {
-            $video->video_parts   = $this->videoManagerService->getAllPartsVideoForUser($video);
-            $video->danmaku_count = $this->videoManagerService->getVideoDanmakuCount($video);
+            $video->video_parts   = $this->videoService->getAllPartsVideoForUser($video);
+            $video->danmaku_count = $this->danmakuService->getVideoDanmakuCount($video);
             $video->load('favorite');
             $video->load('subscriptions');
-            
+
             return response()->json($video);
         }
         abort(404);
@@ -30,7 +36,7 @@ class VideoController extends Controller
 
     public function progress()
     {
-        $list = $this->videoManagerService->getVideos()
+        $list = $this->videoService->getVideos()
             ->sortBy(function ($video) {
                 // 优先使用 fav_time，如果不存在或为 null 则使用 created_at
                 return Carbon::parse($video->fav_time ?? $video->created_at)->timestamp;
@@ -40,7 +46,7 @@ class VideoController extends Controller
 
         $data = [
             'data' => $list,
-            'stat' => $this->videoManagerService->getVideosStat([]),
+            'stat' => $this->videoService->getVideosStat([]),
         ];
 
         return response()->json($data, 200, [], JSON_UNESCAPED_UNICODE);
@@ -48,7 +54,7 @@ class VideoController extends Controller
 
     public function danmaku(Request $request, int $cid)
     {
-        $result = $this->videoManagerService->getDanmaku($cid);
+        $result = $this->danmakuService->getDanmaku($cid);
         return response()->json($result);
     }
 
@@ -62,7 +68,7 @@ class VideoController extends Controller
                 'data'    => [],
             ]);
         }
-        $result = $this->videoManagerService->getDanmaku($cid);
+        $result = $this->danmakuService->getDanmaku($cid);
         $result = $this->dplayerDanmakuService->convertDanmaku($result);
         return response()->json([
             'code' => 0,
@@ -103,7 +109,7 @@ class VideoController extends Controller
 
     protected function covertColor($color)
     {
-        //默认为 #ffffff    
+        //默认为 #ffffff
         return '#' . str_pad(dechex($color), 6, '0', STR_PAD_LEFT);
     }
 }

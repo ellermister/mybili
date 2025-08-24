@@ -1,14 +1,13 @@
 <?php
 namespace App\Listeners;
 
-use App\Contracts\VideoManagerServiceInterface;
-use App\Jobs\DownloadDanmakuJob;
-use App\Services\SettingsService;
 use App\Enums\SettingKey;
 use App\Events\VideoPartUpdated;
+use App\Jobs\DownloadDanmakuJob;
 use App\Models\VideoPart;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use App\Services\SettingsService;
 use Carbon\Carbon;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Log;
 
 class VideoPartDanmakuDownload implements ShouldQueue
@@ -43,9 +42,9 @@ class VideoPartDanmakuDownload implements ShouldQueue
                 if ($videoPart->danmaku_downloaded_at && $videoPart->danmaku_downloaded_at > Carbon::now()->subDays(7)) {
                     Log::info('Danmaku has been saved in the last 7 days', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
                     return;
-              }
+                }
 
-                dispatch(new DownloadDanmakuJob($videoPart, app(VideoManagerServiceInterface::class)));
+                dispatch(new DownloadDanmakuJob($videoPart));
                 Log::info('Download danmaku job dispatched', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
             }
         }

@@ -1,8 +1,6 @@
 <?php
-
 namespace App\Services;
 
-use App\Contracts\VideoManagerServiceInterface;
 use App\Contracts\VideoDownloadServiceInterface;
 use App\Models\Video;
 use App\Models\VideoPart;
@@ -11,17 +9,14 @@ use Illuminate\Support\Facades\Log;
 class HumanReadableNameService
 {
     protected VideoDownloadServiceInterface $videoDownloadService;
-    protected VideoManagerServiceInterface $videoManagerService;
     protected string $humanReadableDir;
     protected array $subDirs = ['tvs', 'movies'];
 
     public function __construct(
         VideoDownloadServiceInterface $videoDownloadService,
-        VideoManagerServiceInterface $videoManagerService
     ) {
         $this->videoDownloadService = $videoDownloadService;
-        $this->videoManagerService = $videoManagerService;
-        $this->humanReadableDir = config('app.human_readable_dir');
+        $this->humanReadableDir     = config('app.human_readable_dir');
     }
 
     /**
@@ -39,20 +34,20 @@ class HumanReadableNameService
     protected function prepareDirectories(): void
     {
         // 创建主目录
-        if(!is_dir($this->humanReadableDir)){
+        if (! is_dir($this->humanReadableDir)) {
             // 目录不存在，中止
-            throw new \Exception('Human readable directory not found, path:'.$this->humanReadableDir);
+            throw new \Exception('Human readable directory not found, path:' . $this->humanReadableDir);
         }
 
         // 创建子目录
         foreach ($this->subDirs as $subDir) {
             $path = $this->humanReadableDir . '/' . $subDir;
-            
+
             // 删除重建目录
             if (is_dir($path)) {
                 $this->deleteDirectory($path);
             }
-            
+
             mkdir($path, 0777, true);
         }
     }
@@ -62,8 +57,8 @@ class HumanReadableNameService
      */
     protected function processVideos(): void
     {
-        $videos = $this->videoManagerService->getVideos();
-        
+        $videos = Video::query()->get();
+
         foreach ($videos as $video) {
             if ($video['video_downloaded_num'] == 0) {
                 continue;
@@ -78,8 +73,8 @@ class HumanReadableNameService
      */
     protected function processVideo(Video $video): void
     {
-        $parts = $this->videoManagerService->getAllPartsVideo($video['id']);
-        $videoType = count($parts) == 1 ? 'movies' : 'tvs';
+        $parts         = VideoPart::query()->where('video_id', $video['id'])->get();
+        $videoType     = count($parts) == 1 ? 'movies' : 'tvs';
         $sanitizedName = $this->sanitizeFileName($video['title']);
 
         if ($videoType == 'movies') {
@@ -95,8 +90,8 @@ class HumanReadableNameService
     protected function processMovie(Video $video, VideoPart $videoPart, string $sanitizedName): void
     {
         $videoPath = $this->videoDownloadService->getVideoPartValidFilePath($videoPart);
-        
-        if (!is_file($videoPath)) {
+
+        if (! is_file($videoPath)) {
             return;
         }
 
@@ -112,8 +107,8 @@ class HumanReadableNameService
         $successCount = 0;
         foreach ($parts as $part) {
             $videoPath = $this->videoDownloadService->getVideoPartValidFilePath($part);
-            
-            if (!is_file($videoPath)) {
+
+            if (! is_file($videoPath)) {
                 continue;
             }
 
@@ -122,9 +117,9 @@ class HumanReadableNameService
             $this->createCoverLink($video, 'tvs', $sanitizedName, $episodeName . '.jpg');
             $successCount++;
         }
-        
-        if($successCount >= 1){
-            $this->createCoverLink($video, 'tvs', $sanitizedName,  $sanitizedName.'.jpg');
+
+        if ($successCount >= 1) {
+            $this->createCoverLink($video, 'tvs', $sanitizedName, $sanitizedName . '.jpg');
         }
     }
 
@@ -134,11 +129,11 @@ class HumanReadableNameService
     protected function createVideoLink(string $sourcePath, string $videoType, string $seriesName, string $fileName): void
     {
         $targetPath = $this->buildTargetPath($videoType, $seriesName, $fileName);
-        
+
         if (is_file($targetPath)) {
             unlink($targetPath);
         }
-        
+
         $this->createLink($sourcePath, $targetPath);
     }
 
@@ -148,39 +143,39 @@ class HumanReadableNameService
     protected function createCoverLink(Video $video, string $videoType, string $seriesName, string $fileName): void
     {
         $coverPath = storage_path('app/public/' . $video->cache_image);
-        
-        if (!is_file($coverPath)) {
+
+        if (! is_file($coverPath)) {
             return;
         }
 
         $targetPath = $this->buildTargetPath($videoType, $seriesName, $fileName);
-        
+
         if (is_file($targetPath)) {
             unlink($targetPath);
         }
-        
+
         $this->createLink($coverPath, $targetPath);
     }
 
     protected function createLink(string $sourcePath, string $targetPath): void
     {
-        try{
+        try {
             if (link($sourcePath, $targetPath)) {
                 Log::info("Created link: {$targetPath}");
             }
-        }catch(\Throwable $e){
+        } catch (\Throwable $e) {
             // php link(): No error information
             // 很奇怪的一种错误，尝试用过 shell 创建硬链接
             $sourcePath = escapeshellarg($sourcePath);
             $targetPath = escapeshellarg($targetPath);
             exec("ln {$sourcePath} {$targetPath}", $output, $returnCode);
-            
-            if($returnCode === 0 && is_file($targetPath)){
+
+            if ($returnCode === 0 && is_file($targetPath)) {
                 Log::info("Created link: {$targetPath}");
-            }else{
+            } else {
                 Log::error("createLink error: {$e->getMessage()}", [
-                    'output' => $output,
-                    'returnCode' => $returnCode
+                    'output'     => $output,
+                    'returnCode' => $returnCode,
                 ]);
             }
         }
@@ -192,12 +187,12 @@ class HumanReadableNameService
     protected function buildTargetPath(string $videoType, string $seriesName, string $fileName): string
     {
         $targetPath = $this->humanReadableDir . '/' . $videoType . '/' . $seriesName . '/' . $fileName;
-        $dir = dirname($targetPath);
-        
-        if (!is_dir($dir)) {
+        $dir        = dirname($targetPath);
+
+        if (! is_dir($dir)) {
             mkdir($dir, 0777, true);
         }
-        
+
         return $targetPath;
     }
 
@@ -248,15 +243,15 @@ class HumanReadableNameService
      */
     protected function deleteDirectory(string $dir): bool
     {
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return false;
         }
 
-        $files = array_diff(scandir($dir), array('.', '..'));
-        
+        $files = array_diff(scandir($dir), ['.', '..']);
+
         foreach ($files as $file) {
             $filePath = $dir . '/' . $file;
-            
+
             if (is_dir($filePath)) {
                 $this->deleteDirectory($filePath);
             } else {

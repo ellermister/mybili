@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
-use App\Contracts\VideoManagerServiceInterface;
 use App\Models\VideoPart;
+use App\Services\VideoManager\Actions\Danmaku\DownloadDanmakuAction;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -31,7 +31,7 @@ class DownloadDanmakuJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(public VideoPart $videoPart, public VideoManagerServiceInterface $videoManagerService)
+    public function __construct(public VideoPart $videoPart)
     {
     }
 
@@ -40,6 +40,6 @@ class DownloadDanmakuJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $this->videoManagerService->downloadDanmaku($this->videoPart);
+        app(DownloadDanmakuAction::class)->execute($this->videoPart);
     }
 }

@@ -1,13 +1,12 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use App\Contracts\VideoManagerServiceInterface;
+use App\Services\VideoManager\Contracts\FavoriteServiceInterface;
 use Illuminate\Http\Request;
 
 class FavController extends Controller
 {
-    public function __construct(public VideoManagerServiceInterface $videoManagerService)
+    public function __construct(public FavoriteServiceInterface $favoriteService)
     {
 
     }
@@ -17,7 +16,7 @@ class FavController extends Controller
      */
     public function index()
     {
-        $data = $this->videoManagerService->getUnifiedContentList();
+        $data = $this->favoriteService->getUnifiedContentList();
         if ($data) {
             return response()->json($data);
         } else {
@@ -38,9 +37,9 @@ class FavController extends Controller
      */
     public function show(string $id)
     {
-        $id = intval($id);
-        $content = $this->videoManagerService->getUnifiedContentDetail($id);
-        
+        $id      = intval($id);
+        $content = $this->favoriteService->getUnifiedContentDetail($id);
+
         if ($content) {
             // 确保视频关联已加载
             if (isset($content->videos) && method_exists($content->videos, 'load')) {

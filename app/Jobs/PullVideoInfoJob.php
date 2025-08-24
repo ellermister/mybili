@@ -1,12 +1,12 @@
 <?php
 namespace App\Jobs;
 
-use App\Contracts\VideoManagerServiceInterface;
+use App\Services\VideoManager\Actions\Video\PullVideoInfoAction;
 
 class PullVideoInfoJob extends BaseScheduledRateLimitedJob
 {
     public $queue = 'default';
-    
+
     /**
      * Create a new job instance.
      */
@@ -43,6 +43,6 @@ class PullVideoInfoJob extends BaseScheduledRateLimitedJob
      */
     public function process(): void
     {
-        app(VideoManagerServiceInterface::class)->pullVideoInfo($this->bvid);
+        app(PullVideoInfoAction::class)->execute($this->bvid);
     }
 }

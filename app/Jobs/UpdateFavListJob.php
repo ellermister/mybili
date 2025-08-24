@@ -1,7 +1,7 @@
 <?php
 namespace App\Jobs;
 
-use App\Contracts\VideoManagerServiceInterface;
+use App\Services\VideoManager\Actions\Favorite\UpdateFavoritesAction;
 use Log;
 
 class UpdateFavListJob extends BaseScheduledRateLimitedJob
@@ -45,12 +45,10 @@ class UpdateFavListJob extends BaseScheduledRateLimitedJob
      */
     protected function process(): void
     {
-        Log::info('Update fav list job start');
+        Log::info('Update favorites job start');
 
-        $videoManagerService = app(VideoManagerServiceInterface::class);
+        app(UpdateFavoritesAction::class)->execute();
 
-        $videoManagerService->updateFavList();
-
-        Log::info('Update fav list job end');
+        Log::info('Update favorites job end');
     }
 }

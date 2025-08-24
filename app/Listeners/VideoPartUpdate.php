@@ -1,9 +1,9 @@
 <?php
 namespace App\Listeners;
 
-use App\Contracts\VideoManagerServiceInterface;
 use App\Events\VideoUpdated;
 use App\Models\Video;
+use App\Services\VideoManager\Actions\Video\UpdateVideoPartsAction;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Log;
@@ -15,7 +15,7 @@ class VideoPartUpdate implements ShouldQueue
     /**
      * Create the event listener.
      */
-    public function __construct(public VideoManagerServiceInterface $videoManagerService)
+    public function __construct(public UpdateVideoPartsAction $updateVideoPartsAction)
     {
 
     }
@@ -33,7 +33,7 @@ class VideoPartUpdate implements ShouldQueue
 
             $video = Video::where('id', $event->newVideo['id'])->first();
             if ($video) {
-                $this->videoManagerService->updateVideoParts($video);
+                $this->updateVideoPartsAction->execute($video);
             }
         }
     }

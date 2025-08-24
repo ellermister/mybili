@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Contracts\VideoManagerServiceInterface;
+use App\Services\VideoManager\Actions\Video\FixFavoriteInvalidVideoAction;
 use Log;
 
 class FixInvalidFavVideosJob extends BaseScheduledRateLimitedJob
@@ -49,9 +49,7 @@ class FixInvalidFavVideosJob extends BaseScheduledRateLimitedJob
     protected function process(): void
     {
         Log::info('Fix invalid fav videos job start');
-        $videoManagerService = app(VideoManagerServiceInterface::class);
-
-        $videoManagerService->fixFavInvalidVideos($this->fav['id'], $this->page);
+        app(FixFavoriteInvalidVideoAction::class)->execute($this->fav['id'], $this->page);
         Log::info('Fix invalid fav videos job end', ['fav_title' => $this->fav['title'], 'page' => $this->page]);
     }
 

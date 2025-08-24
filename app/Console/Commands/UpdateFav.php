@@ -2,13 +2,14 @@
 namespace App\Console\Commands;
 
 use App\Contracts\VideoDownloadServiceInterface;
-use App\Contracts\VideoManagerServiceInterface;
 use App\Jobs\FixInvalidFavVideosJob;
 use App\Jobs\UpdateFavListJob;
 use App\Jobs\UpdateFavVideosJob;
 use App\Models\Video;
 use App\Models\VideoPart;
 use App\Services\DownloadFilterService;
+use App\Services\VideoManager\Actions\Video\UpdateVideoPartsAction;
+use App\Services\VideoManager\Contracts\FavoriteServiceInterface;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
 use Log;
@@ -41,7 +42,8 @@ class UpdateFav extends Command
      * Execute the console command.
      */
     public function handle(
-        VideoManagerServiceInterface $videoManagerService,
+        FavoriteServiceInterface $favoriteService,
+        UpdateVideoPartsAction $updateVideoPartsAction,
         VideoDownloadServiceInterface $videoDownloadService
     ) {
         if ($this->option('update-fav')) {
@@ -50,16 +52,16 @@ class UpdateFav extends Command
         }
 
         if ($this->option('update-fav-videos')) {
-            $page = $this->option('update-fav-videos-page');
-            $favList = $videoManagerService->getFavList();
+            $page    = $this->option('update-fav-videos-page');
+            $favList = $favoriteService->getFavorites();
             foreach ($favList as $item) {
                 $this->info('dispatch update fav videos: ' . $item['title'] . ' id: ' . $item['id']);
-                $this->dispatchUpdateFavVideosJob($item, $page);
+                $this->dispatchUpdateFavVideosJob($item->toArray(), $page);
             }
         }
 
         if ($this->option('update-video-parts')) {
-            Video::chunk(100, function ($videos) use ($videoManagerService) {
+            Video::chunk(100, function ($videos) use ($updateVideoPartsAction) {
                 foreach ($videos as $video) {
                     $currentFav = $video->favorite;
                     if ($this->shouldExcludeByFavForMultiFav($currentFav)) {
@@ -70,7 +72,7 @@ class UpdateFav extends Command
                         Log::info($message, ['favs' => collect($currentFav->pluck('id'))->toArray()]);
                         continue;
                     }
-                    $videoManagerService->updateVideoParts($video);
+                    $updateVideoPartsAction->execute($video);
                 }
             });
         }
@@ -78,7 +80,7 @@ class UpdateFav extends Command
         if ($this->option('download-video-part')) {
             VideoPart::chunk(100, function ($videoParts) use ($videoDownloadService) {
                 foreach ($videoParts as $videoPart) {
-                    if($this->shouldExcludeByFavForMultiFav($videoPart->video->favorite)){
+                    if ($this->shouldExcludeByFavForMultiFav($videoPart->video->favorite)) {
                         $message = sprintf('in download video part command, exclude fav: %s id: %s', $videoPart->video['title'], $videoPart->video['id']);
                         $this->info($message);
                         Log::info($message, ['favs' => collect($videoPart->video->favorite->pluck('id'))->toArray()]);
@@ -90,11 +92,11 @@ class UpdateFav extends Command
         }
 
         if ($this->option('fix-invalid-fav-videos')) {
-            $page = $this->option('fix-invalid-fav-videos-page');
-            $favList = $videoManagerService->getFavList();
+            $page    = $this->option('fix-invalid-fav-videos-page');
+            $favList = $favoriteService->getFavorites();
             foreach ($favList as $item) {
                 $this->info('dispatch fix invalid fav videos: ' . $item['title'] . ' id: ' . $item['id']);
-                $this->dispatchFixInvalidFavVideosJob($item, $page);
+                $this->dispatchFixInvalidFavVideosJob($item->toArray(), $page);
             }
         }
     }
