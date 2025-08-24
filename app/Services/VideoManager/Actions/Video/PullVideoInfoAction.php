@@ -37,6 +37,7 @@ class PullVideoInfoAction
             }
 
             $videoData = $this->mapVideoInfoToVideoData($aid, $videoInfo);
+
             $video->fill($videoData);
             $video->save();
 
@@ -68,7 +69,7 @@ class PullVideoInfoAction
             'bvid'    => $videoInfo['bvid'],
             'pubtime' => Carbon::createFromTimestamp($videoInfo['pubdate']),
             'invalid' => $isInvalid,
-            'frozen'  => $isInvalid,
+            'frozen'  => false,
             'page'    => count($videoInfo['pages']),
         ];
     }
