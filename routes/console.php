@@ -1,6 +1,6 @@
 <?php
 
-use App\Contracts\VideoManagerServiceInterface;
+use App\Services\VideoManager\Contracts\VideoServiceInterface;
 use App\Enums\SettingKey;
 use App\Services\SettingsService;
 use App\Services\SubscriptionService;
@@ -22,7 +22,7 @@ Schedule::call(function () {
     $updateFavEnable = app(SettingsService::class)->get(SettingKey::FAVORITE_SYNC_ENABLED);
     if ($updateFavEnable == "on") {
         // 如果是首次运行则全量更新
-        if(app(VideoManagerServiceInterface::class)->countVideos() == 0){
+        if(app(VideoServiceInterface::class)->count() == 0){
             Artisan::call('app:update-fav', ['--update-fav-videos' => true]);
             return;
         }

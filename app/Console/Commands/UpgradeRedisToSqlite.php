@@ -10,7 +10,7 @@ use App\Models\Video;
 use App\Models\VideoPart;
 use App\Services\DownloadImageService;
 use App\Services\SettingsService;
-use App\Services\VideoDownloadService;
+use App\Services\DownloadVideoService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
@@ -52,7 +52,7 @@ class UpgradeRedisToSqlite extends Command
     {
         $this->downloadImageService = app(DownloadImageService::class);
         $this->settingService       = app(SettingsService::class);
-        $this->videoDownloadService = app(VideoDownloadService::class);
+        $this->videoDownloadService = app(DownloadVideoService::class);
         if ($this->option('favorite-list')) {
             $this->upgradeFavoriteList();
         }

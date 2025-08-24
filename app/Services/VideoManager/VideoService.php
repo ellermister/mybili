@@ -10,6 +10,11 @@ use Illuminate\Database\Eloquent\Collection;
 class VideoService implements VideoServiceInterface
 {
 
+    public function count(): int
+    {
+        return Video::count();
+    }
+
     public function getVideoInfo(string $id, bool $withParts = false): ?Video
     {
         $video = Video::query()->where('id', $id)->first();

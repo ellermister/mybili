@@ -5,7 +5,7 @@ namespace App\Jobs;
 use App\Contracts\TelegramBotServiceInterface;
 use App\Models\Video;
 use App\Models\VideoPart;
-use App\Services\VideoDownloadService;
+use App\Services\VideoManager\Contracts\VideoServiceInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
@@ -40,13 +40,7 @@ class SendVideoFreezeMessageJob implements ShouldQueue
         $videoFileSize = 0;
         $videoDuration = 0;
         foreach($videoParts as $videoPart){
-            $filePath = app(VideoDownloadService::class)->getVideoPartValidFilePath($videoPart);
-            if ($filePath) {
-                $videoFileSize += filesize($filePath);
-            }
-
-            $videoFileSize += $videoPart->danmakus()->sum('size');
-
+            $videoFileSize += app(VideoServiceInterface::class)->getVideoPartFileSize($videoPart);
             $videoDuration += $videoPart->duration;
         }
 

@@ -17,4 +17,6 @@ interface VideoServiceInterface
 
     public function getVideoPartFileSize(VideoPart $videoPart): int;
 
+    public function count(): int;
+
 }
