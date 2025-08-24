@@ -132,7 +132,7 @@ class UpdateFavoriteVideosAction
                         'title'          => $item['title'],
                         'changed_fields' => array_keys($changedFields),
                     ]);
-                    event(new VideoUpdated($oldVideoData, $video->toArray()));
+                    event(new VideoUpdated($oldVideoData, $video->getAttributes()));
                 } else {
                     Log::info('Video data unchanged, skipping VideoUpdated event', [
                         'id'    => $item['id'],
