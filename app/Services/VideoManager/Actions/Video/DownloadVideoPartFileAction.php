@@ -47,11 +47,6 @@ class DownloadVideoPartFileAction
 
         $url = config('services.bilibili.id_type') == 'bv' ? sprintf('https://www.bilibili.com/video/%s/', $video->bvid) : sprintf('https://www.bilibili.com/video/av%s/', $video->id);
 
-        // 获取音乐节特辑类的链接
-        $festivalJumpUrl = $this->bilibiliService->getVideoFestivalJumpUrl($video->id);
-        if ($festivalJumpUrl) {
-            $url = $festivalJumpUrl;
-        }
 
         $filePath = $this->downloadVideoService->getVideoPartValidFilePath($videoPart);
         if ($filePath) {
@@ -60,6 +55,13 @@ class DownloadVideoPartFileAction
             return;
         } else {
             // 如果不存在就去下载
+
+            // 获取音乐节特辑类的链接
+            $festivalJumpUrl = $this->bilibiliService->getVideoFestivalJumpUrl($video->id);
+            if ($festivalJumpUrl) {
+                $url = $festivalJumpUrl;
+            }
+
             $this->downloadVideoService->createDownloadDirectory();
             $binPath = base_path('download-video.sh');
 

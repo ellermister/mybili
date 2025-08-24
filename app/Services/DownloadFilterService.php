@@ -70,6 +70,9 @@ class DownloadFilterService
     public function shouldExcludeByDuration(int $duration)
     {
         $durationExclude = $this->settings->get(SettingKey::DURATION_VIDEO_EXCLUDE);
+        if (!$durationExclude) {
+            return false;
+        }
         if ($durationExclude['type'] === 'off') {
             return false;
         }
@@ -88,6 +91,9 @@ class DownloadFilterService
     public function shouldExcludeByDurationPart(int $duration)
     {
         $durationPartExclude = $this->settings->get(SettingKey::DURATION_VIDEO_PART_EXCLUDE);
+        if (!$durationPartExclude) {
+            return false;
+        }
         if ($durationPartExclude['type'] === 'off') {
             return false;
         }

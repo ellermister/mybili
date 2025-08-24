@@ -13,7 +13,7 @@ use App\Services\VideoManager\DanmakuService;
 use App\Services\VideoManager\FavoriteService;
 use App\Services\VideoManager\VideoService;
 use Illuminate\Support\ServiceProvider;
-
+use Illuminate\Support\Facades\DB;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,6 +36,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+         // SQLite WAL模式优化
+        if (config('database.default') === 'sqlite') {
+            DB::statement('PRAGMA journal_mode=WAL');
+            DB::statement('PRAGMA synchronous=NORMAL');
+            DB::statement('PRAGMA wal_autocheckpoint=1000');
+            DB::statement('PRAGMA busy_timeout=30000');
+            DB::statement('PRAGMA cache_size=10000');
+            DB::statement('PRAGMA temp_store=MEMORY');
+        }
     }
 }
