@@ -1,8 +1,8 @@
 <?php
 namespace App\Jobs;
 
-use App\Contracts\VideoDownloadServiceInterface;
 use App\Models\VideoPart;
+use App\Services\VideoManager\Actions\Video\CheckVideoPartFileToDownloadAction;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class ScanCheckVideoLocalFileJob implements ShouldQueue
@@ -19,11 +19,11 @@ class ScanCheckVideoLocalFileJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(VideoDownloadServiceInterface $videoDownloadService): void
+    public function handle(CheckVideoPartFileToDownloadAction $checkVideoPartFileToDownloadAction): void
     {
         $videoPart = VideoPart::where('id', $this->videoPartId)->first();
         if ($videoPart) {
-            $videoDownloadService->downloadVideoPartFile($videoPart, $this->download);
+            $checkVideoPartFileToDownloadAction->execute($videoPart, $this->download);
         }
     }
 }

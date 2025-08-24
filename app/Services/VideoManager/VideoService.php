@@ -1,8 +1,10 @@
 <?php
-namespace App\Services\VideoManager\Services;
+namespace App\Services\VideoManager;
 
 use App\Models\Video;
+use App\Models\VideoPart;
 use App\Services\VideoManager\Contracts\VideoServiceInterface;
+use App\Services\DownloadVideoService;
 use Illuminate\Database\Eloquent\Collection;
 
 class VideoService implements VideoServiceInterface
@@ -59,5 +61,14 @@ class VideoService implements VideoServiceInterface
             'frozen'     => Video::where('frozen', 1)->count(),
         ];
         return $stat;
+    }
+
+    public function getVideoPartFileSize(VideoPart $videoPart): int
+    {
+        $filePath = app(DownloadVideoService::class)->getVideoPartValidFilePath($videoPart);
+        if ($filePath) {
+            return filesize($filePath);
+        }
+        return 0;
     }
 }

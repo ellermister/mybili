@@ -1,13 +1,13 @@
 <?php
 namespace App\Console\Commands;
 
-use App\Contracts\VideoDownloadServiceInterface;
 use App\Jobs\FixInvalidFavVideosJob;
 use App\Jobs\UpdateFavListJob;
 use App\Jobs\UpdateFavVideosJob;
 use App\Models\Video;
 use App\Models\VideoPart;
 use App\Services\DownloadFilterService;
+use App\Services\VideoManager\Actions\Video\CheckVideoPartFileToDownloadAction;
 use App\Services\VideoManager\Actions\Video\UpdateVideoPartsAction;
 use App\Services\VideoManager\Contracts\FavoriteServiceInterface;
 use Illuminate\Console\Command;
@@ -44,7 +44,7 @@ class UpdateFav extends Command
     public function handle(
         FavoriteServiceInterface $favoriteService,
         UpdateVideoPartsAction $updateVideoPartsAction,
-        VideoDownloadServiceInterface $videoDownloadService
+        CheckVideoPartFileToDownloadAction $checkVideoPartFileToDownloadAction
     ) {
         if ($this->option('update-fav')) {
             $job = new UpdateFavListJob();
@@ -78,7 +78,7 @@ class UpdateFav extends Command
         }
 
         if ($this->option('download-video-part')) {
-            VideoPart::chunk(100, function ($videoParts) use ($videoDownloadService) {
+            VideoPart::chunk(100, function ($videoParts) use ($checkVideoPartFileToDownloadAction) {
                 foreach ($videoParts as $videoPart) {
                     if ($this->shouldExcludeByFavForMultiFav($videoPart->video->favorite)) {
                         $message = sprintf('in download video part command, exclude fav: %s id: %s', $videoPart->video['title'], $videoPart->video['id']);
@@ -86,7 +86,7 @@ class UpdateFav extends Command
                         Log::info($message, ['favs' => collect($videoPart->video->favorite->pluck('id'))->toArray()]);
                         continue;
                     }
-                    $videoDownloadService->downloadVideoPartFile($videoPart, true);
+                    $checkVideoPartFileToDownloadAction->execute($videoPart, true);
                 }
             });
         }

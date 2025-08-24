@@ -1,8 +1,8 @@
 <?php
 namespace App\Jobs;
 
-use App\Contracts\VideoDownloadServiceInterface;
 use App\Models\VideoPart;
+use App\Services\VideoManager\Actions\Video\DownloadVideoPartFileAction;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -60,8 +60,8 @@ class DownloadVideoJob extends BaseScheduledRateLimitedJob
      */
     public function process(): void
     {
-        $videoDownloadService = app(VideoDownloadServiceInterface::class);
-        $videoDownloadService->downloadVideoPartFileQueue($this->videoPart);
+        $downloadVideoPartFileAction = app(DownloadVideoPartFileAction::class);
+        $downloadVideoPartFileAction->execute($this->videoPart);
     }
 
     public function displayName(): string

@@ -4,6 +4,7 @@ namespace App\Listeners;
 use App\Contracts\TelegramBotServiceInterface;
 use App\Events\VideoPartDownloaded;
 use App\Services\VideoDownloadService;
+use App\Services\VideoManager\Contracts\VideoServiceInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class SendVideoDownloadedMessage implements ShouldQueue
@@ -26,11 +27,7 @@ class SendVideoDownloadedMessage implements ShouldQueue
         $videoPart = $event->videoPart;
         $video     = $videoPart->video;
 
-        $videoFileSize = 0;
-        $filePath = app(VideoDownloadService::class)->getVideoPartValidFilePath($videoPart);
-        if ($filePath) {
-            $videoFileSize = filesize($filePath);
-        }
+        $videoFileSize = app(VideoServiceInterface::class)->getVideoPartFileSize($videoPart);
 
         $readableFileSize = format_file_size($videoFileSize);
         $formattedDuration = format_duration($videoPart->duration);

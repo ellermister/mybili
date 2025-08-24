@@ -1,5 +1,5 @@
 <?php
-namespace App\Services\VideoManager\Services;
+namespace App\Services\VideoManager;
 
 use App\Models\Danmaku;
 use App\Models\Video;

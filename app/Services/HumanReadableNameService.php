@@ -1,21 +1,19 @@
 <?php
 namespace App\Services;
 
-use App\Contracts\VideoDownloadServiceInterface;
 use App\Models\Video;
 use App\Models\VideoPart;
+use App\Services\DownloadVideoService;
 use Illuminate\Support\Facades\Log;
 
 class HumanReadableNameService
 {
-    protected VideoDownloadServiceInterface $videoDownloadService;
     protected string $humanReadableDir;
     protected array $subDirs = ['tvs', 'movies'];
 
     public function __construct(
-        VideoDownloadServiceInterface $videoDownloadService,
+        public DownloadVideoService $downloadVideoService
     ) {
-        $this->videoDownloadService = $videoDownloadService;
         $this->humanReadableDir     = config('app.human_readable_dir');
     }
 
@@ -89,7 +87,7 @@ class HumanReadableNameService
      */
     protected function processMovie(Video $video, VideoPart $videoPart, string $sanitizedName): void
     {
-        $videoPath = $this->videoDownloadService->getVideoPartValidFilePath($videoPart);
+        $videoPath = $this->downloadVideoService->getVideoPartValidFilePath($videoPart);
 
         if (! is_file($videoPath)) {
             return;
@@ -106,7 +104,7 @@ class HumanReadableNameService
     {
         $successCount = 0;
         foreach ($parts as $part) {
-            $videoPath = $this->videoDownloadService->getVideoPartValidFilePath($part);
+            $videoPath = $this->downloadVideoService->getVideoPartValidFilePath($part);
 
             if (! is_file($videoPath)) {
                 continue;

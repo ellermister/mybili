@@ -1,9 +1,9 @@
 <?php
 namespace App\Listeners;
 
-use App\Contracts\VideoDownloadServiceInterface;
 use App\Events\VideoPartUpdated;
 use App\Models\VideoPart;
+use App\Services\VideoManager\Actions\Video\DownloadVideoPartFileAction;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class VideoPartFileDownload implements ShouldQueue
@@ -13,7 +13,7 @@ class VideoPartFileDownload implements ShouldQueue
     /**
      * Create the event listener.
      */
-    public function __construct(public VideoDownloadServiceInterface $videoDownloadService)
+    public function __construct(public DownloadVideoPartFileAction $downloadVideoPartFileAction)
     {
         //
     }
@@ -26,7 +26,7 @@ class VideoPartFileDownload implements ShouldQueue
         if (isset($event->newVideoPart)) {
             $videoPart = VideoPart::where('cid', $event->newVideoPart['cid'])->first();
             if ($videoPart) {
-                $this->videoDownloadService->downloadVideoPartFile($videoPart, true);
+                $this->downloadVideoPartFileAction->execute($videoPart, true);
             }
         }
     }
