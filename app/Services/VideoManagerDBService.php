@@ -277,12 +277,6 @@ class VideoManagerDBService implements VideoManagerServiceInterface
             return;
         }
 
-        // 后面考虑要不要控制频率，减少风控
-        // if ($video->video_downloaded_at && $video->video_downloaded_at > Carbon::now()->subDays(7)) {
-        //     Log::info('Video parts has been saved in the last 7 days', ['id' => $video->id, 'bvid' => $video->bvid, 'title' => $video->title]);
-        //     return;
-        // }
-
         try {
             if (config('services.bilibili.id_type') == 'bv') {
                 $videoParts = $this->bilibiliService->getVideoParts($video->bvid);
