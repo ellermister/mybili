@@ -19,7 +19,7 @@ class PullVideoInfoAction
             $aid       = $videoInfo['aid'];
 
             $video        = Video::query()->where('id', $aid)->first();
-            $oldVideoData = $video?->toArray() ?? [];
+            $oldVideoData = $video?->getAttributes() ?? [];
 
             // 如果是已存在的视频且无效，跳过更新
             if ($video && $this->videoIsInvalid($videoInfo)) {
@@ -40,7 +40,7 @@ class PullVideoInfoAction
             $video->fill($videoData);
             $video->save();
 
-            event(new VideoUpdated($oldVideoData, $video->toArray()));
+            event(new VideoUpdated($oldVideoData, $video->getAttributes()));
 
         } catch (\Exception $e) {
             Log::error("PullVideoInfoJob failed: " . $e->getMessage());
@@ -84,11 +84,11 @@ class PullVideoInfoAction
             return;
         }
 
-        $oldVideo       = $video->toArray();
+        $oldVideo       = $video->getAttributes();
         $video->invalid = true;
         $video->frozen  = true;
         $video->save();
 
-        event(new VideoUpdated($oldVideo, $video->toArray()));
+        event(new VideoUpdated($oldVideo, $video->getAttributes()));
     }
 }
