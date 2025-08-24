@@ -501,39 +501,82 @@ class VideoManagerDBService implements VideoManagerServiceInterface
     {
         try {
             $videoInfo = app(BilibiliService::class)->getVideoInfo($bvid);
-            $aid       = $videoInfo['aid'];
-            $video     = Video::query()->firstOrNew(['id' => $aid]);
-            //  ['id', 'link', 'title', 'intro', 'cover', 'bvid', 'pubtime', 'attr', 'invalid', 'frozen', 'cache_image', 'page', 'fav_time', 'danmaku_downloaded_at', 'video_downloaded_at'];
-            $video->fill([
-                'link'        => sprintf('bilibili://video/%s', $aid),
-                'title'       => $videoInfo['title'],
-                'intro'       => $videoInfo['desc'],
-                'cover'       => $videoInfo['pic'],
-                'bvid'        => $videoInfo['bvid'],
-                'pubtime'     => Carbon::createFromTimestamp($videoInfo['pubdate']),
-                'attr'        => 0,
-                'invalid'     => $videoInfo['state'] == 0 ? false : true,
-                'frozen'      => $videoInfo['state'] == 0 ? false : true,
-                'cache_image' => '',
-                'page'        => count($videoInfo['pages']),
-                'fav_time'    => null,
-            ]);
+            $aid = $videoInfo['aid'];
+            
+            $video = Video::query()->where('id', $aid)->first();
+            $oldVideoData = $video?->toArray() ?? [];
+            
+            // 如果是已存在的视频且无效，跳过更新
+            if ($video && $this->videoIsInvalid($videoInfo)) {
+                Log::info('Video is invalid, skip update video info', [
+                    'id' => $aid, 
+                    'title' => $videoInfo['title']
+                ]);
+                $this->markVideoAsInvalidByBvid($bvid);
+                return;
+            }
+            
+            // 创建或更新视频
+            if (!$video) {
+                $video = new Video(['id' => $aid]);
+            }
+            
+            $videoData = $this->mapVideoInfoToVideoData($aid, $videoInfo);
+            $video->fill($videoData);
             $video->save();
-            event(new VideoUpdated([], $video->toArray()));
+            
+            event(new VideoUpdated($oldVideoData, $video->toArray()));
+            
         } catch (\Exception $e) {
             Log::error("PullVideoInfoJob failed: " . $e->getMessage());
+        
+            // 处理404错误，标记视频为无效
             if ($e->getCode() == -404) {
-                $video = Video::where('bvid', $bvid)->first();
-                if ($video && ! $video->invalid) {
-                    $oldVideo       = $video->toArray();
-                    $video->invalid = true;
-                    $video->frozen  = true;
-                    $video->save();
-                    event(new VideoUpdated($oldVideo, $video->toArray()));
-                }
+                $this->markVideoAsInvalidByBvid($bvid);
             }
             throw $e;
         }
+    }
+
+
+    /**
+     * 将视频信息映射为数据库字段
+     */
+    private function mapVideoInfoToVideoData(string $aid, array $videoInfo): array
+    {
+        $isInvalid = $videoInfo['state'] != 0;
+        
+        return [
+            'link' => sprintf('bilibili://video/%s', $aid),
+            'title' => $videoInfo['title'],
+            'intro' => $videoInfo['desc'],
+            'cover' => $videoInfo['pic'],
+            'bvid' => $videoInfo['bvid'],
+            'pubtime' => Carbon::createFromTimestamp($videoInfo['pubdate']),
+            'invalid' => $isInvalid,
+            'frozen' => $isInvalid,
+            'page' => count($videoInfo['pages']),
+        ];
+    }
+
+    
+    /**
+     * 根据BVID标记视频为无效
+     */
+    private function markVideoAsInvalidByBvid(string $bvid): void
+    {
+        $video = Video::where('bvid', $bvid)->first();
+        
+        if (!$video || $video->invalid) {
+            return;
+        }
+        
+        $oldVideo = $video->toArray();
+        $video->invalid = true;
+        $video->frozen = true;
+        $video->save();
+        
+        event(new VideoUpdated($oldVideo, $video->toArray()));
     }
 
     // ==================== 统一内容管理相关 ====================
