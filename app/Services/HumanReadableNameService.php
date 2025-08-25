@@ -9,12 +9,11 @@ use Illuminate\Support\Facades\Log;
 class HumanReadableNameService
 {
     protected string $humanReadableDir;
-    protected array $subDirs = ['tvs', 'movies'];
 
     public function __construct(
         public DownloadVideoService $downloadVideoService
     ) {
-        $this->humanReadableDir     = config('app.human_readable_dir');
+        $this->humanReadableDir = config('app.human_readable_dir');
     }
 
     /**
@@ -32,21 +31,22 @@ class HumanReadableNameService
     protected function prepareDirectories(): void
     {
         // 创建主目录
-        if (! is_dir($this->humanReadableDir)) {
+        if (!is_dir($this->humanReadableDir)) {
             // 目录不存在，中止
             throw new \Exception('Human readable directory not found, path:' . $this->humanReadableDir);
         }
 
-        // 创建子目录
-        foreach ($this->subDirs as $subDir) {
-            $path = $this->humanReadableDir . '/' . $subDir;
+        $subDirs = scandir($this->humanReadableDir);
 
-            // 删除重建目录
-            if (is_dir($path)) {
-                $this->deleteDirectory($path);
+        // 删除子目录
+        foreach ($subDirs as $subDir) {
+            if ($subDir != "." && $subDir != "..") {
+                $path = $this->humanReadableDir . '/' . $subDir;
+
+                if (is_dir($path)) {
+                    $this->deleteDirectory($path);
+                }
             }
-
-            mkdir($path, 0777, true);
         }
     }
 
@@ -71,62 +71,74 @@ class HumanReadableNameService
      */
     protected function processVideo(Video $video): void
     {
-        $parts         = VideoPart::query()->where('video_id', $video['id'])->get();
-        $videoType     = count($parts) == 1 ? 'movies' : 'tvs';
+        $parts = VideoPart::query()->where('video_id', $video['id'])->get();
+        $videoType = count($parts) == 1 ? 'movies' : 'tvs';
         $sanitizedName = $this->sanitizeFileName($video['title']);
 
-        if ($videoType == 'movies') {
-            $this->processMovie($video, $parts->first(), $sanitizedName);
-        } else {
-            $this->processTvSeries($video, $parts, $sanitizedName);
+        # get name from favorites and subscriptions
+        $favoriteNames = $video->favorite() ? $video->favorite()->pluck('title')->toArray() : [];
+        $substriptionNames = $video->subscriptions() ? $video->subscriptions()->pluck('name')->toArray() : [];
+
+        # merge favoriteNames and subscriptionNames
+        $allNames = array_unique(array_merge($favoriteNames, $substriptionNames));
+
+        # for each name, create links
+        foreach ($allNames as $favoriteName) {
+            $sanitizedFavoriteName = $this->sanitizeFileName($favoriteName);
+
+            if ($videoType == 'movies') {
+                $this->processMovie($video, $parts->first(), $sanitizedName, $sanitizedFavoriteName);
+            } else {
+                $this->processTvSeries($video, $parts, $sanitizedName, $sanitizedFavoriteName);
+            }
         }
     }
 
     /**
      * 处理电影类型视频
      */
-    protected function processMovie(Video $video, VideoPart $videoPart, string $sanitizedName): void
+    protected function processMovie(Video $video, VideoPart $videoPart, string $sanitizedName, string $sanitizedFavoriteName): void
     {
         $videoPath = $this->downloadVideoService->getVideoPartValidFilePath($videoPart);
 
-        if (! is_file($videoPath)) {
+        if (!is_file($videoPath)) {
             return;
         }
 
-        $this->createVideoLink($videoPath, 'movies', $sanitizedName, $sanitizedName . '.mp4');
-        $this->createCoverLink($video, 'movies', $sanitizedName, $sanitizedName . '.jpg');
+        $this->createVideoLink($videoPath, $sanitizedFavoriteName, $sanitizedName, $sanitizedName . '.mp4');
+        $this->createCoverLink($video, $sanitizedFavoriteName, $sanitizedName, $sanitizedName . '.jpg');
     }
 
     /**
      * 处理电视剧类型视频
      */
-    protected function processTvSeries(Video $video, $parts, string $sanitizedName): void
+    protected function processTvSeries(Video $video, $parts, string $sanitizedName, string $sanitizedFavoriteName): void
     {
         $successCount = 0;
         foreach ($parts as $part) {
             $videoPath = $this->downloadVideoService->getVideoPartValidFilePath($part);
 
-            if (! is_file($videoPath)) {
+            if (!is_file($videoPath)) {
                 continue;
             }
 
             $episodeName = trim($this->formatEpisodeName($part->part ?? '', $part->page));
-            $this->createVideoLink($videoPath, 'tvs', $sanitizedName, $episodeName . '.mp4');
-            $this->createCoverLink($video, 'tvs', $sanitizedName, $episodeName . '.jpg');
+            $this->createVideoLink($videoPath, $sanitizedFavoriteName, $sanitizedName, $episodeName . '.mp4');
+            $this->createCoverLink($video, $sanitizedFavoriteName, $sanitizedName, $episodeName . '.jpg');
             $successCount++;
         }
 
         if ($successCount >= 1) {
-            $this->createCoverLink($video, 'tvs', $sanitizedName, $sanitizedName . '.jpg');
+            $this->createCoverLink($video, $sanitizedFavoriteName, $sanitizedName, $sanitizedName . '.jpg');
         }
     }
 
     /**
      * 创建视频硬链接
      */
-    protected function createVideoLink(string $sourcePath, string $videoType, string $seriesName, string $fileName): void
+    protected function createVideoLink(string $sourcePath, string $sanitizedFavoriteName, string $seriesName, string $fileName): void
     {
-        $targetPath = $this->buildTargetPath($videoType, $seriesName, $fileName);
+        $targetPath = $this->buildTargetPath($sanitizedFavoriteName, $seriesName, $fileName);
 
         if (is_file($targetPath)) {
             unlink($targetPath);
@@ -138,15 +150,15 @@ class HumanReadableNameService
     /**
      * 创建封面硬链接
      */
-    protected function createCoverLink(Video $video, string $videoType, string $seriesName, string $fileName): void
+    protected function createCoverLink(Video $video, string $sanitizedFavoriteName, string $seriesName, string $fileName): void
     {
         $coverPath = storage_path('app/public/' . $video->cache_image);
 
-        if (! is_file($coverPath)) {
+        if (!is_file($coverPath)) {
             return;
         }
 
-        $targetPath = $this->buildTargetPath($videoType, $seriesName, $fileName);
+        $targetPath = $this->buildTargetPath($sanitizedFavoriteName, $seriesName, $fileName);
 
         if (is_file($targetPath)) {
             unlink($targetPath);
@@ -172,7 +184,7 @@ class HumanReadableNameService
                 Log::info("Created link: {$targetPath}");
             } else {
                 Log::error("createLink error: {$e->getMessage()}", [
-                    'output'     => $output,
+                    'output' => $output,
                     'returnCode' => $returnCode,
                 ]);
             }
@@ -182,12 +194,12 @@ class HumanReadableNameService
     /**
      * 构建目标路径
      */
-    protected function buildTargetPath(string $videoType, string $seriesName, string $fileName): string
+    protected function buildTargetPath(string $sanitizedFavoriteName, string $seriesName, string $fileName): string
     {
-        $targetPath = $this->humanReadableDir . '/' . $videoType . '/' . $seriesName . '/' . $fileName;
-        $dir        = dirname($targetPath);
+        $targetPath = $this->humanReadableDir . '/' . $sanitizedFavoriteName . '/' . $seriesName . '/' . $fileName;
+        $dir = dirname($targetPath);
 
-        if (! is_dir($dir)) {
+        if (!is_dir($dir)) {
             mkdir($dir, 0777, true);
         }
 
@@ -241,7 +253,7 @@ class HumanReadableNameService
      */
     protected function deleteDirectory(string $dir): bool
     {
-        if (! is_dir($dir)) {
+        if (!is_dir($dir)) {
             return false;
         }
 
