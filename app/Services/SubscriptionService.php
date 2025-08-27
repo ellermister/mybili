@@ -23,7 +23,17 @@ class SubscriptionService
             }
             $mid               = $matches[1];
             $seasonId          = $matches[2];
-            $subscription      = $this->updateSeasons($mid, $seasonId, true);
+            $subscription      = $this->updateSeasonsAndSeries('seasons', $mid, $seasonId, true);
+            $subscription->url = $url;
+            $subscription->save();
+            return $subscription;
+        } else if ($type == 'series') {
+            if (! preg_match('#/(\d+)/lists/(\d+)#', $url, $matches)) {
+                throw new \Exception('invalid series url');
+            }
+            $mid               = $matches[1];
+            $seriesId          = $matches[2];
+            $subscription      = $this->updateSeasonsAndSeries('series', $mid, $seriesId, true);
             $subscription->url = $url;
             $subscription->save();
             return $subscription;
@@ -76,13 +86,13 @@ class SubscriptionService
         $subscriptions = Subscription::where('status', Subscription::STATUS_ACTIVE)->where('last_check_at', '<', now()->subMinutes(20))->get();
         foreach ($subscriptions as $subscription) {
             if ($subscription->type == 'seasons') {
-                if (! $this->lockSubscription($subscription->mid, $subscription->season_id)) {
+                if (! $this->lockSubscription($subscription->mid, $subscription->list_id)) {
                     continue;
                 }
                 try {
-                    $this->updateSeasons($subscription->mid, $subscription->season_id, false);
+                    $this->updateSeasonsAndSeries($subscription->type, $subscription->mid, $subscription->list_id, false);
                 } finally {
-                    $this->unlockSubscription($subscription->mid, $subscription->season_id);
+                    $this->unlockSubscription($subscription->mid, $subscription->list_id);
                 }
             } else if ($subscription->type == 'up') {
                 if (! $this->lockSubscription($subscription->mid)) {
@@ -97,54 +107,74 @@ class SubscriptionService
         }
     }
 
-    public function unlockSubscription($mid, $seasonId = null)
+    public function unlockSubscription($mid, $listId = null)
     {
-        redis()->del("subscription:lock:{$mid}:{$seasonId}");
+        redis()->del("subscription:lock:{$mid}:{$listId}");
     }
 
-    protected function lockSubscription($mid, $seasonId = null)
+    protected function lockSubscription($mid, $listId = null)
     {
-        $lock = redis()->setnx("subscription:lock:{$mid}:{$seasonId}", 1);
+        $lock = redis()->setnx("subscription:lock:{$mid}:{$listId}", 1);
         if (! $lock) {
             return false;
         }
-        redis()->expire("subscription:lock:{$mid}:{$seasonId}", 1200);
+        redis()->expire("subscription:lock:{$mid}:{$listId}", 1200);
         return true;
     }
 
-    public function updateSeasons($mid, $seasonId, $pullAll = false)
+    public function updateSeasonsAndSeries($type, $mid, $listId, $pullAll = false)
     {
-        $subscription            = Subscription::where('mid', $mid)->where('season_id', $seasonId)->firstOrNew();
-        $subscription->type      = 'seasons';
+        if (! in_array($type, ['seasons', 'series'])) {
+            throw new \Exception('invalid type');
+        }
+        $subscription            = Subscription::query()->where('mid', $mid)->where('list_id', $listId)->firstOrNew();
+        $subscription->type      = $type;
         $subscription->mid       = $mid;
-        $subscription->season_id = $seasonId;
+        $subscription->list_id = $listId;
         $subscription->save();
+
+        if ($type == "series") {
+            $dataMeta                  = $this->bilibiliService->getSeriesMeta($listId);
+            $listMeta                  = $dataMeta['meta'];
+            $subscription->total       = $listMeta['total'];
+            $subscription->name        = $listMeta['name'];
+            $subscription->description = $listMeta['description'];
+            $subscription->cover       = $listMeta['cover'] ?? '';
+            $subscription->save();
+        }
 
         $oldSubscription = $subscription->toArray();
         $page            = 1;
         $loaded          = 0;
         while (1) {
-            $seasonsList = $this->bilibiliService->getSeasonsList($mid, $seasonId, $page);
-            if (isset($seasonsList['data']) && is_array($seasonsList['data'])) {
+            if ($type == 'seasons') {
+                $dataList = $this->bilibiliService->getSeasonsList($mid, $listId, $page);
+            } else {
+                $dataList = $this->bilibiliService->getSeriesList($mid, $listId, $page);
+            }
+            if (is_array($dataList) && isset($dataList['archives']) && is_array($dataList['archives'])) {
 
-                if (count($seasonsList['data']['archives']) == 0) {
+                if (count($dataList['archives']) == 0) {
                     break;
                 }
 
-                if (! isset($seasonsList['data']['meta'])) {
-                    Log::error('get seasons list failed', ['mid' => $mid, 'season_id' => $seasonId, 'page' => $page, 'response' => $seasonsList]);
-                    throw new \Exception('get seasons list failed');
-                }
+                $loaded += count($dataList['archives']);
+                DB::transaction(function () use ($subscription, $dataList, $type, $page) {
+                    if ($type == "seasons" && isset($dataList['meta'])) {
+                        $listMeta                  = $dataList['meta'];
+                        $subscription->total       = $listMeta['total'];
+                        $subscription->name        = $listMeta['name'];
+                        $subscription->description = $listMeta['description'];
+                        $subscription->cover       = $listMeta['cover'];
+                        $subscription->save();
+                    }
 
-                $loaded += count($seasonsList['data']['archives']);
-                DB::transaction(function () use ($subscription, $seasonsList) {
-                    $subscription->total       = $seasonsList['data']['meta']['total'];
-                    $subscription->name        = $seasonsList['data']['meta']['name'];
-                    $subscription->description = $seasonsList['data']['meta']['description'];
-                    $subscription->cover       = $seasonsList['data']['meta']['cover'];
-                    $subscription->save();
+                    if ($type == "series" && $page == 1&& count($dataList['archives']) > 0) {
+                        $subscription->cover = $dataList['archives'][0]['pic'] ?? '';
+                        $subscription->save();
+                    }
 
-                    $archives = $seasonsList['data']['archives'];
+                    $archives = $dataList['archives'];
                     foreach ($archives as $archive) {
                         $subscriptionVideo                  = SubscriptionVideo::where('subscription_id', $subscription->id)->where('video_id', $archive['aid'])->firstOrNew();
                         $subscriptionVideo->bvid            = $archive['bvid'];
@@ -166,9 +196,6 @@ class SubscriptionService
                 }
 
                 $page++;
-            } else {
-                Log::error('get seasons list failed', ['mid' => $mid, 'season_id' => $seasonId, 'page' => $page, 'response' => $seasonsList]);
-                throw new \Exception('get seasons list failed');
             }
         }
         $subscription->last_check_at = now();

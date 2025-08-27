@@ -70,7 +70,7 @@
                     <div class="absolute top-2 left-2">
                         <span :class="subscription.type === 'up' ? 'bg-blue-500' : 'bg-orange-500'" 
                               class="text-white text-xs px-2 py-1 rounded-full select-none">
-                            {{ subscription.type === 'up' ? t('subscription.upMaster') : t('subscription.series') }}
+                            {{ subscription.type === 'up' ? t('subscription.upMaster') : t('subscription.'+ subscription.type) }}
                         </span>
                     </div>
                     
@@ -330,7 +330,7 @@
                         <div class="absolute top-2 left-2">
                             <span :class="subscription.type === 'up' ? 'bg-blue-500' : 'bg-orange-500'" 
                                   class="text-white text-xs px-2 py-1 rounded-full select-none">
-                                {{ subscription.type === 'up' ? t('subscription.upMaster') : t('subscription.series') }}
+                                {{ subscription.type === 'up' ? t('subscription.upMaster') : t('subscription.'+ subscription.type) }}
                             </span>
                         </div>
                     </div>
@@ -458,7 +458,8 @@
                     <select v-model="newSubscription.type" 
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                         <option value="up">{{ t('subscription.upMaster') }}</option>
-                        <option value="seasons">{{ t('subscription.series') }}</option>
+                        <option value="series">{{ t('subscription.series') }}</option>
+                        <option value="seasons">{{ t('subscription.seasons') }}</option>
                     </select>
                 </div>
                 
@@ -514,7 +515,7 @@ const breadcrumbItems = computed(() => [
 
 // 分类订阅数据
 const seasonsSubscriptions = computed(() => 
-    subscriptionList.value.filter(sub => sub.type === 'seasons')
+    subscriptionList.value.filter(sub => sub.type === 'seasons' || sub.type === 'series')
 );
 
 const upSubscriptions = computed(() => 

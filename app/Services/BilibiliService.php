@@ -527,7 +527,11 @@ class BilibiliService
             $url = self::API_HOST . "/x/polymer/web-space/seasons_archives_list?mid={$mid}&season_id={$seasonId}&sort_reverse=false&page_size={$pageSize}&page_num={$page}";
             $response = $client->request('GET', $url);
             $result = json_decode($response->getBody()->getContents(), true);
-            return $result;
+            if (is_array($result) && isset($result['data']) && is_array($result['data'])){
+                return $result['data'];
+            }
+            Log::error("get seasons list failed", ['mid' => $mid, 'season_id' => $seasonId, 'page' => $page, 'result' => $result]);
+            throw new \Exception("get seasons list failed");
         }catch(\Exception $e){
             Log::error("API request failed: " . $e->getMessage());
             if (strpos($e->getMessage(), '429') !== false || strpos($e->getMessage(), '412') !== false) {
@@ -538,6 +542,51 @@ class BilibiliService
         }
     }
 
+    public function getSeriesMeta(int $seriesId)
+    {
+        $client = $this->getClient();
+        $url = self::API_HOST . "/x/series/series?series_id={$seriesId}";
+        try{
+            $response = $client->request('GET', $url);
+            $result = json_decode($response->getBody()->getContents(), true);
+            if(is_array($result) && isset($result['data']) && is_array($result['data'])){
+                return $result['data'];
+            }
+            Log::error("get series meta failed", ['series_id' => $seriesId, 'result' => $result]);
+            throw new \Exception("get series meta failed");
+        }catch(\Exception $e){
+            Log::error("API request failed: " . $e->getMessage());
+            if (strpos($e->getMessage(), '429') !== false || strpos($e->getMessage(), '412') !== false) {
+                Log::warning("Rate limit detected, waiting 60 seconds before retry");
+                $this->bilibiliSuspendService->setSuspend();
+            }
+            throw $e;
+        }
+    }
+
+    public function getSeriesList(int $mid, int $seriesId, int $page = 1)
+    {
+        try{
+            $pageSize = 30;
+            $client = $this->getClient();
+            $url = self::API_HOST . "/x/series/archives?mid={$mid}&series_id={$seriesId}&only_normal=true&sort=desc&ps={$pageSize}&pn={$page}";
+            $response = $client->request('GET', $url);
+            $result = json_decode($response->getBody()->getContents(), true);
+            if(is_array($result) && isset($result['data']) && is_array($result['data'])){
+                return $result['data'];
+            }
+            Log::error("get series list failed", ['mid' => $mid, 'series_id' => $seriesId, 'page' => $page, 'result' => $result]);
+            throw new \Exception("get series list failed");
+        }catch(\Exception $e){
+            Log::error("API request failed: " . $e->getMessage());
+            if (strpos($e->getMessage(), '429') !== false || strpos($e->getMessage(), '412') !== false) {
+                Log::warning("Rate limit detected, waiting 60 seconds before retry");
+                $this->bilibiliSuspendService->setSuspend();
+            }
+            throw $e;
+        }
+
+    }
     public function getUpVideos(int $mid, ?int $offsetAid)
     {
         $client = $this->getClient();
