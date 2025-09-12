@@ -212,6 +212,7 @@ const messages = {
                 enterKeyword: '输入要过滤的关键词',
                 enterRegex: '输入正则表达式',
                 enterSizeMB: '输入大小（MB）',
+                enterBotApiUrl: '请输入 Bot API URL',
                 enterBotToken: '请输入 Bot Token',
                 enterChatId: '请输入聊天 ID'
             },
@@ -219,6 +220,8 @@ const messages = {
             // 通知设置
             notifications: {
                 telegramBot: 'Telegram Bot 通知',
+                botApiUrl: 'Bot API URL',
+                botApiUrlDescription: '填写反向代理的 API URL 例如 https://api.telegram.org',
                 botToken: 'Bot Token',
                 chatId: '聊天 ID',
                 connectionTest: '连接测试',
@@ -557,6 +560,7 @@ const messages = {
                 enterKeyword: 'Enter keyword to filter',
                 enterRegex: 'Enter regex pattern',
                 enterSizeMB: 'Enter size in MB',
+                enterBotApiUrl: 'Enter Bot API URL',
                 enterBotToken: 'Enter Bot Token',
                 enterChatId: 'Enter Chat ID'
             },
@@ -564,6 +568,8 @@ const messages = {
             // 通知设置
             notifications: {
                 telegramBot: 'Telegram Bot Notifications',
+                botApiUrl: 'Bot API URL',
+                botApiUrlDescription: 'Fill the API URL of the reverse proxy, for example https://api.telegram.org',
                 botToken: 'Bot Token',
                 chatId: 'Chat ID',
                 connectionTest: 'Connection Test',

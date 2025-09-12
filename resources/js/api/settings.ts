@@ -15,7 +15,7 @@ export const saveSettings = async (settings: any) => {
     return await res.json();
 };
 
-export const testTelegramConnection = (botToken: string, chatId: string) => {
+export const testTelegramConnection = (botToken: string, chatId: string, botUrl?: string) => {
     return fetch('/api/settings/test-telegram', {
         method: 'POST',
         headers: {
@@ -24,6 +24,7 @@ export const testTelegramConnection = (botToken: string, chatId: string) => {
         body: JSON.stringify({
             telegram_bot_token: botToken,
             telegram_chat_id: chatId,
+            telegram_bot_api_url: botUrl,
         }),
     }).then((res) => res.json());
 };

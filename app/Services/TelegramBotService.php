@@ -31,7 +31,7 @@ class TelegramBotService implements TelegramBotServiceInterface
 
         $botToken = $this->getBotToken();
         $chatId = $this->getChatId();
-
+        $botUrl = $this->getBotUrl();
         if (!$botToken || !$chatId) {
             Log::warning('Telegram bot not configured properly', [
                 'bot_token' => $botToken ? 'set' : 'not_set',
@@ -41,7 +41,7 @@ class TelegramBotService implements TelegramBotServiceInterface
         }
 
         try {
-            $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
+            $url = "$botUrl/bot{$botToken}/sendMessage";
             
             $data = [
                 'chat_id' => $chatId,
@@ -110,13 +110,14 @@ class TelegramBotService implements TelegramBotServiceInterface
 
         $botToken = $this->getBotToken();
         $chatId = $this->getChatId();
+        $botUrl = $this->getBotUrl();
 
         if (!$botToken || !$chatId) {
             return false;
         }
 
         try {
-            $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
+            $url = "$botUrl/bot{$botToken}/sendMessage";
             
             $data = [
                 'chat_id' => $chatId,
@@ -189,6 +190,20 @@ class TelegramBotService implements TelegramBotServiceInterface
     }
 
     /**
+     * 获取Bot URL
+     * 
+     * @return string|null
+     */
+    public function getBotUrl(): ?string
+    {
+        $url = $this->settings->get(SettingKey::TELEGRAM_BOT_API_URL->value);
+        if(empty($url)){
+            return 'https://api.telegram.org';
+        }
+        return $url;
+    }
+
+    /**
      * 设置Bot Token
      * 
      * @param string $token
@@ -222,6 +237,17 @@ class TelegramBotService implements TelegramBotServiceInterface
     }
 
     /**
+     * 设置Bot URL
+     * 
+     * @param string $url
+     * @return void
+     */
+    public function setBotUrl(string $url): void
+    {
+        $this->settings->put(SettingKey::TELEGRAM_BOT_API_URL->value, $url);
+    }
+
+    /**
      * 测试Bot连接
      * 
      * @return bool
@@ -231,9 +257,11 @@ class TelegramBotService implements TelegramBotServiceInterface
         if(!empty($args)){
             $botToken = $args['bot_token'];
             $chatId = $args['chat_id'];
+            $botUrl = $args['bot_url'] ?? 'https://api.telegram.org';
         }else{
             $botToken = $this->getBotToken();
             $chatId = $this->getChatId();
+            $botUrl = $this->getBotUrl();
         }
 
         if (!$botToken || !$chatId) {
@@ -241,7 +269,11 @@ class TelegramBotService implements TelegramBotServiceInterface
         }
 
         try {
-            $url = "https://api.telegram.org/bot{$botToken}/getMe";
+            $url = "$botUrl/bot{$botToken}/getMe";
+            Log::info('Testing Telegram bot connection', [
+                'url' => $url,
+                'args' => $args,
+            ]);
             $response = Http::timeout(10)->get($url);
 
             if ($response->successful()) {
@@ -249,7 +281,7 @@ class TelegramBotService implements TelegramBotServiceInterface
                 if ($result['ok'] ?? false) {
                     // 发送测试消息
                     $testMessage = "Test Message - Your Telegram Bot has been connected successfully!";
-                    $sendUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
+                    $sendUrl = "$botUrl/bot{$botToken}/sendMessage";
                     $sendResponse = Http::post($sendUrl, [
                         'chat_id' => $chatId,
                         'text' => $testMessage

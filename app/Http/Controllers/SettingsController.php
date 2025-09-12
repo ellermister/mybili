@@ -44,6 +44,7 @@ class SettingsController extends Controller
                 'custom_duration' => 0,
                 'type'            => 'off',
             ],
+            SettingKey::TELEGRAM_BOT_API_URL->value             => '',
             SettingKey::TELEGRAM_BOT_ENABLED->value             => 'off',
             SettingKey::TELEGRAM_BOT_TOKEN->value               => '',
             SettingKey::TELEGRAM_CHAT_ID->value                 => '',
@@ -93,6 +94,7 @@ class SettingsController extends Controller
             SettingKey::FAVORITE_EXCLUDE->value . '.enabled'                    => 'required|boolean',
             SettingKey::FAVORITE_EXCLUDE->value . '.selected'                   => 'required_if:fav_exclude.enabled,true|array',
 
+            SettingKey::TELEGRAM_BOT_API_URL->value                             => 'required|string',
             SettingKey::TELEGRAM_BOT_ENABLED->value                             => 'required|string|in:on,off',
             SettingKey::TELEGRAM_BOT_TOKEN->value                               => 'required_if:telegram_bot_enabled,on|string',
             SettingKey::TELEGRAM_CHAT_ID->value                                 => 'required_if:telegram_bot_enabled,on|string',
@@ -108,13 +110,15 @@ class SettingsController extends Controller
     public function testTelegramConnection(Request $request)
     {
         $data = $request->validate([
-            SettingKey::TELEGRAM_BOT_TOKEN->value => 'required|string',
-            SettingKey::TELEGRAM_CHAT_ID->value   => 'required|string',
+            SettingKey::TELEGRAM_BOT_TOKEN->value   => 'required|string',
+            SettingKey::TELEGRAM_CHAT_ID->value     => 'required|string',
+            SettingKey::TELEGRAM_BOT_API_URL->value => 'nullable|string',
         ]);
 
         $result = $this->telegramBot->testConnection([
             'bot_token' => $data[SettingKey::TELEGRAM_BOT_TOKEN->value],
             'chat_id'   => $data[SettingKey::TELEGRAM_CHAT_ID->value],
+            'bot_url'   => $data[SettingKey::TELEGRAM_BOT_API_URL->value] ?? null,
         ]);
 
         return response()->json(['message' => 'Telegram connection test successful', 'result' => $result]);

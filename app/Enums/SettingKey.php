@@ -21,6 +21,7 @@ enum SettingKey: string {
     case COOKIES_CONTENT = 'cookies_content';
 
     // Telegram Bot 设置
+    case TELEGRAM_BOT_API_URL = 'telegram_bot_api_url';
     case TELEGRAM_BOT_ENABLED = 'telegram_bot_enabled';
     case TELEGRAM_BOT_TOKEN = 'telegram_bot_token';
     case TELEGRAM_CHAT_ID = 'telegram_chat_id';
@@ -45,6 +46,7 @@ enum SettingKey: string {
             self::COOKIES_CONTENT => 'Cookies 内容',
             
             // Telegram Bot 设置
+            self::TELEGRAM_BOT_API_URL => 'Telegram Bot API URL',
             self::TELEGRAM_BOT_ENABLED => 'Telegram Bot 启用',
             self::TELEGRAM_BOT_TOKEN => 'Telegram Bot Token',
             self::TELEGRAM_CHAT_ID => 'Telegram 聊天 ID',
