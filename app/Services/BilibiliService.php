@@ -13,6 +13,8 @@ class BilibiliService
 
     const API_HOST = 'https://api.bilibili.com';
     const APP_API_HOST = 'https://app.biliapi.com';
+    const APP_KEY = '1d8b6e7d45233436';
+    const APP_SECRET = '560c52ccd288fed045859ed18bffd973';
 
     protected $favVideosPageSize;
 
@@ -31,6 +33,21 @@ class BilibiliService
             'headers' => [
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
                 'Referer'    => 'https://www.bilibili.com/',
+            ],
+        ]);
+    }
+
+    private function getAppClient()
+    {
+        return new Client([
+            'headers' => [
+                'User-Agent' => 'bili-universal/77100100 CFNetwork/1404.0.5 Darwin/22.3.0',
+                'Buvid' => 'XY' . bin2hex(random_bytes(16)),
+                'Display-ID' => 'MAC-' . strtoupper(bin2hex(random_bytes(6))),
+                'Device-ID' => bin2hex(random_bytes(20)),
+                'Channel' => 'AppStore',
+                'App-Key' => 'iphone',
+                'Env' => 'prod',
             ],
         ]);
     }
@@ -137,6 +154,29 @@ class BilibiliService
         $wbiSign = md5($query . $mixinKey);
 
         return $query . '&w_rid=' . $wbiSign;
+    }
+
+    /**
+     * APP签名方法
+     */
+    private function appSign(array $params, string $appkey, string $appsec): array
+    {
+        // 添加appkey参数
+        $params['appkey'] = $appkey;
+        
+        // 按照key重排参数
+        ksort($params);
+        
+        // 序列化参数
+        $query = http_build_query($params);
+        
+        // 计算api签名
+        $sign = md5($query . $appsec);
+        
+        // 添加签名参数
+        $params['sign'] = $sign;
+        
+        return $params;
     }
 
     /**
@@ -589,12 +629,28 @@ class BilibiliService
     }
     public function getUpVideos(int $mid, ?int $offsetAid)
     {
-        $client = $this->getClient();
-        if($offsetAid === null){
-            $url = self::APP_API_HOST . "/x/v2/space/archive/cursor?vmid={$mid}&order=pubdate&ps=20";
-        }else{
-            $url = self::APP_API_HOST . "/x/v2/space/archive/cursor?vmid={$mid}&order=pubdate&ps=20&aid={$offsetAid}";
+        $client = $this->getAppClient();
+        
+        // 准备基础参数
+        $params = [
+            'vmid' => $mid,
+            'order' => 'pubdate',
+            'ps' => 20,
+            'ts' => time()
+        ];
+        
+        // 如果有偏移aid，添加到参数中
+        if ($offsetAid !== null) {
+            $params['aid'] = $offsetAid;
         }
+        
+        // 进行APP签名
+        $signedParams = $this->appSign($params, self::APP_KEY, self::APP_SECRET);
+        
+        // 构建查询字符串
+        $query = http_build_query($signedParams);
+        $url = self::APP_API_HOST . "/x/v2/space/archive/cursor?" . $query;
+        
         try{
             $response = $client->request('GET', $url);
             $result = json_decode($response->getBody()->getContents(), true);
