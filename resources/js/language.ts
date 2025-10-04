@@ -158,7 +158,11 @@ const messages = {
             videoNotFoundDescription: '抱歉，您要查找的视频不存在或已被删除',
             backToHome: '返回首页',
             loading: '加载中...',
-            favorite: '收藏夹'
+            favorite: '收藏夹',
+            downloadVideo: '下载视频',
+            downloadDanmaku: '下载弹幕',
+            downloadCover: '下载封面',
+            visitSpace: '访问空间'
         },
 
         // 设置页面
@@ -507,7 +511,11 @@ const messages = {
             videoNotFoundDescription: 'Sorry, the video you are looking for does not exist or has been deleted',
             backToHome: 'Back to Home',
             loading: 'Loading...',
-            favorite: 'Favorite'
+            favorite: 'Favorite',
+            downloadVideo: 'Download Video',
+            downloadDanmaku: 'Download Danmaku',
+            downloadCover: 'Download Cover',
+            visitSpace: 'Visit Space'
         },
 
         // 设置页面

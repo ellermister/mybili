@@ -1,6 +1,7 @@
 <?php
 namespace App\Services\VideoManager\Actions\Video;
 
+use App\Events\UpperTryUpdated;
 use App\Events\VideoUpdated;
 use App\Models\Video;
 use App\Services\BilibiliService;
@@ -38,6 +39,10 @@ class PullVideoInfoAction
 
             $videoData = $this->mapVideoInfoToVideoData($aid, $videoInfo);
 
+            if(isset($videoInfo['owner']) && isset($videoInfo['owner']['mid'])){
+                event(new UpperTryUpdated($videoInfo['owner']));
+            }
+
             $video->fill($videoData);
             $video->save();
 
@@ -61,6 +66,12 @@ class PullVideoInfoAction
     {
         $isInvalid = $videoInfo['state'] != 0;
 
+        if(isset($videoInfo['owner']) && isset($videoInfo['owner']['mid'])){
+            $upperId = $videoInfo['owner']['mid'];
+        }else{
+            $upperId = null;
+        }
+
         return [
             'link'    => sprintf('bilibili://video/%s', $aid),
             'title'   => $videoInfo['title'],
@@ -71,6 +82,7 @@ class PullVideoInfoAction
             'invalid' => $isInvalid,
             'frozen'  => false,
             'page'    => count($videoInfo['pages']),
+            'upper_id' => $upperId,
         ];
     }
 

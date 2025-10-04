@@ -28,6 +28,7 @@ class VideoController extends Controller
             $video->danmaku_count = $this->danmakuService->getVideoDanmakuCount($video);
             $video->load('favorite');
             $video->load('subscriptions');
+            $video->load('upper');
 
             return response()->json($video);
         }

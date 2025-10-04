@@ -1,6 +1,7 @@
 <?php
 namespace App\Services\VideoManager\Actions\Favorite;
 
+use App\Events\UpperTryUpdated;
 use App\Events\VideoUpdated;
 use App\Models\FavoriteList;
 use App\Models\Video;
@@ -16,7 +17,7 @@ class UpdateFavoriteVideosAction
     use CacheableTrait, VideoDataTrait;
 
     public function __construct(
-        public BilibiliService $bilibiliService
+        public BilibiliService $bilibiliService,
     ) {
     }
 
@@ -52,6 +53,12 @@ class UpdateFavoriteVideosAction
                 $newValue = $item;
             }
 
+            $upperId = $newValue['upper']['mid'] ?? ($exist['upper_id'] ?? null);
+
+            if($newValue['upper']){
+                event(new UpperTryUpdated($newValue['upper']));
+            }
+
             //在此做键值对映射，避免字段未来变更
             return [
                 'id'       => $item['id'],
@@ -66,7 +73,8 @@ class UpdateFavoriteVideosAction
                 'invalid'  => $newValue['invalid'],
                 'frozen'   => $newValue['frozen'],
                 'page'     => $newValue['page'],
-                'fav_time' => date('Y-m-d H:i:s', $newValue['fav_time'])
+                'fav_time' => date('Y-m-d H:i:s', $newValue['fav_time']),
+                'upper_id' => $upperId,
             ];
         }, $videos);
 

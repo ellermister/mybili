@@ -7,7 +7,7 @@ use Storage;
 class Video extends Model
 {
     protected $table      = 'videos';
-    protected $fillable   = ['id', 'link', 'title', 'intro', 'cover', 'bvid', 'pubtime', 'duration', 'attr', 'invalid', 'frozen', 'cache_image', 'page', 'fav_time', 'danmaku_downloaded_at', 'video_downloaded_at'];
+    protected $fillable   = ['id', 'link', 'title', 'intro', 'cover', 'bvid', 'pubtime', 'duration', 'attr', 'invalid', 'frozen', 'cache_image', 'page', 'fav_time', 'danmaku_downloaded_at', 'video_downloaded_at','upper_id'];
     protected $primaryKey = 'id';
 
     protected $casts = [
@@ -25,6 +25,7 @@ class Video extends Model
         'frozen'      => false,
         'page'        => 1,
         'fav_time'    => null,
+        'upper_id'    => null,
     ];
 
     public function parts()
@@ -56,5 +57,10 @@ class Video extends Model
     public function subscriptions()
     {
         return $this->belongsToMany(Subscription::class, 'subscription_videos', 'video_id', 'subscription_id');
+    }
+
+    public function upper()
+    {
+        return $this->belongsTo(Upper::class, 'upper_id', 'mid');
     }
 }

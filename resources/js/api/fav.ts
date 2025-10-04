@@ -1,4 +1,5 @@
 import type { Subscription } from "./subscription";
+import type { Upper } from "./upper";
 
 export interface Favorite {
     id: number;
@@ -43,6 +44,7 @@ export interface Video {
     video_parts: VideoPartType[]|null;
     danmaku_count: number
     subscriptions: Subscription[]|null;
+    upper: Upper|null;
 }
 
 

@@ -28,8 +28,8 @@
                         <h3 class="text-xl font-semibold mb-3 text-gray-800 flex items-center flex-shrink-0">
                             <span class="w-2 h-2 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full mr-2"></span>
                             {{ t('video.videoParts') }}&nbsp;<span class="text-gray-500 text-sm font-normal">({{
-                                videoInfo.video_parts.findIndex(part => part.id === currentPart?.id) + 1 }}/{{
-                                videoInfo.video_parts.length }})</span>
+                                videoInfo.video_parts.findIndex(part => part.id === currentPart?.id) + 1}}/{{
+                                    videoInfo.video_parts.length }})</span>
                         </h3>
                         <div class="space-y-1 overflow-y-auto flex-1 min-h-0 pr-1 custom-scrollbar">
                             <button v-for="part in videoInfo?.video_parts" :key="part.id" @click="playPart(part.id)"
@@ -56,6 +56,29 @@
                     <div>
                         <h2 class="text-2xl font-bold text-gray-800 mb-2 leading-tight">{{ videoInfo.title }}</h2>
                         <div class="w-16 h-1 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full"></div>
+                    </div>
+
+                    <!-- UP主信息 -->
+                    <div v-if="videoInfo.upper" class="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200/50">
+                        <div class="flex items-center space-x-3">
+                            <!-- 预留头像位置 -->
+                            <div class="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span class="text-white font-semibold text-sm">UP</span>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <h3 class="font-semibold text-gray-800 truncate">{{ videoInfo.upper.name }}</h3>
+                                    <span class="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">UID: {{ videoInfo.upper.mid }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <a :href="upperSpaceUrl(videoInfo.upper.mid)" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           class="inline-flex items-center space-x-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0">
+                            <span>{{ t('video.visitSpace') }}</span>
+                            <span class="text-gray-400">↗</span>
+                        </a>
                     </div>
 
                     <!-- Description -->
@@ -112,6 +135,42 @@
                             <span class="text-white/80">↗</span>
                         </a>
                     </div>
+
+                    <!-- Download Actions -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t border-gray-200/50">
+                        <!-- Download Video Button -->
+                        <button @click="downloadVideo"
+                            class="flex flex-col items-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200/50 rounded-xl hover:from-blue-100 hover:to-blue-150 hover:border-blue-300/50 transition-all duration-300 group hover:shadow-md">
+                            <div
+                                class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                                <span class="text-xl text-white">🎬</span>
+                            </div>
+                            <span class="text-sm font-medium text-blue-700 group-hover:text-blue-800">{{
+                                t('video.downloadVideo') }}</span>
+                        </button>
+
+                        <!-- Download Danmaku Button -->
+                        <button @click="downloadDanmaku"
+                            class="flex flex-col items-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200/50 rounded-xl hover:from-purple-100 hover:to-purple-150 hover:border-purple-300/50 transition-all duration-300 group hover:shadow-md">
+                            <div
+                                class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                                <span class="text-xl text-white">💬</span>
+                            </div>
+                            <span class="text-sm font-medium text-purple-700 group-hover:text-purple-800">{{
+                                t('video.downloadDanmaku') }}</span>
+                        </button>
+
+                        <!-- Download Cover Button -->
+                        <button @click="downloadCover"
+                            class="flex flex-col items-center p-4 bg-gradient-to-br from-pink-50 to-pink-100 border border-pink-200/50 rounded-xl hover:from-pink-100 hover:to-pink-150 hover:border-pink-300/50 transition-all duration-300 group hover:shadow-md">
+                            <div
+                                class="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                                <span class="text-xl text-white">🖼️</span>
+                            </div>
+                            <span class="text-sm font-medium text-pink-700 group-hover:text-pink-800">{{
+                                t('video.downloadCover') }}</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -165,7 +224,7 @@ const breadcrumbItems = computed(() => {
         let fav = videoInfo.value?.favorite?.find(fav => fav.id == parseInt(favId))
         if (fav) {
             title = fav.title
-        }else{
+        } else {
             let subscription = videoInfo.value?.subscriptions?.find(sub => -sub.id == parseInt(favId))
             if (subscription) {
                 title = subscription.name
@@ -177,16 +236,91 @@ const breadcrumbItems = computed(() => {
             { text: videoInfo.value?.title ?? t('video.loading') }
         ]
     } else {
-        return [
-            { text: t('navigation.home'), to: '/' },
-            { text: (videoInfo.value?.favorite?.[0]?.title ?? t('video.favorite')), to: '/fav/' + (videoInfo.value?.favorite?.[0]?.id ?? '') },
-            { text: videoInfo.value?.title ?? t('video.loading') }
-        ]
+        if (videoInfo.value?.favorite && videoInfo.value?.favorite?.length > 0) {
+            return [
+                { text: t('navigation.home'), to: '/' },
+                { text: (videoInfo.value?.favorite?.[0]?.title ?? t('video.favorite')), to: '/fav/' + (videoInfo.value?.favorite?.[0]?.id ?? '') },
+                { text: videoInfo.value?.title ?? t('video.loading') }
+            ]
+        } else if (videoInfo.value?.subscriptions && videoInfo.value?.subscriptions?.length > 0) {
+            return [
+                { text: t('navigation.home'), to: '/' },
+                { text: (videoInfo.value?.subscriptions?.[0]?.name ?? t('video.favorite')), to: '/subscription/' + (videoInfo.value?.subscriptions?.[0]?.id ?? '') },
+                { text: videoInfo.value?.title ?? t('video.loading') }
+            ]
+        } else {
+            return [
+                { text: t('navigation.home'), to: '/' },
+                { text: videoInfo.value?.title ?? t('video.loading') }
+            ]
+        }
+
     }
 })
 
 const bilibiliUrl = (bvid: string) => {
     return `https://www.bilibili.com/video/${bvid}`
+}
+
+const upperSpaceUrl = (mid: number) => {
+    return `https://space.bilibili.com/${mid}`
+}
+
+const downloadFile = (url: string, name: string) => {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = name
+    a.click()
+}
+
+const downloadVideo = () => {
+    const parts = videoInfo.value?.video_parts
+    if (parts) {
+        for (let i in parts) {
+            const part = parts[i]
+            const url = part.url
+            if (url) {
+                // 下载视频
+                downloadFile(url, part.title + ".mp4")
+            }
+        }
+    }
+    console.log('Download video clicked for:', videoInfo.value?.bvid)
+}
+
+const downloadDanmaku = () => {
+    const parts = videoInfo.value?.video_parts
+    if (parts) {
+        for (let i in parts) {
+            const part = parts[i]
+            const partId = part.id
+            fetch(`/api/danmaku/v3/?id=${partId}`).then(async (rsp) => {
+                if (rsp.ok) {
+                    const jsonData = await rsp.json()
+                    const danmaku = jsonData.data
+                    if (danmaku) {
+                        // 按照第一个元素排序,时间
+                        danmaku.sort((a: any, b: any) => a[0] - b[0])
+                        const json = JSON.stringify(danmaku)
+                        const file = new File([json], part.title + ".json", { type: "application/json" })
+                        const url = URL.createObjectURL(file)
+                        downloadFile(url, part.title + ".json")
+                    }
+                }
+            })
+        }
+    }
+    console.log('Download danmaku clicked for:', videoInfo.value?.bvid)
+}
+
+const downloadCover = () => {
+    // TODO: Implement cover download functionality
+    const coverURL = videoInfo.value?.cache_image_url
+    if (coverURL) {
+        // 下载图片
+        downloadFile(coverURL, videoInfo.value?.title + ".jpg")
+    }
+    console.log('Download cover clicked for:', videoInfo.value?.bvid)
 }
 
 const videoInfo = ref<Video | null>()
