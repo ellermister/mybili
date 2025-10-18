@@ -8,6 +8,7 @@ import CookieView from './pages/CookieView.vue';
 import SettingsView from './pages/SettingsView.vue';
 import SubscriptionView from './pages/Subscription.vue';
 import SubscriptionVideoView from './pages/SubscriptionVideo.vue';
+import VideoManagement from './pages/VideoManagement.vue';
 
 const routes = [
   { path: '/', component: Home },
@@ -16,6 +17,7 @@ const routes = [
   { path: '/video/:id', component: VideoView, name:'video-id' },
   { path: '/about', component: About },
   { path: '/progress', component: ProgressView, name: 'progress' },
+  { path: '/videos', component: VideoManagement, name: 'video-management' },
   { path: '/cookie', component: CookieView },
   { path: '/settings', component: SettingsView },
   { path: '/subscription', component: SubscriptionView, name: 'subscription' },

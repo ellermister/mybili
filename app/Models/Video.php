@@ -2,10 +2,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Storage;
 
 class Video extends Model
 {
+
+    use SoftDeletes;
+
     protected $table      = 'videos';
     protected $fillable   = ['id', 'link', 'title', 'intro', 'cover', 'bvid', 'pubtime', 'duration', 'attr', 'invalid', 'frozen', 'cache_image', 'page', 'fav_time', 'danmaku_downloaded_at', 'video_downloaded_at','upper_id'];
     protected $primaryKey = 'id';

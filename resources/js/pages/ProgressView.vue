@@ -7,9 +7,14 @@
                     <h1 class="my-8 text-2xl">
                         <RouterLink to="/">🌸</RouterLink> {{ t('progress.title') }} {{ $route.params.id }}
                     </h1>
-                    <h1 class="my-8 text-2xl">
-                        <RouterLink to="/horizon" target="_blank">🔭 {{ t('progress.viewTasks') }}</RouterLink> 
-                    </h1>
+                    <div class="flex gap-4 my-8 text-2xl">
+                        <RouterLink to="/videos" class="hover:text-blue-600 transition-colors">
+                            🎬 {{ t('navigation.videoManagement') }}
+                        </RouterLink>
+                        <RouterLink to="/horizon" target="_blank" class="hover:text-blue-600 transition-colors">
+                            🔭 {{ t('progress.viewTasks') }}
+                        </RouterLink> 
+                    </div>
                 </div>
 
                 <div class="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">

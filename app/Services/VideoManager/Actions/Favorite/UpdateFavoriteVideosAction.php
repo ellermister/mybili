@@ -37,7 +37,12 @@ class UpdateFavoriteVideosAction
         $videos = array_map(function ($item) {
             $videoInvalid = $this->videoIsInvalid($item);
 
-            $exist = Video::query()->where('id', $item['id'])->first();
+            $exist = Video::withTrashed()->where('id', $item['id'])->first();
+
+            // 如果视频已经删除即忽略
+            if($exist && $exist->trashed()){
+                return null;
+            }
 
             // 是否冻结该视频: 是否已经保护备份了该视频
             // 如果已经冻结了该视频, 就不更新该视频的主要信息
@@ -77,6 +82,11 @@ class UpdateFavoriteVideosAction
                 'upper_id' => $upperId,
             ];
         }, $videos);
+
+        $videos = array_filter($videos);
+        if(empty($videos)){
+            return;
+        }
 
         // 暂存视频数据
         $this->saveFavoriteVideo($favId, $videos);

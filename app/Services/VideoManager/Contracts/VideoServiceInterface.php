@@ -11,6 +11,8 @@ interface VideoServiceInterface
 
     public function getVideos(array $conditions = []): Collection;
 
+    public function getVideosByPage(array $conditions = [], $page = 1, $perPage = 10): array;
+
     public function getAllPartsVideoForUser(Video $video): array;
 
     public function getVideosStat(array $conditions = []): array;
@@ -18,5 +20,7 @@ interface VideoServiceInterface
     public function getVideoPartFileSize(VideoPart $videoPart): int;
 
     public function count(): int;
+
+    public function deleteVideos(array $ids): array;
 
 }

@@ -109,4 +109,25 @@ class DownloadVideoService
         }
         return false;
     }
+
+    public function deleteVideoPartFile(VideoPart $videoPart): void
+    {
+        $savePath = $this->getDownloadPath($videoPart->video_id, $videoPart->page);
+        $hashPath = $this->getDownloadHashPath($videoPart->video_id, $videoPart->page);
+        if (is_file($savePath)) {
+            unlink($savePath);
+        }
+        if (is_file($hashPath)) {
+            unlink($hashPath);
+        }
+
+        $savePath = $this->getDownloadPath($videoPart->video_id, $videoPart->cid);
+        $hashPath = $this->getDownloadHashPath($videoPart->video_id, $videoPart->cid);
+        if (is_file($savePath)) {
+            unlink($savePath);
+        }
+        if (is_file($hashPath)) {
+            unlink($hashPath);
+        }
+    }
 }

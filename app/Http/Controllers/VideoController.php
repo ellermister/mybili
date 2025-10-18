@@ -2,9 +2,9 @@
 namespace App\Http\Controllers;
 
 use App\Services\DPlayerDanmakuService;
-use App\Services\VideoManager\Contracts\VideoServiceInterface;
-use App\Services\VideoManager\Contracts\FavoriteServiceInterface;
 use App\Services\VideoManager\Contracts\DanmakuServiceInterface;
+use App\Services\VideoManager\Contracts\FavoriteServiceInterface;
+use App\Services\VideoManager\Contracts\VideoServiceInterface;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -18,6 +18,57 @@ class VideoController extends Controller
         public DPlayerDanmakuService $dplayerDanmakuService
     ) {
 
+    }
+
+    public function index(Request $request)
+    {
+        $data = $request->validate([
+            'query'      => 'nullable|string',
+            'page'       => 'nullable|integer|min:1',
+            'status'     => 'nullable|string',
+            'downloaded' => 'nullable|string',
+            'multi_part' => 'nullable|string',
+            'fav_id'     => 'nullable|integer',
+            'page_size'  => 'nullable|integer|min:1',
+        ]);
+        $page    = $data['page'] ?? 1;
+        $perPage = 30;
+        $result  = $this->videoService->getVideosByPage([
+            'query'      => $data['query'] ?? '',
+            'status'     => $data['status'] ?? '',
+            'downloaded' => $data['downloaded'] ?? '',
+            'multi_part' => $data['multi_part'] ?? '',
+            'fav_id'     => $data['fav_id'] ?? '',
+        ], $page, intval($data['page_size'] ?? $perPage));
+        return response()->json([
+            'stat'  => $result['stat'],
+            'list'  => $result['list'],
+        ]);
+    }
+
+    public function destroy(Request $request, string $id)
+    {
+        // 补充其他ID
+        $extend_ids = $request->input('extend_ids');
+        if ($extend_ids && is_array($extend_ids)) {
+            $ids = array_merge([$id], $extend_ids);
+        } else {
+            $ids = [$id];
+        }
+        $ids        = array_map('intval', $ids);
+        $deletedIds = $this->videoService->deleteVideos($ids);
+        if ($deletedIds) {
+            return response()->json([
+                'code'        => 0,
+                'message'     => 'Video deleted successfully',
+                'deleted_ids' => $deletedIds,
+            ]);
+        } else {
+            return response()->json([
+                'code'    => 1,
+                'message' => 'Video deletion failed',
+            ]);
+        }
     }
 
     public function show(Request $request, int $id)

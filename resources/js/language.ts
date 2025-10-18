@@ -63,7 +63,8 @@ const messages = {
             cookie: '会话',
             settings: '设置',
             about: '关于',
-            menu: '菜单'
+            menu: '菜单',
+            videoManagement: '视频管理'
         },
 
         // 首页
@@ -306,6 +307,49 @@ const messages = {
             retry: '重试'
         },
 
+        // 视频管理页面
+        videoManagement: {
+            title: '视频管理',
+            searchPlaceholder: '搜索视频标题或 ID...',
+            status: '视频状态',
+            allStatus: '全部状态',
+            validOnly: '仅有效视频',
+            invalidOnly: '仅无效视频',
+            frozenOnly: '仅冻结视频',
+            cacheStatus: '缓存状态',
+            allCache: '全部',
+            cachedOnly: '已缓存',
+            notCachedOnly: '未缓存',
+            multiPart: '分P状态',
+            allParts: '全部',
+            singlePartOnly: '单P视频',
+            multiPartOnly: '多P视频',
+            favorite: '收藏夹',
+            allFavorites: '全部收藏夹',
+            selectAll: '全选',
+            deselectAll: '取消全选',
+            deleteSelected: '删除选中',
+            resetFilters: '重置筛选',
+            totalVideos: '总视频数',
+            validVideos: '有效视频',
+            invalidVideos: '无效视频',
+            frozenVideos: '冻结视频',
+            filteredCount: '筛选结果',
+            noVideos: '暂无视频',
+            view: '查看',
+            delete: '删除',
+            cached: '已缓存',
+            invalid: '无效',
+            frozen: '冻结',
+            published: '发布',
+            favorited: '收藏',
+            confirmDeleteTitle: '确认删除',
+            confirmDeleteMessage: '确定要删除这个视频吗？此操作无法撤销。',
+            confirmBatchDeleteMessage: '确定要删除选中的 {count} 个视频吗？此操作无法撤销。',
+            deleteSuccess: '删除成功',
+            noMoreVideos: '没有更多视频了'
+        },
+
         // 订阅管理页面
         subscription: {
             title: '订阅',
@@ -416,7 +460,8 @@ const messages = {
             cookie: 'Cookie',
             settings: 'Settings',
             about: 'About',
-            menu: 'Menu'
+            menu: 'Menu',
+            videoManagement: 'Video Management'
         },
 
         // 首页
@@ -656,6 +701,49 @@ const messages = {
             goHome: 'Go Home',
             goBack: 'Go Back',
             retry: 'Retry'
+        },
+
+        // 视频管理页面
+        videoManagement: {
+            title: 'Video Management',
+            searchPlaceholder: 'Search by title or ID...',
+            status: 'Video Status',
+            allStatus: 'All Status',
+            validOnly: 'Valid Only',
+            invalidOnly: 'Invalid Only',
+            frozenOnly: 'Frozen Only',
+            cacheStatus: 'Cache Status',
+            allCache: 'All',
+            cachedOnly: 'Cached',
+            notCachedOnly: 'Not Cached',
+            multiPart: 'Multi-Part',
+            allParts: 'All',
+            singlePartOnly: 'Single Part',
+            multiPartOnly: 'Multi-Part',
+            favorite: 'Favorite',
+            allFavorites: 'All Favorites',
+            selectAll: 'Select All',
+            deselectAll: 'Deselect All',
+            deleteSelected: 'Delete Selected',
+            resetFilters: 'Reset Filters',
+            totalVideos: 'Total Videos',
+            validVideos: 'Valid Videos',
+            invalidVideos: 'Invalid Videos',
+            frozenVideos: 'Frozen Videos',
+            filteredCount: 'Filtered',
+            noVideos: 'No Videos',
+            view: 'View',
+            delete: 'Delete',
+            cached: 'Cached',
+            invalid: 'Invalid',
+            frozen: 'Frozen',
+            published: 'Published',
+            favorited: 'Favorited',
+            confirmDeleteTitle: 'Confirm Delete',
+            confirmDeleteMessage: 'Are you sure you want to delete this video? This action cannot be undone.',
+            confirmBatchDeleteMessage: 'Are you sure you want to delete {count} selected videos? This action cannot be undone.',
+            deleteSuccess: 'Delete successful',
+            noMoreVideos: 'No more videos'
         },
 
         // 订阅管理页面

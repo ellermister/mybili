@@ -26,6 +26,11 @@ class CheckVideoPartFileToDownloadAction
     {
         $video = Video::where('id', $videoPart->video_id)->first();
 
+        if(!$video){
+            Log::info('Video not found or deleted', ['id' => $videoPart->video_id]);
+            return;
+        }
+
         // 获取当前分片在视频第几个索引
         $videoParts = VideoPart::where('video_id', $video->id)->select(['video_id', 'page', 'cid'])->get();
 
