@@ -63,3 +63,7 @@ jobs:
           APP_VERSION=${{ steps.version.outputs.version }}
           WEBSITE_ID=${{ secrets.WEBSITE_ID }}
         tags: ${{ steps.version.outputs.is_tag == 'true' && format('ellermister/mybili:latest,ellermister/mybili:{0}', steps.version.outputs.version) || 'ellermister/mybili:latest' }}
+        cache-from: type=registry,ref=ellermister/mybili:buildcache
+        cache-to: type=registry,ref=ellermister/mybili:buildcache,mode=max
+        provenance: false
+        sbom: false
