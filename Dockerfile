@@ -1,6 +1,6 @@
 ARG NODE_VERSION=22
 
-FROM node:${NODE_VERSION}-bullseye-slim AS build
+FROM node:${NODE_VERSION}-bullseye-slim as build
 
 WORKDIR /app
 
@@ -10,33 +10,18 @@ RUN npm install -g pnpm
 RUN pnpm install
 RUN pnpm build
 
-#ffmpeg - 支持多架构
-ARG TARGETPLATFORM
+#ffmpeg
+ADD https://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-6.0.1-amd64-static.tar.xz /tmp
 
-RUN apt update && apt install -y xz-utils curl
-
-# 根据目标平台下载对应的 ffmpeg
-# 如果 TARGETPLATFORM 为空（非 buildx 环境），则使用 uname 检测当前架构
-RUN PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
-    case "${PLATFORM}" in \
-        "linux/amd64"|"linux/x86_64") \
-            FFMPEG_URL="https://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-6.0.1-amd64-static.tar.xz" \
-            ;; \
-        "linux/arm64"|"linux/aarch64") \
-            FFMPEG_URL="https://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-6.0.1-arm64-static.tar.xz" \
-            ;; \
-        *) \
-            echo "Unsupported platform: ${PLATFORM}" && exit 1 \
-            ;; \
-    esac && \
-    curl -L ${FFMPEG_URL} -o /tmp/ffmpeg.tar.xz && \
-    cd /tmp && \
-    xz -d /tmp/ffmpeg.tar.xz && \
-    tar -xf ffmpeg.tar -C /tmp --strip-components=1 && \
-    cp /tmp/ffmpeg /usr/local/bin/ffmpeg && \
-    chmod +x /usr/local/bin/ffmpeg && \
-    cp /tmp/ffprobe /usr/local/bin/ffprobe && \
-    chmod +x /usr/local/bin/ffprobe
+RUN apt update \
+    && apt install -y xz-utils  \
+    && cd /tmp \
+    && xz -d /tmp/ffmpeg-6.0.1* \
+    && tar -xf ffmpeg-6.0.1* -C /tmp --strip-components=1 \
+    && cp /tmp/ffmpeg /usr/local/bin/ffmpeg \
+    && chmod +x /usr/local/bin/ffmpeg \
+    && cp /tmp/ffprobe /usr/local/bin/ffprobe \
+    && chmod +x /usr/local/bin/ffprobe
 
 
 FROM phpswoole/swoole:php8.3-alpine
@@ -44,49 +29,16 @@ FROM phpswoole/swoole:php8.3-alpine
 # 重新声明 ARG，确保能从构建参数接收版本号
 ARG APP_VERSION=1.0.0
 ARG WEBSITE_ID
-ARG TARGETPLATFORM
 
 WORKDIR /app
 
 ENV PHPRC=/etc/php.ini
 
-# 根据目标平台下载对应的 yt-dlp
-# 如果 TARGETPLATFORM 为空（非 buildx 环境），则使用 uname 检测当前架构
-RUN PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
-    case "${PLATFORM}" in \
-        "linux/amd64"|"linux/x86_64") \
-            YT_DLP_ARCH="yt-dlp_linux" \
-            ;; \
-        "linux/arm64"|"linux/aarch64") \
-            YT_DLP_ARCH="yt-dlp_linux_aarch64" \
-            ;; \
-        *) \
-            echo "Unsupported platform: ${PLATFORM}" && exit 1 \
-            ;; \
-    esac && \
-    wget -O /usr/local/bin/yt-dlp_linux \
-        "https://github.com/grqz/yt-dlp/releases/download/ie%2Fbilibili%2Fpi_fallbk/${YT_DLP_ARCH}" && \
-    chmod 775 /usr/local/bin/yt-dlp_linux && \
-    chown root:root /usr/local/bin/yt-dlp_linux
+ADD --chown=root:root --chmod=775 \
+https://github.com/grqz/yt-dlp/releases/download/ie%2Fbilibili%2Fpi_fallbk/yt-dlp_linux /usr/local/bin/yt-dlp_linux
 
-# 根据目标平台下载对应的 frankenphp
-# 如果 TARGETPLATFORM 为空（非 buildx 环境），则使用 uname 检测当前架构
-RUN PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
-    case "${PLATFORM}" in \
-        "linux/amd64"|"linux/x86_64") \
-            FRANKENPHP_ARCH="frankenphp-linux-x86_64" \
-            ;; \
-        "linux/arm64"|"linux/aarch64") \
-            FRANKENPHP_ARCH="frankenphp-linux-aarch64" \
-            ;; \
-        *) \
-            echo "Unsupported platform: ${PLATFORM}" && exit 1 \
-            ;; \
-    esac && \
-    wget -O /usr/local/bin/frankenphp \
-        "https://github.com/dunglas/frankenphp/releases/download/v1.2.5/${FRANKENPHP_ARCH}" && \
-    chmod 775 /usr/local/bin/frankenphp && \
-    chown root:root /usr/local/bin/frankenphp
+ADD --chown=root:root --chmod=775 \
+    https://github.com/dunglas/frankenphp/releases/download/v1.2.5/frankenphp-linux-x86_64 /usr/local/bin/frankenphp
 
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
@@ -95,26 +47,7 @@ COPY --from=composer/composer:2-bin /composer /usr/bin/composer
 COPY --from=build /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=build /usr/local/bin/ffprobe /usr/local/bin/ffprobe
 
-# 根据目标平台下载对应的 supervisord
-# 如果 TARGETPLATFORM 为空（非 buildx 环境），则使用 uname 检测当前架构
-RUN apk add --no-cache curl tar && \
-    PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
-    case "${PLATFORM}" in \
-        "linux/amd64"|"linux/x86_64") \
-            SUPERVISORD_URL="https://github.com/ochinchina/supervisord/releases/download/v0.7.3/supervisord_0.7.3_Linux_64-bit.tar.gz" \
-            ;; \
-        "linux/arm64"|"linux/aarch64") \
-            SUPERVISORD_URL="https://github.com/ochinchina/supervisord/releases/download/v0.7.3/supervisord_0.7.3_Linux_ARM64.tar.gz" \
-            ;; \
-        *) \
-            echo "Unsupported platform: ${PLATFORM}" && exit 1 \
-            ;; \
-    esac && \
-    curl -L ${SUPERVISORD_URL} -o /tmp/supervisord.tar.gz && \
-    tar -xzf /tmp/supervisord.tar.gz -C /usr/local/bin/ --strip-components=1 && \
-    chmod +x /usr/local/bin/supervisord && \
-    rm -f /tmp/supervisord.tar.gz && \
-    apk del curl tar
+COPY --from=ochinchina/supervisord:latest /usr/local/bin/supervisord /usr/local/bin/supervisord
 
 RUN docker-php-ext-install pcntl
 
