@@ -4,6 +4,12 @@
 
 <img src="./mybili.png" alt="Mybili Logo" width="256" height="256" />
 
+## 📱 社区交流
+
+加入我们的 Telegram 群组，与其他用户交流使用心得，获取最新更新和帮助：
+
+🔗 **[加入 Telegram 群组](https://t.me/+SqAyFZfxF7dmNjk1)**
+
 ## ✨ 功能特性
 
 - ⏰ 定时5分钟获取你的收藏夹所有视频，缓存标题、描述、封面等重要信息
