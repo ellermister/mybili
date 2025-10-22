@@ -169,6 +169,7 @@ tail -f /app/storage/logs/laravel.log
 - **Buy me a coffee**: [买一杯咖啡](https://buymeacoffee.com/ellermister)
 - **USDT**: TRC20 `TRjWTbPfQBhHawCD8DrfLGa8ECbhPP6F3b`
 - **LTC**: Litecoin `LdH6SxbAq3No9P4zaNR2aGgH9Kr9yfuGHi`
+- **爱发电**  [去支持一下](https://afdian.com/a/eller)
 
 任何形式的支持都将帮助我继续改进和维护这个项目，非常感谢！
 
