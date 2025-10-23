@@ -61,7 +61,9 @@ class UpdateFav extends Command
         }
 
         if ($this->option('update-video-parts')) {
-            Video::chunk(100, function ($videos) use ($updateVideoPartsAction) {
+            $startTime = microtime(true);
+            $count = 0;
+            Video::chunk(100, function ($videos) use ($updateVideoPartsAction, &$count) {
                 foreach ($videos as $video) {
                     $currentFav = $video->favorite;
                     if ($this->shouldExcludeByFavForMultiFav($currentFav)) {
@@ -72,9 +74,13 @@ class UpdateFav extends Command
                         Log::info($message, ['favs' => collect($currentFav->pluck('id'))->toArray()]);
                         continue;
                     }
+                    $this->info(sprintf('[%s] update video parts: %s id: %s, count: %s', $video['title'], $video['id'], $count));
                     $updateVideoPartsAction->execute($video);
+                    $count++;
                 }
             });
+            $endTime = microtime(true);
+            $this->info('update video parts time: ' . ($endTime - $startTime) . ' seconds');
         }
 
         if ($this->option('download-video-part')) {

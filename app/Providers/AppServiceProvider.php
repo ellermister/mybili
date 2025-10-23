@@ -42,12 +42,30 @@ class AppServiceProvider extends ServiceProvider
                 // 检查数据库文件是否存在
                 $databasePath = config('database.connections.sqlite.database');
                 if (file_exists($databasePath)) {
+                    // WAL模式配置
                     DB::statement('PRAGMA journal_mode=WAL');
                     DB::statement('PRAGMA synchronous=NORMAL');
-                    DB::statement('PRAGMA wal_autocheckpoint=1000');
-                    DB::statement('PRAGMA busy_timeout=30000');
-                    DB::statement('PRAGMA cache_size=10000');
-                    DB::statement('PRAGMA temp_store=MEMORY');
+                    
+                    // 锁定和并发优化
+                    DB::statement('PRAGMA busy_timeout=60000'); // 60秒超时
+                    DB::statement('PRAGMA locking_mode=NORMAL'); // 允许多连接
+                    
+                    // WAL checkpoint优化
+                    DB::statement('PRAGMA wal_autocheckpoint=2000'); // 增加checkpoint阈值
+                    DB::statement('PRAGMA journal_size_limit=67108864'); // 64MB WAL大小限制
+                    
+                    // 内存和缓存优化
+                    DB::statement('PRAGMA cache_size=-20000'); // 20MB缓存
+                    DB::statement('PRAGMA temp_store=MEMORY'); // 临时表存内存
+                    DB::statement('PRAGMA mmap_size=268435456'); // 256MB内存映射
+                    
+                    // 性能优化
+                    DB::statement('PRAGMA page_size=4096'); // 4KB页大小
+                    DB::statement('PRAGMA auto_vacuum=INCREMENTAL'); // 增量清理
+                    DB::statement('PRAGMA incremental_vacuum(100)'); // 清理100页
+                    
+                    // 查询优化
+                    DB::statement('PRAGMA optimize'); // 优化查询计划
                 }
             } catch (\Exception $e) {
                 // 在构建阶段或数据库不可用时静默处理
