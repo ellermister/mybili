@@ -74,7 +74,7 @@ Schedule::call(function () {
 
 
 Schedule::call(function () {
-    app(SubscriptionService::class)->updateSubscription();
+    app(SubscriptionService::class)->updateSubscriptions();
 })
 ->name('update-subscription')
 ->withoutOverlapping()

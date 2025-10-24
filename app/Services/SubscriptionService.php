@@ -2,17 +2,67 @@
 namespace App\Services;
 
 use App\Events\SubscriptionUpdated;
+use App\Events\VideoUpdated;
 use App\Jobs\PullVideoInfoJob;
+use App\Jobs\UpdateSubscriptionJob;
 use App\Models\Subscription;
 use App\Models\SubscriptionVideo;
+use App\Models\Video;
 use App\Services\BilibiliService;
-use DB;
+use App\Services\VideoManager\Contracts\VideoServiceInterface;
 use Log;
 
 class SubscriptionService
 {
-    public function __construct(public BilibiliService $bilibiliService)
+    public function __construct(public BilibiliService $bilibiliService, public VideoServiceInterface $videoService)
     {
+    }
+
+    public function deleteSubscription(Subscription $subscription)
+    {
+        // 预加载关联数据，避免 N+1 查询
+        $subscription->load(['videos.favorite', 'videos.subscriptions']);
+        
+        $removeIds = [];
+        foreach($subscription->videos as $video) {
+            // 判断视频是否被收藏夹引用
+            if($video->favorite->count() > 0){
+                Log::info('video is referenced by favorite', [
+                    'video_id' => $video->id, 
+                    'subscription_id' => $subscription->id, 
+                    'title' => $video->title
+                ]);
+                continue;
+            }
+
+            // 判断视频是否被其他订阅引用（大于1表示除了当前订阅外还有其他订阅）
+            if($video->subscriptions->count() > 1){
+                Log::info('video is referenced by other subscription', [
+                    'video_id' => $video->id, 
+                    'subscription_id' => $subscription->id,
+                    'subscriptions_count' => $video->subscriptions->count(),
+                    'title' => $video->title
+                ]);
+                continue;
+            }
+            
+            // 只有当视频没有被任何收藏夹或其他订阅引用时，才加入删除列表
+            $removeIds[] = $video->id;
+        }
+        
+        // 删除未被引用的视频
+        if (!empty($removeIds)) {
+            $this->videoService->deleteVideos($removeIds);
+        }
+        
+        // 删除订阅与视频的关联关系
+        SubscriptionVideo::where('subscription_id', $subscription->id)->delete();
+        
+        // 删除订阅与封面的关联关系（不删除封面本身）
+        $subscription->coverImage()->detach();
+        
+        // 删除订阅记录
+        $subscription->delete();
     }
 
     public function addSubscription($type, $url)
@@ -21,30 +71,42 @@ class SubscriptionService
             if (! preg_match('#/(\d+)/lists/(\d+)#', $url, $matches)) {
                 throw new \Exception('invalid seasons url');
             }
-            $mid               = $matches[1];
-            $seasonId          = $matches[2];
-            $subscription      = $this->updateSeasonsAndSeries('seasons', $mid, $seasonId, true);
-            $subscription->url = $url;
+            $mid                   = $matches[1];
+            $seasonId              = $matches[2];
+            $subscription          = Subscription::query()->where('mid', $mid)->where('list_id', $seasonId)->firstOrNew();
+            $subscription->type    = $type;
+            $subscription->mid     = $mid;
+            $subscription->list_id = $seasonId;
+            $subscription->url     = $url;
             $subscription->save();
+
+            UpdateSubscriptionJob::dispatch($subscription, true);
             return $subscription;
         } else if ($type == 'series') {
             if (! preg_match('#/(\d+)/lists/(\d+)#', $url, $matches)) {
                 throw new \Exception('invalid series url');
             }
-            $mid               = $matches[1];
-            $seriesId          = $matches[2];
-            $subscription      = $this->updateSeasonsAndSeries('series', $mid, $seriesId, true);
-            $subscription->url = $url;
+            $mid                   = $matches[1];
+            $seriesId              = $matches[2];
+            $subscription          = Subscription::query()->where('mid', $mid)->where('list_id', $seriesId)->firstOrNew();
+            $subscription->type    = $type;
+            $subscription->mid     = $mid;
+            $subscription->list_id = $seriesId;
+            $subscription->url     = $url;
             $subscription->save();
+            UpdateSubscriptionJob::dispatch($subscription, true);
             return $subscription;
         } else {
             if (! preg_match('#/(\d+)/upload#', $url, $matches)) {
                 throw new \Exception('invalid up url');
             }
-            $mid               = $matches[1];
-            $subscription      = $this->updateUpVideos($mid, true);
-            $subscription->url = $url;
+            $mid                = $matches[1];
+            $subscription       = Subscription::query()->where('mid', $mid)->where('type', 'up')->firstOrNew();
+            $subscription->type = 'up';
+            $subscription->mid  = $mid;
+            $subscription->url  = $url;
             $subscription->save();
+            UpdateSubscriptionJob::dispatch($subscription, true);
             return $subscription;
         }
     }
@@ -66,14 +128,6 @@ class SubscriptionService
         $subscription->save();
     }
 
-    public function deleteSubscription(Subscription $subscription)
-    {
-        if ($subscription->videos()->count() > 0) {
-            throw new \Exception('subscription has videos, cannot delete');
-        }
-        $subscription->delete();
-    }
-
     public function changeSubscription(Subscription $subscription, array $data)
     {
         $subscription->fill($data);
@@ -81,28 +135,33 @@ class SubscriptionService
         return $subscription;
     }
 
-    public function updateSubscription()
+    public function updateSubscriptions()
     {
         $subscriptions = Subscription::where('status', Subscription::STATUS_ACTIVE)->where('last_check_at', '<', now()->subMinutes(20))->get();
         foreach ($subscriptions as $subscription) {
-            if ($subscription->type == 'seasons') {
-                if (! $this->lockSubscription($subscription->mid, $subscription->list_id)) {
-                    continue;
-                }
-                try {
-                    $this->updateSeasonsAndSeries($subscription->type, $subscription->mid, $subscription->list_id, false);
-                } finally {
-                    $this->unlockSubscription($subscription->mid, $subscription->list_id);
-                }
-            } else if ($subscription->type == 'up') {
-                if (! $this->lockSubscription($subscription->mid)) {
-                    continue;
-                }
-                try {
-                    $this->updateUpVideos($subscription->mid, false);
-                } finally {
-                    $this->unlockSubscription($subscription->mid);
-                }
+            $this->updateSubscription($subscription, false);
+        }
+    }
+
+    public function updateSubscription(Subscription $subscription, bool $pullAll = false)
+    {
+        if ($subscription->type == 'seasons') {
+            if (! $this->lockSubscription($subscription->mid, $subscription->list_id)) {
+                return;
+            }
+            try {
+                $this->updateSeasonsAndSeries($subscription->type, $subscription->mid, $subscription->list_id, $pullAll);
+            } finally {
+                $this->unlockSubscription($subscription->mid, $subscription->list_id);
+            }
+        } else if ($subscription->type == 'up') {
+            if (! $this->lockSubscription($subscription->mid)) {
+                return;
+            }
+            try {
+                $this->updateUpVideos($subscription->mid, $pullAll);
+            } finally {
+                $this->unlockSubscription($subscription->mid);
             }
         }
     }
@@ -127,9 +186,9 @@ class SubscriptionService
         if (! in_array($type, ['seasons', 'series'])) {
             throw new \Exception('invalid type');
         }
-        $subscription            = Subscription::query()->where('mid', $mid)->where('list_id', $listId)->firstOrNew();
-        $subscription->type      = $type;
-        $subscription->mid       = $mid;
+        $subscription          = Subscription::query()->where('mid', $mid)->where('list_id', $listId)->firstOrNew();
+        $subscription->type    = $type;
+        $subscription->mid     = $mid;
         $subscription->list_id = $listId;
         $subscription->save();
 
@@ -168,7 +227,7 @@ class SubscriptionService
                     $subscription->save();
                 }
 
-                if ($type == "series" && $page == 1&& count($dataList['archives']) > 0) {
+                if ($type == "series" && $page == 1 && count($dataList['archives']) > 0) {
                     $subscription->cover = $dataList['archives'][0]['pic'] ?? '';
                     $subscription->save();
                 }
@@ -183,7 +242,6 @@ class SubscriptionService
 
                     PullVideoInfoJob::dispatchWithRateLimit($archive['bvid']);
                 }
-
 
                 if ($loaded >= $subscription->total) {
                     break;
@@ -221,7 +279,21 @@ class SubscriptionService
         $loaded    = 0;
         while (1) {
             Log::info('get up videos', ['offsetAid' => $offsetAid, 'loaded' => $loaded]);
-            $upVideos = $this->bilibiliService->getUpVideos($mid, $offsetAid);
+            while (1) {
+                $retry = 0;
+                try {
+                    $upVideos = $this->bilibiliService->getUpVideos($mid, $offsetAid);
+                } catch (\Exception $e) {
+                    Log::error('get up videos error', ['error' => $e->getMessage()]);
+                    $retry++;
+                    if ($retry > 3) {
+                        Log::error('get up videos error: ' . $e->getMessage());
+                        throw new \Exception('get up videos error: ' . $e->getMessage());
+                    }
+                    continue;
+                }
+                break;
+            }
             foreach ($upVideos['list'] as $item) {
                 Log::info('up video', ['title' => $item['title']]);
                 $aid                                = $item['param'];
@@ -230,6 +302,27 @@ class SubscriptionService
                 $subscriptionVideo->subscription_id = $subscription->id;
                 $subscriptionVideo->video_id        = $aid;
                 $subscriptionVideo->save();
+
+                // 快速填写一个视频信息
+                // 这里获取到的视频都是有效的，所以可以忽略 invalid 处理和封面判断
+                $video = Video::withTrashed()->where('id', $aid)->firstOrNew();
+                $video->fill([
+                    'id'       => $aid,
+                    'upper_id' => $mid,
+                    'bvid'     => $item['bvid'],
+                    'title'    => $item['title'],
+                    'cover'    => $item['cover'],
+                    'duration' => $item['duration'],
+                    'page'     => intval($item['videos']),
+                    'pubtime'  => date('Y-m-d H:i:s', $item['ctime']),
+                    'link'     => sprintf('https://www.bilibili.com/video/%s', $item['bvid']),
+                    'intro'    => '',
+                ]);
+                $video->save();
+                if($video->trashed()){
+                    $video->restore();
+                }
+                event(new VideoUpdated([], $video->getAttributes()));
 
                 PullVideoInfoJob::dispatchWithRateLimit($item['bvid']);
             }

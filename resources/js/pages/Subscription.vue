@@ -111,14 +111,10 @@
                     
                     <!-- 操作按钮 -->
                     <div class="mt-4 flex gap-2">
-                        <button v-if="subscription.total === 0" 
+                        <button
                                 @click="deleteSubscription(subscription.id)"
                                 class="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm transition-colors duration-200">
                             {{ t('subscription.delete') }}
-                        </button>
-                        <button v-else 
-                                class="flex-1 bg-gray-300 text-gray-500 px-3 py-2 rounded text-sm cursor-not-allowed">
-                            {{ t('subscription.cannotDelete') }}
                         </button>
                     </div>
                 </div>
@@ -200,14 +196,10 @@
                         
                         <!-- 操作按钮 -->
                         <div class="mt-4 flex gap-2">
-                            <button v-if="subscription.total === 0" 
+                            <button
                                     @click="deleteSubscription(subscription.id)"
                                     class="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm transition-colors duration-200">
                                 {{ t('subscription.delete') }}
-                            </button>
-                            <button v-else 
-                                    class="flex-1 bg-gray-300 text-gray-500 px-3 py-2 rounded text-sm cursor-not-allowed">
-                                {{ t('subscription.cannotDelete') }}
                             </button>
                         </div>
                     </div>
@@ -279,14 +271,10 @@
                         
                         <!-- 操作按钮 -->
                         <div class="flex gap-2">
-                            <button v-if="subscription.total === 0" 
+                            <button 
                                     @click="deleteSubscription(subscription.id)"
                                     class="flex-1 bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs transition-colors duration-200">
                                 {{ t('subscription.delete') }}
-                            </button>
-                            <button v-else 
-                                    class="flex-1 bg-gray-300 text-gray-500 px-2 py-1 rounded text-xs cursor-not-allowed">
-                                {{ t('subscription.cannotDelete') }}
                             </button>
                         </div>
                     </div>
