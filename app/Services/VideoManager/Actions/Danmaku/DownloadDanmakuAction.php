@@ -46,22 +46,20 @@ class DownloadDanmakuAction
 
         $start_time = microtime(true);
         // 分批插入数据，每批1000条
-        DB::transaction(function () use (&$insertData, &$videoPart) {
-            foreach (array_chunk($insertData, 1000) as $chunk) {
-                $videoPart->danmakus()->createMany($chunk);
-                unset($chunk);
-            }
+        foreach (array_chunk($insertData, 1000) as $chunk) {
+            $videoPart->danmakus()->createMany($chunk);
+            unset($chunk);
+        }
 
-            // 释放原始数据
-            unset($insertData);
+        // 释放原始数据
+        unset($insertData);
 
-            $videoPart->danmakus()->update([
-                'video_id' => $videoPart->video_id,
-            ]);
+        $videoPart->danmakus()->update([
+            'video_id' => $videoPart->video_id,
+        ]);
 
-            unset($videoPart);
-        });
-        Log::info('Save danmaku count, DB transaction time', ['time' => microtime(true) - $start_time]);
+        unset($videoPart);
+        Log::info('Save danmaku count, time', ['time' => microtime(true) - $start_time]);
     }
 
     public function execute(VideoPart $videoPart): void

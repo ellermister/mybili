@@ -22,23 +22,12 @@ class UpdateFavoritesAction
         Log::info('Update favorites start');
         $favorites = $this->bilibiliService->pullFav();
 
-        DB::transaction(function () use ($favorites) {
-            array_map(function ($item) {
-                $favorite = FavoriteList::query()->where('id', $item['id'])->first();
-                if (! $favorite) {
-                    $favorite = new FavoriteList();
-                }
-
-                $oldFav = $favorite->toArray();
-
-                $favorite->fill($item);
-                $favorite->save();
-
-                event(new FavoriteUpdated($oldFav, $item));
-
-                return $item;
-            }, $favorites);
-        });
+        array_map(function ($item) {
+            $favorite = FavoriteList::query()->firstOrNew(['id' => $item['id']]);
+            $favorite->fill($item);
+            $favorite->save();
+            event(new FavoriteUpdated($favorite->getAttributes(), $item));
+        }, $favorites);
 
         Log::info('Update favorites success');
     }

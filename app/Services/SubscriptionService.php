@@ -159,33 +159,31 @@ class SubscriptionService
                 }
 
                 $loaded += count($dataList['archives']);
-                DB::transaction(function () use ($subscription, $dataList, $type, $page) {
-                    if ($type == "seasons" && isset($dataList['meta'])) {
-                        $listMeta                  = $dataList['meta'];
-                        $subscription->total       = $listMeta['total'];
-                        $subscription->name        = $listMeta['name'];
-                        $subscription->description = $listMeta['description'];
-                        $subscription->cover       = $listMeta['cover'];
-                        $subscription->save();
-                    }
+                if ($type == "seasons" && isset($dataList['meta'])) {
+                    $listMeta                  = $dataList['meta'];
+                    $subscription->total       = $listMeta['total'];
+                    $subscription->name        = $listMeta['name'];
+                    $subscription->description = $listMeta['description'];
+                    $subscription->cover       = $listMeta['cover'];
+                    $subscription->save();
+                }
 
-                    if ($type == "series" && $page == 1&& count($dataList['archives']) > 0) {
-                        $subscription->cover = $dataList['archives'][0]['pic'] ?? '';
-                        $subscription->save();
-                    }
+                if ($type == "series" && $page == 1&& count($dataList['archives']) > 0) {
+                    $subscription->cover = $dataList['archives'][0]['pic'] ?? '';
+                    $subscription->save();
+                }
 
-                    $archives = $dataList['archives'];
-                    foreach ($archives as $archive) {
-                        $subscriptionVideo                  = SubscriptionVideo::where('subscription_id', $subscription->id)->where('video_id', $archive['aid'])->firstOrNew();
-                        $subscriptionVideo->bvid            = $archive['bvid'];
-                        $subscriptionVideo->subscription_id = $subscription->id;
-                        $subscriptionVideo->video_id        = $archive['aid'];
-                        $subscriptionVideo->save();
+                $archives = $dataList['archives'];
+                foreach ($archives as $archive) {
+                    $subscriptionVideo                  = SubscriptionVideo::where('subscription_id', $subscription->id)->where('video_id', $archive['aid'])->firstOrNew();
+                    $subscriptionVideo->bvid            = $archive['bvid'];
+                    $subscriptionVideo->subscription_id = $subscription->id;
+                    $subscriptionVideo->video_id        = $archive['aid'];
+                    $subscriptionVideo->save();
 
-                        PullVideoInfoJob::dispatchWithRateLimit($archive['bvid']);
-                    }
+                    PullVideoInfoJob::dispatchWithRateLimit($archive['bvid']);
+                }
 
-                });
 
                 if ($loaded >= $subscription->total) {
                     break;
@@ -224,19 +222,17 @@ class SubscriptionService
         while (1) {
             Log::info('get up videos', ['offsetAid' => $offsetAid, 'loaded' => $loaded]);
             $upVideos = $this->bilibiliService->getUpVideos($mid, $offsetAid);
-            DB::transaction(function () use ($subscription, $upVideos) {
-                foreach ($upVideos['list'] as $item) {
-                    Log::info('up video', ['title' => $item['title']]);
-                    $aid                                = $item['param'];
-                    $subscriptionVideo                  = SubscriptionVideo::where('subscription_id', $subscription->id)->where('video_id', $aid)->firstOrNew();
-                    $subscriptionVideo->bvid            = $item['bvid'];
-                    $subscriptionVideo->subscription_id = $subscription->id;
-                    $subscriptionVideo->video_id        = $aid;
-                    $subscriptionVideo->save();
+            foreach ($upVideos['list'] as $item) {
+                Log::info('up video', ['title' => $item['title']]);
+                $aid                                = $item['param'];
+                $subscriptionVideo                  = SubscriptionVideo::where('subscription_id', $subscription->id)->where('video_id', $aid)->firstOrNew();
+                $subscriptionVideo->bvid            = $item['bvid'];
+                $subscriptionVideo->subscription_id = $subscription->id;
+                $subscriptionVideo->video_id        = $aid;
+                $subscriptionVideo->save();
 
-                    PullVideoInfoJob::dispatchWithRateLimit($item['bvid']);
-                }
-            });
+                PullVideoInfoJob::dispatchWithRateLimit($item['bvid']);
+            }
             $loaded += count($upVideos['list']);
 
             if (! $pullAll) {
