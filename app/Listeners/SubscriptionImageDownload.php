@@ -1,25 +1,17 @@
 <?php
 namespace App\Listeners;
 
-use App\Contracts\DownloadImageServiceInterface;
 use App\Events\SubscriptionUpdated;
 use App\Models\Subscription;
+use App\Services\CoverService;
 use Log;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
-class SubscriptionImageDownload implements ShouldQueue
+class SubscriptionImageDownload
 {
-
-    public $queue = 'fast';
-    
-    public $tries = 3;
-
-    public $backoff = 30;
-
     /**
      * Create the event listener.
      */
-    public function __construct(public DownloadImageServiceInterface $downloadImageService)
+    public function __construct(public CoverService $coverService)
     {
     }
 
@@ -31,21 +23,23 @@ class SubscriptionImageDownload implements ShouldQueue
         $oldSubscription = $event->oldSubscription;
         $newSubscription = $event->newSubscription;
 
-        $oldCover = $oldSubscription['cover'] ?? '';
-        $newCover = $newSubscription['cover'] ?? '';
-        if ($oldCover != $newCover  || ($newCover != '' && $newSubscription['cache_image'] == '')) {
-            Log::info('Download subscription image', ['cover' => $newSubscription['cover']]);
-            if (empty($newCover)) {
-                Log::info('Cover is empty, skip download');
+        $oldCover   = $oldSubscription['cover'] ?? '';
+        $newCover   = $newSubscription['cover'] ?? '';
+        $resourceId = $newSubscription['id'] ?? '';
+        if (! $resourceId) {
+            Log::info('Subscription ID is empty, skip download', ['newSubscription' => $newSubscription]);
+            return;
+        }
+        $resource = Subscription::find($resourceId);
+        if ($oldCover != $newCover && $newCover != '' && $resource != null) {
+            Log::info('Download subscription image', ['cover' => $newCover, 'resourceId' => $resourceId]);
+            if ($this->coverService->isCoverable($newCover, $resource)) {
+                Log::info('Cover is already coverable, skip download', ['cover' => $newCover, 'resourceId' => $resourceId]);
                 return;
             }
-            try {
-                $savePath = $this->downloadImageService->getImageLocalPath($newSubscription['cover']);
-                $this->downloadImageService->downloadImage($newSubscription['cover'], $savePath);
-                Subscription::where('id', $newSubscription['id'])->update(['cache_image' => get_relative_path($savePath)]);
-            } catch (\Exception $e) {
-                Log::error('Download fav image failed', ['error' => $e->getMessage()]);
-            }
+
+            $this->coverService->downloadCoverImageJob($newCover, 'subscription', $resource);
+            Log::info('Trigger subscription image download job success', ['cover' => $newCover, 'resourceId' => $resourceId]);
         }
     }
 }

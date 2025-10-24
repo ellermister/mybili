@@ -152,7 +152,7 @@ class HumanReadableNameService
      */
     protected function createCoverLink(Video $video, string $sanitizedFavoriteName, string $seriesName, string $fileName): void
     {
-        $coverPath = storage_path('app/public/' . $video->cache_image);
+        $coverPath = storage_path('app/public/' . $video->cover_info->path);
 
         if (!is_file($coverPath)) {
             return;

@@ -2,7 +2,7 @@
 namespace App\Services\VideoManager\Actions\Video;
 
 use App\Contracts\DownloadImageServiceInterface as ContractsDownloadImageServiceInterface;
-use App\Jobs\DownloadVideoImageJob;
+use App\Jobs\DownloadCoverImageJob;
 use App\Models\Video;
 use App\Services\BilibiliService;
 use Illuminate\Support\Facades\Log;
@@ -57,7 +57,7 @@ class FixFavoriteInvalidVideoAction
                 $count++;
 
                 if ($oldVideoData['cover'] != $videoCover) {
-                    dispatch(new DownloadVideoImageJob($existVideo->toArray(), $this->downloadImageServiceInterface));
+                    dispatch(new DownloadCoverImageJob($videoCover, 'video', $existVideo));
                 }
             }
         }

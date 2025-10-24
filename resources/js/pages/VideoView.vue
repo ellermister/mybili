@@ -59,23 +59,24 @@
                     </div>
 
                     <!-- UP主信息 -->
-                    <div v-if="videoInfo.upper" class="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200/50">
+                    <div v-if="videoInfo.upper"
+                        class="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200/50">
                         <div class="flex items-center space-x-3">
                             <!-- 预留头像位置 -->
-                            <div class="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <div
+                                class="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
                                 <span class="text-white font-semibold text-sm">UP</span>
                             </div>
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center space-x-2">
                                     <h3 class="font-semibold text-gray-800 truncate">{{ videoInfo.upper.name }}</h3>
-                                    <span class="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">UID: {{ videoInfo.upper.mid }}</span>
+                                    <span class="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">UID: {{
+                                        videoInfo.upper.mid }}</span>
                                 </div>
                             </div>
                         </div>
-                        <a :href="upperSpaceUrl(videoInfo.upper.mid)" 
-                           target="_blank" 
-                           rel="noopener noreferrer"
-                           class="inline-flex items-center space-x-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0">
+                        <a :href="upperSpaceUrl(videoInfo.upper.mid)" target="_blank" rel="noopener noreferrer"
+                            class="inline-flex items-center space-x-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0">
                             <span>{{ t('video.visitSpace') }}</span>
                             <span class="text-gray-400">↗</span>
                         </a>
@@ -315,7 +316,7 @@ const downloadDanmaku = () => {
 
 const downloadCover = () => {
     // TODO: Implement cover download functionality
-    const coverURL = videoInfo.value?.cache_image_url
+    const coverURL = videoInfo.value?.cover_info?.image_url
     if (coverURL) {
         // 下载图片
         downloadFile(coverURL, videoInfo.value?.title + ".jpg")

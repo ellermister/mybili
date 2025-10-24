@@ -150,7 +150,7 @@
 
                         <div @click="toggleSelection(item.id)" class="cursor-pointer">
                             <Image class="rounded-t-lg w-full h-48 object-cover hover:scale-105 transition-all duration-300"
-                                :src="item.cache_image_url ?? '/assets/images/notfound.webp'"
+                                :src="item.cover_info?.image_url ?? '/assets/images/notfound.webp'"
                                 :class="{ 'grayscale-image': item.video_downloaded_num == 0 }" :title="item.title" />
                         </div>
 

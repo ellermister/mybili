@@ -1,5 +1,6 @@
 import type { Subscription } from "./subscription";
 import type { Upper } from "./upper";
+import type { Cover } from "./cover";
 
 export interface Favorite {
     id: number;
@@ -9,9 +10,9 @@ export interface Favorite {
     url: string;
     ctime: number;
     mtime: number;
-    cache_image_url: string;
     media_count: number;
     videos: Video[]| null;
+    cover_info: Cover|null;
 }
 
 export interface VideoPartType {
@@ -32,19 +33,18 @@ export interface Video {
     attr: number;
     invalid: number;
     frozen: number;
-    cache_image: string;
     page: number;
     fav_time: number;
     created_at: string;
     updated_at: string;
     video_downloaded_at: string;
     video_downloaded_num: number;
-    cache_image_url: string;
     favorite: Favorite[]|null;
     video_parts: VideoPartType[]|null;
     danmaku_count: number
     subscriptions: Subscription[]|null;
     upper: Upper|null;
+    cover_info: Cover|null;
 }
 
 

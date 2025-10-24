@@ -1,9 +1,9 @@
 <?php
 namespace App\Listeners;
 
-use App\Contracts\DownloadImageServiceInterface;
 use App\Events\FavoriteUpdated;
 use App\Models\FavoriteList;
+use App\Services\CoverService;
 use Log;
 
 class FavoriteImageDownload
@@ -11,33 +11,30 @@ class FavoriteImageDownload
     /**
      * Create the event listener.
      */
-    public function __construct(public DownloadImageServiceInterface $downloadImageService)
+    public function __construct(public CoverService $coverService)
     {
     }
-
-    /**
-     * Handle the event.
-     */
     public function handle(FavoriteUpdated $event): void
     {
-        $oldFav = $event->oldFav;
-        $newFav = $event->newFav;
+        $oldCover   = $event->oldFav['cover'] ?? '';
+        $newCover   = $event->newFav['cover'] ?? '';
+        $resourceId = $event->newFav['id'] ?? '';
 
-        $oldCover = $oldFav['cover'] ?? '';
-        $newCover = $newFav['cover'] ?? '';
-        if ($oldCover != $newCover ) {
-            Log::info('Download fav image', ['cover' => $newFav['cover']]);
-            if (empty($newCover)) {
-                Log::info('Cover is empty, skip download');
+        if (! $resourceId) {
+            Log::info('Favorite ID is empty, skip download', ['newFavorite' => $event->newFav]);
+            return;
+        }
+
+        $resource = FavoriteList::find($resourceId);
+        if ($oldCover != $newCover && $newCover != '' && $resource != null) {
+            Log::info('Download fav image', ['cover' => $newCover, 'resourceId' => $resourceId]);
+            if ($this->coverService->isCoverable($newCover, $resource)) {
+                Log::info('Cover is already coverable, skip download', ['cover' => $newCover, 'resourceId' => $resourceId]);
                 return;
             }
-            try {
-                $savePath = $this->downloadImageService->getImageLocalPath($newFav['cover']);
-                $this->downloadImageService->downloadImage($newFav['cover'], $savePath);
-                FavoriteList::where('id', $newFav['id'])->update(['cache_image' => get_relative_path($savePath)]);
-            } catch (\Exception $e) {
-                Log::error('Download fav image failed', ['error' => $e->getMessage()]);
-            }
+
+            $this->coverService->downloadCoverImageJob($newCover, 'favorite', $resource);
+            Log::info('Trigger fav image download job success', ['cover' => $newCover, 'resourceId' => $resourceId]);
         }
     }
 }

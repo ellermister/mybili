@@ -28,13 +28,12 @@ class FavoriteService implements FavoriteServiceInterface
                 'title'           => $fav['title'] ?? '',
                 'description'     => $fav['intro'] ?? '',
                 'cover'           => $fav['cover'] ?? '',
-                'cache_image'     => $fav['cache_image'] ?? '',
-                'cache_image_url' => $fav['cache_image_url'] ?? '',
                 'media_count'     => $fav['media_count'] ?? 0,
                 'created_at'      => $fav['created_at'] ? strtotime($fav['created_at']) : null,
                 'updated_at'      => $fav['updated_at'] ? strtotime($fav['updated_at']) : null,
                 'ctime'           => $fav['ctime'] ? $fav['ctime'] : null,
                 'mtime'           => $fav['mtime'] ? $fav['mtime'] : null,
+                'cover_info'      => $fav['cover_info'] ?? null,
             ];
         }
 
@@ -46,13 +45,12 @@ class FavoriteService implements FavoriteServiceInterface
                 'title'           => $subscription['name'] ?? '',
                 'description'     => $subscription['description'] ?? '',
                 'cover'           => $subscription['cover'] ?? '',
-                'cache_image'     => $subscription['cache_image'] ?? '',
-                'cache_image_url' => $subscription['cache_image_url'] ?? '',
                 'media_count'     => intval($subscription['total'] ?? 0),
                 'created_at'      => $subscription['created_at'] ? strtotime($subscription['created_at']) : null,
                 'updated_at'      => $subscription['updated_at'] ? strtotime($subscription['updated_at']) : null,
                 'ctime'           => $subscription['created_at'] ? strtotime($subscription['created_at']) : null,
                 'mtime'           => $subscription['updated_at'] ? strtotime($subscription['updated_at']) : null,
+                'cover_info'      => $subscription['cover_info'] ?? null,
             ];
         }
 

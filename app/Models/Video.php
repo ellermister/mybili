@@ -3,7 +3,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Storage;
 
 class Video extends Model
 {
@@ -11,7 +10,7 @@ class Video extends Model
     use SoftDeletes;
 
     protected $table      = 'videos';
-    protected $fillable   = ['id', 'link', 'title', 'intro', 'cover', 'bvid', 'pubtime', 'duration', 'attr', 'invalid', 'frozen', 'cache_image', 'page', 'fav_time', 'danmaku_downloaded_at', 'video_downloaded_at','upper_id'];
+    protected $fillable   = ['id', 'link', 'title', 'intro', 'cover', 'bvid', 'pubtime', 'duration', 'attr', 'invalid', 'frozen', 'page', 'fav_time', 'danmaku_downloaded_at', 'video_downloaded_at','upper_id'];
     protected $primaryKey = 'id';
 
     protected $casts = [
@@ -19,7 +18,7 @@ class Video extends Model
     ];
 
     protected $appends = [
-        'cache_image_url',
+        'cover_info',
     ];
 
     protected $attributes = [
@@ -35,11 +34,6 @@ class Video extends Model
     public function parts()
     {
         return $this->hasMany(VideoPart::class, 'video_id', 'id');
-    }
-
-    public function getCacheImageUrlAttribute()
-    {
-        return $this->cache_image ? Storage::url($this->cache_image) : null;
     }
 
     // 访问器：读取时将时间戳转换为 Carbon 对象
@@ -66,5 +60,25 @@ class Video extends Model
     public function upper()
     {
         return $this->belongsTo(Upper::class, 'upper_id', 'mid');
+    }
+
+    /**
+     * 获取视频封面（通过多态关联）
+     * 返回 Cover 模型，可以访问封面的完整信息
+     */
+    public function coverImage()
+    {
+        return $this->morphToMany(Cover::class, 'coverable', 'coverables')
+                    ->withTimestamps();
+    }
+
+    /**
+     * 获取单个封面（由于唯一约束，一个视频只有一个封面）
+     * 使用示例: $video->coverImage()->first()
+     * 或者使用访问器: $video->cover_info
+     */
+    public function getCoverInfoAttribute()
+    {
+        return $this->coverImage()->first();
     }
 }

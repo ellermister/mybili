@@ -3,8 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\SubscriptionVideo;
-use Storage;
 
 class Subscription extends Model
 {
@@ -21,7 +19,7 @@ class Subscription extends Model
     ];
 
     protected $appends = [
-        'cache_image_url',
+        'cover_info',
     ];
 
     public function videos()
@@ -29,8 +27,22 @@ class Subscription extends Model
         return $this->belongsToMany(Video::class, 'subscription_videos', 'subscription_id', 'video_id');
     }
 
-    public function getCacheImageUrlAttribute()
+    /**
+     * 获取视频封面（通过多态关联）
+     * 返回 Cover 模型，可以访问封面的完整信息
+     */
+    public function coverImage()
     {
-        return $this->cache_image ? Storage::url($this->cache_image) : null;
+        return $this->morphToMany(Cover::class, 'coverable', 'coverables')
+                    ->withTimestamps();
+    }
+    /**
+     * 获取单个封面（由于唯一约束，一个视频只有一个封面）
+     * 使用示例: $video->coverImage()->first()
+     * 或者使用访问器: $video->cover_info
+     */
+    public function getCoverInfoAttribute()
+    {
+        return $this->coverImage()->first();
     }
 }

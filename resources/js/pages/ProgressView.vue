@@ -135,7 +135,7 @@
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-4 w-full gap-4" ref="videoGridRef">
                     <div class="flex flex-col relative" v-for="item in dataList">
                         <RouterLink :to="{ name: 'video-id', params: { id: item.id } }">
-                            <Image class="rounded-lg w-full h-auto md:w-96 md:h-56 hover:scale-105 transition-all duration-300" :src="item.cache_image_url ?? '/assets/images/notfound.webp'"
+                            <Image class="rounded-lg w-full h-auto md:w-96 md:h-56 hover:scale-105 transition-all duration-300" :src="item.cover_info?.image_url ?? '/assets/images/notfound.webp'"
                                 :class="{ 'grayscale-image': item.video_downloaded_num == 0 }" :title="item.title" />
                         </RouterLink>
                         <span class="mt-4 text-center h-12 line-clamp-2" :title="item.title">{{ item.title }}</span>
@@ -159,6 +159,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import Image from '@/components/Image.vue';
 import { formatTimestamp, image } from "../lib/helper"
+import type { Cover } from '../api/cover';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -188,8 +189,6 @@ const filter = ref<{
 interface VideoType {
     id: string
     title: string
-    cache_image: string
-    cache_image_url: string
     video_downloaded_at: string
     invalid: boolean
     frozen: boolean
@@ -197,6 +196,7 @@ interface VideoType {
     fav_time: number
     page: number
     video_downloaded_num: number
+    cover_info: Cover | null
 }
 
 // 从URL参数初始化过滤器状态

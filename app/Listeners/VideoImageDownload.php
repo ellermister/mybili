@@ -1,20 +1,17 @@
 <?php
 namespace App\Listeners;
 
-use App\Contracts\DownloadImageServiceInterface;
 use App\Events\VideoUpdated;
-use App\Jobs\DownloadVideoImageJob;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
+use App\Models\Video;
+use App\Services\CoverService;
 use Log;
 
-class VideoImageDownload implements ShouldQueue
+class VideoImageDownload
 {
-    use Queueable;
     /**
      * Create the event listener.
      */
-    public function __construct(public DownloadImageServiceInterface $downloadImageService)
+    public function __construct(public CoverService $coverService)
     {
     }
 
@@ -34,12 +31,21 @@ class VideoImageDownload implements ShouldQueue
             return;
         }
 
-        // 如果封面有变化，或者封面不为空且缓存封面为空，则下载封面
-        if (
-            ($oldCover != $newCover) || ($newCover != '' && $newVideo['cache_image'] == '')
-        ) {
-            Log::info('Download video image', ['cover' => $newVideo['cover']]);
-            dispatch(new DownloadVideoImageJob($newVideo, $this->downloadImageService));
+        $resourceId = $newVideo['id'] ?? '';
+        if (! $resourceId) {
+            Log::info('Video ID is empty, skip download', ['newVideo' => $newVideo]);
+            return;
+        }
+        $resource = Video::find($resourceId);
+        if ($oldCover != $newCover && $newCover != '' && $resource != null) {
+            Log::info('Download video image', ['cover' => $newCover, 'resourceId' => $resourceId]);
+            if ($this->coverService->isCoverable($newCover, $resource)) {
+                Log::info('Cover is already coverable, skip download', ['cover' => $newCover, 'resourceId' => $resourceId]);
+                return;
+            }
+
+            $this->coverService->downloadCoverImageJob($newCover, 'video', $resource);
+            Log::info('Trigger video image download job success', ['cover' => $newCover, 'resourceId' => $resourceId]);
         }
     }
 }

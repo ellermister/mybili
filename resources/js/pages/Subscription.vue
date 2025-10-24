@@ -52,7 +52,7 @@
                 <div class="relative">
                     <RouterLink :to="{ name: 'subscription-id', params: { id: subscription.id } }" 
                                class="block hover:opacity-90 transition-opacity duration-200">
-                        <Image :src="subscription.cache_image_url || '/assets/images/notfound.webp'" 
+                        <Image :src="subscription.cover_info?.image_url || '/assets/images/notfound.webp'" 
                                :title="subscription.name"
                                class="w-full h-48 object-cover select-none pointer-events-none" />
                     </RouterLink>
@@ -149,7 +149,7 @@
                     <div class="relative">
                         <RouterLink :to="{ name: 'subscription-id', params: { id: subscription.id } }" 
                                    class="block hover:opacity-90 transition-opacity duration-200">
-                            <Image :src="subscription.cache_image_url || '/assets/images/notfound.webp'" 
+                            <Image :src="subscription.cover_info?.image_url || '/assets/images/notfound.webp'" 
                                    :title="subscription.name"
                                    class="w-full h-32 object-cover select-none pointer-events-none" />
                         </RouterLink>
@@ -230,7 +230,7 @@
                         <RouterLink :to="{ name: 'subscription-id', params: { id: subscription.id } }" 
                                    class="block hover:opacity-90 transition-opacity duration-200">
                             <div class="mx-auto w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200">
-                                <Image :src="subscription.cache_image_url || '/assets/images/notfound.webp'" 
+                                <Image :src="subscription.cover_info?.image_url || '/assets/images/notfound.webp'" 
                                        :title="subscription.name"
                                        class="w-full h-full object-cover select-none pointer-events-none" />
                             </div>
@@ -314,7 +314,7 @@
                     <div class="relative">
                         <RouterLink :to="{ name: 'subscription-id', params: { id: subscription.id } }" 
                                    class="block hover:opacity-90 transition-opacity duration-200">
-                            <Image :src="subscription.cache_image_url || '/assets/images/notfound.webp'" 
+                            <Image :src="subscription.cover_info?.image_url || '/assets/images/notfound.webp'" 
                                    :title="subscription.name"
                                    class="w-full h-32 object-cover select-none pointer-events-none" />
                         </RouterLink>
@@ -365,7 +365,7 @@
                         
                         <RouterLink :to="{ name: 'subscription-id', params: { id: subscription.id } }" 
                                    class="block hover:opacity-90 transition-opacity duration-200">
-                            <Image :src="subscription.cache_image_url || '/assets/images/notfound.webp'" 
+                            <Image :src="subscription.cover_info?.image_url || '/assets/images/notfound.webp'" 
                                    :title="subscription.name"
                                    class="w-16 h-12 rounded object-cover flex-shrink-0 select-none pointer-events-none" />
                         </RouterLink>
@@ -411,7 +411,7 @@
                         <RouterLink :to="{ name: 'subscription-id', params: { id: subscription.id } }" 
                                    class="block hover:opacity-90 transition-opacity duration-200">
                             <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
-                                <Image :src="subscription.cache_image_url || '/assets/images/notfound.webp'" 
+                                <Image :src="subscription.cover_info?.image_url || '/assets/images/notfound.webp'" 
                                        :title="subscription.name"
                                        class="w-full h-full object-cover select-none pointer-events-none" />
                             </div>

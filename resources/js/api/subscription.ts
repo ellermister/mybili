@@ -1,4 +1,5 @@
 import type { Video } from "./fav";
+import type { Cover } from "./cover";
 
 export interface Subscription {
     id: number;
@@ -6,12 +7,12 @@ export interface Subscription {
     url: string;
     type: string;
     mid: string;
-    cache_image_url: string;
     description: string;
     total: number;
     status: number;
     last_check_at: number;
     videos: Video[] | null;
+    cover_info: Cover|null;
 }
 
 export async function getSubscriptionList(): Promise<Subscription[]> {
