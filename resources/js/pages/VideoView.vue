@@ -15,8 +15,8 @@
             <div class="flex flex-col lg:flex-row gap-4">
                 <!-- Main Player -->
                 <div class="flex-1">
-                    <div ref="playerContainer" class="bg-white shadow-lg overflow-hidden border border-gray-200/50 ">
-                        <Player ref="playerRef" @ready="onPlayerReady" />
+                    <div ref="playerContainer" id="playerContainer" class="bg-white shadow-lg overflow-hidden border border-gray-200/50 ">
+                        <Player ref="playerRef" @ready="onPlayerReady" :danmaku="danmaku" :url="currentPart?.url ?? ''" />
                     </div>
                 </div>
 
@@ -196,11 +196,11 @@ import { formatTimestamp } from '../lib/helper';
 import Player from '../components/Player.vue';
 import Breadcrumbs from '../components/Breadcrumbs.vue';
 import type { Video, VideoPartType } from '@/api/fav';
+import { getVideoDanmaku, getVideoInfo } from '@/api/video';
 
 const { t } = useI18n();
 const playerRef = ref()
-const playerContainer = ref()
-const playerReady = ref(false)
+const playerContainer = ref<HTMLDivElement | null>(null)
 const sidebarHeight = ref('auto')
 
 const route = useRoute()
@@ -329,42 +329,29 @@ const notfound = ref(false)
 
 const currentPart = ref<VideoPartType | null>(null)
 
+const danmaku = ref<any[]>([])
+
 // Player 准备就绪时的回调
 const onPlayerReady = () => {
-    playerReady.value = true
-    // 如果视频数据已经加载，立即播放第一个视频
-    if (videoInfo.value?.video_parts && videoInfo.value.video_parts.length > 0) {
-        const firstVideo = videoInfo.value.video_parts[0]
-        playFirstVideo(firstVideo)
-    }
+    playPart(videoInfo.value?.video_parts?.[0]?.id ?? 0)
 }
 
-// 播放第一个视频
-const playFirstVideo = (firstVideo: VideoPartType) => {
-    if (playerRef.value && playerReady.value) {
-        playerRef.value.switchVideo(
-            {
-                url: firstVideo.url,
-                type: 'mp4',
-                danmaku_id: firstVideo.id,
-            }
-        )
-        currentPart.value = firstVideo
-    }
-}
 
 const playPart = (partId: number) => {
+    console.log('playPart', partId)
     const part = videoInfo.value?.video_parts?.find(part => part.id === partId)
-    if (part && playerRef.value && playerReady.value) {
-        // p1 视频, p2 弹幕
-        playerRef.value.switchVideo({
-            url: part.url,
-            type: 'mp4',
-        }, {
-            id: part.id,
-            api: '/api/danmaku/',
+    if (part && playerRef.value) {
+        console.log('playPart switchVideo', part.id)
+        getVideoDanmaku(part.id).then(danmaku => {
+            console.log('playPart switchVideo', {
+                url: part.url,
+                danmaku: danmaku,
+            })
+            playerRef.value?.switchVideo({
+                url: part.url,
+                danmaku: danmaku,
+            })
         })
-
         currentPart.value = part as VideoPartType
     }
 }
@@ -381,19 +368,11 @@ const updateSidebarHeight = () => {
 let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
-    fetch(`/api/video/${videoId.value}`).then(async (rsp) => {
-        if (!rsp.ok) {
-            notfound.value = true
-        } else {
-            const jsonData = await rsp.json()
-            videoInfo.value = jsonData
-            // 如果 Player 已经准备就绪，立即播放第一个视频
-            if (playerReady.value && jsonData.video_parts.length > 0) {
-                const firstVideo = jsonData.video_parts[0]
-                playFirstVideo(firstVideo)
-            }
-
-            // 等待DOM更新后设置高度监听
+    getVideoInfo(parseInt(videoId.value as string)).then(async (data) => {
+        if (data) {
+            videoInfo.value = data
+            updateSidebarHeight()
+            // // 等待DOM更新后设置高度监听
             nextTick(() => {
                 updateSidebarHeight()
 

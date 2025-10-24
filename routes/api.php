@@ -9,11 +9,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SystemController;
 
 Route::apiResource('/fav', FavController::class)->only(['show', 'index']);
-Route::get('/video/{id}', [VideoController::class, 'show']);
+Route::get('/videos/{id}', [VideoController::class, 'show']);
 Route::get('/videos', [VideoController::class, 'index']);
 Route::delete('/videos/{id}', [VideoController::class, 'destroy']);
-Route::get('/danmaku/v3', [VideoController::class, 'danmakuV3']);
-Route::get('/danmaku/{id}', [VideoController::class, 'danmaku']);
+Route::get('/danmaku', [VideoController::class, 'danmaku']);
 Route::get('/progress', [VideoController::class, 'progress']);
 Route::get('/cookie/exist', [CookieController::class, 'checkFileExist']);
 Route::get('/cookie/status', [CookieController::class, 'checkCookieValid']);

@@ -24,7 +24,8 @@
         "vue-tsc": "^2.0.21"
     },
     "dependencies": {
-        "dplayer": "https://github.com/ellermister/DPlayer#v1.27.3",
+        "artplayer": "^5.3.0",
+        "artplayer-plugin-danmuku": "^5.2.0",
         "vue-i18n": "^11.1.7"
     }
 }

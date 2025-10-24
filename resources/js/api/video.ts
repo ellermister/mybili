@@ -27,7 +27,7 @@ export async function getVideoList(data: VideoListParams): Promise<VideoListResp
     );
     const params = new URLSearchParams(filteredData as Record<string, string>);
     const url = `/api/videos${params.toString() ? '?' + params.toString() : ''}`;
-    
+
     const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -44,6 +44,21 @@ export async function deleteVideo(id: number, extend_ids?: number[]): Promise<bo
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ extend_ids: extend_ids }),
+    });
+    return response.json();
+}
+
+export async function getVideoDanmaku(id: number): Promise<any[]> {
+    const response = await fetch(`/api/danmaku?id=${id}`, {
+        method: 'GET',
+    });
+    const data = await response.json()
+    return data.data;
+}
+
+export async function getVideoInfo(id: number): Promise<Video> {
+    const response = await fetch(`/api/videos/${id}`, {
+        method: 'GET',
     });
     return response.json();
 }

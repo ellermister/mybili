@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Services\DPlayerDanmakuService;
+use App\Services\DanmakuConverterService;
 use App\Services\VideoManager\Contracts\DanmakuServiceInterface;
 use App\Services\VideoManager\Contracts\FavoriteServiceInterface;
 use App\Services\VideoManager\Contracts\VideoServiceInterface;
@@ -15,7 +15,7 @@ class VideoController extends Controller
         public VideoServiceInterface $videoService,
         public FavoriteServiceInterface $favoriteService,
         public DanmakuServiceInterface $danmakuService,
-        public DPlayerDanmakuService $dplayerDanmakuService
+        public DanmakuConverterService $danmakuConverterService
     ) {
 
     }
@@ -104,64 +104,33 @@ class VideoController extends Controller
         return response()->json($data, 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function danmaku(Request $request, int $cid)
-    {
-        $result = $this->danmakuService->getDanmaku($cid);
-        return response()->json($result);
-    }
-
-    public function danmakuV3(Request $request)
+    /**
+     * 获取指定 CID 的弹幕数据（新格式）
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function danmaku(Request $request)
     {
         $cid = $request->input('id');
-        if (! $cid) {
+        
+        if (!$cid) {
             return response()->json([
-                'code'    => 0,
-                'message' => 'empty cid request',
+                'code'    => 1,
+                'message' => 'CID 参数不能为空',
                 'data'    => [],
             ]);
         }
-        $result = $this->danmakuService->getDanmaku($cid);
-        $result = $this->dplayerDanmakuService->convertDanmaku($result);
+
+        // 获取原始弹幕数据
+        $danmakuList = $this->danmakuService->getDanmaku($cid);
+        
+        // 转换为新格式
+        $convertedData = $this->danmakuConverterService->convert($danmakuList);
+        
         return response()->json([
             'code' => 0,
-            'data' => $result,
+            'data' => $convertedData,
         ]);
-    }
-
-    protected function covertMode($mode)
-    {
-        // default: right
-        // 1：普通弹幕 => right
-        // 4：底部弹幕 => bottom
-        // 5：顶部弹幕 => top
-        // 7：高级弹幕
-        switch ($mode) {
-            case 1:
-                return 'right';
-            case 4:
-                return 'bottom';
-            case 5:
-                return 'top';
-            default:
-                return 'right';
-        }
-        // number2Type: (number) => {
-        //     switch (number) {
-        //         case 0:
-        //             return 'right';
-        //         case 1:
-        //             return 'top';
-        //         case 2:
-        //             return 'bottom';
-        //         default:
-        //             return 'right';
-        //     }
-        // },
-    }
-
-    protected function covertColor($color)
-    {
-        //默认为 #ffffff
-        return '#' . str_pad(dechex($color), 6, '0', STR_PAD_LEFT);
     }
 }
