@@ -11,6 +11,9 @@ importers:
       artplayer:
         specifier: ^5.3.0
         version: 5.3.0
+      artplayer-plugin-auto-thumbnail:
+        specifier: ^1.0.1
+        version: 1.0.1
       artplayer-plugin-danmuku:
         specifier: ^5.2.0
         version: 5.2.0
@@ -567,6 +570,9 @@ packages:
 
   arg@5.0.2:
     resolution: {integrity: sha512-PYjyFOLKQ9y57JvQ6QLo8dAgNqswh8M1RMJYdQduT6xbWSgK36P/Z/v+p888pM69jMMfS8Xd8F6I1kQ/I9HUGg==}
+
+  artplayer-plugin-auto-thumbnail@1.0.1:
+    resolution: {integrity: sha512-jewDuGQNqa9e0dDJ3DzC4UghnbJ1+sHgFbTVcVCPzlvh3teHSjjU3/173V5Lq8jaPCRosY3dJWUUi2ZRULf8JQ==}
 
   artplayer-plugin-danmuku@5.2.0:
     resolution: {integrity: sha512-iHHSGEc0J+gl7imX4nmLqqC7LXmv8xeGf2lUevhhyUCoiCRZplecpKQICHjErVb1Yqyp1xCy6Sp8eYN+EpFWFw==}
@@ -1784,6 +1790,8 @@ snapshots:
       picomatch: 2.3.1
 
   arg@5.0.2: {}
+
+  artplayer-plugin-auto-thumbnail@1.0.1: {}
 
   artplayer-plugin-danmuku@5.2.0: {}
 

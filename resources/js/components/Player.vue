@@ -5,7 +5,7 @@
 import { onMounted, ref, shallowRef, onBeforeUnmount } from 'vue';
 import Artplayer from 'artplayer'
 import artplayerPluginDanmuku from 'artplayer-plugin-danmuku';
-
+import artplayerPluginAutoThumbnail from 'artplayer-plugin-auto-thumbnail';
 const art = shallowRef<Artplayer | null>(null)
 const $container = ref<HTMLDivElement | null>(null)
 
@@ -36,6 +36,13 @@ onMounted(async () => {
         fullscreenWeb: true,
         autoOrientation: true,
         url: props.url,
+        setting: true,
+        volume: 0.5,
+        flip: true,
+        playbackRate: true,
+        theme: "#e749a0",
+        miniProgressBar: true,
+  
         plugins: [
             artplayerPluginDanmuku({
                 danmuku: props.danmaku,
@@ -43,7 +50,10 @@ onMounted(async () => {
                 antiOverlap: true,
                 synchronousPlayback: false,
                 fontSize: fontSize,
-            })
+                theme: "light",
+            }),
+            artplayerPluginAutoThumbnail({
+            }),
         ]
     })
     console.log('art.value', art.value)
