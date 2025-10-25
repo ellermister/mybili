@@ -108,7 +108,12 @@
       </transition>
 
       <main class="bg-white md:rounded-lg shadow-lg p-2 md:p-6">
-        <router-view></router-view>
+        <router-view v-slot="{ Component }">
+          <keep-alive>
+            <component :is="Component" :key="$route.path" v-if="$route.meta.keepAlive"/>
+          </keep-alive>
+          <component :is="Component" :key="$route.path" v-if="!$route.meta.keepAlive"/>
+        </router-view>
       </main>
     </div>
   </div>

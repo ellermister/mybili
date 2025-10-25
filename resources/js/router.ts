@@ -12,16 +12,16 @@ import VideoManagement from './pages/VideoManagement.vue';
 
 const routes = [
   { path: '/', component: Home },
-  { path: '/fav/:id', component: FavlistView, name:'favlist-id' },
+  { path: '/fav/:id', component: FavlistView, name:'favlist-id', meta: { keepAlive: true } },
   { path: '/fav/:id/video/:video_id', component: VideoView, name:'favlist-video-id' },
   { path: '/video/:id', component: VideoView, name:'video-id' },
   { path: '/about', component: About },
-  { path: '/progress', component: ProgressView, name: 'progress' },
+  { path: '/progress', component: ProgressView, name: 'progress', meta: { keepAlive: true } },
   { path: '/videos', component: VideoManagement, name: 'video-management' },
   { path: '/cookie', component: CookieView },
   { path: '/settings', component: SettingsView },
   { path: '/subscription', component: SubscriptionView, name: 'subscription' },
-  { path: '/subscription/:id', component: SubscriptionVideoView, name: 'subscription-id' },
+  { path: '/subscription/:id', component: SubscriptionVideoView, name: 'subscription-id', meta: { keepAlive: true } },
   { path: '/subscription/:id/video/:video_id', component: VideoView, name: 'subscription-video-id' },
 ];
 
