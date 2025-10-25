@@ -94,7 +94,7 @@ class SettingsController extends Controller
             SettingKey::FAVORITE_EXCLUDE->value . '.enabled'                    => 'required|boolean',
             SettingKey::FAVORITE_EXCLUDE->value . '.selected'                   => 'required_if:fav_exclude.enabled,true|array',
 
-            SettingKey::TELEGRAM_BOT_API_URL->value                             => 'required|string',
+            SettingKey::TELEGRAM_BOT_API_URL->value                             => 'nullable|string',
             SettingKey::TELEGRAM_BOT_ENABLED->value                             => 'required|string|in:on,off',
             SettingKey::TELEGRAM_BOT_TOKEN->value                               => 'required_if:telegram_bot_enabled,on|string',
             SettingKey::TELEGRAM_CHAT_ID->value                                 => 'required_if:telegram_bot_enabled,on|string',
