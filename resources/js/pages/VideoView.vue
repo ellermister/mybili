@@ -15,7 +15,7 @@
             <div class="flex flex-col lg:flex-row gap-4">
                 <!-- Main Player -->
                 <div class="flex-1">
-                    <div ref="playerContainer" id="playerContainer" class="bg-white shadow-lg overflow-hidden border border-gray-200/50 ">
+                    <div ref="playerContainer" id="playerContainer" class="-mx-2 md:mx-0 bg-white shadow-lg overflow-hidden md:border border-gray-200/50">
                         <Player ref="playerRef" @ready="onPlayerReady" :danmaku="danmaku" :url="currentPart?.url ?? ''" />
                     </div>
                 </div>
@@ -67,16 +67,16 @@
                                 class="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
                                 <span class="text-white font-semibold text-sm">UP</span>
                             </div>
-                            <div class="min-w-0 flex-1">
+                            <div class="min-w-0 flex-1" @click="openUpperSpace(videoInfo.upper.mid)">
                                 <div class="flex items-center space-x-2">
-                                    <h3 class="font-semibold text-gray-800 truncate">{{ videoInfo.upper.name }}</h3>
+                                    <h3 class="font-semibold text-gray-800 truncate" >{{ videoInfo.upper.name }}</h3>
                                     <span class="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">UID: {{
                                         videoInfo.upper.mid }}</span>
                                 </div>
                             </div>
                         </div>
                         <a :href="upperSpaceUrl(videoInfo.upper.mid)" target="_blank" rel="noopener noreferrer"
-                            class="inline-flex items-center space-x-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0">
+                            class="hidden md:inline-flex items-center space-x-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0">
                             <span>{{ t('video.visitSpace') }}</span>
                             <span class="text-gray-400">↗</span>
                         </a>
@@ -265,6 +265,10 @@ const bilibiliUrl = (bvid: string) => {
 
 const upperSpaceUrl = (mid: number) => {
     return `https://space.bilibili.com/${mid}`
+}
+
+const openUpperSpace = (mid: number) => {
+    window.open(upperSpaceUrl(mid), '_blank')
 }
 
 const downloadFile = (url: string, name: string) => {

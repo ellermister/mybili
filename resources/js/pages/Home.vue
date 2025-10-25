@@ -1,10 +1,10 @@
 <template>
 
     <div class="flex justify-between">
-        <h1 class="my-8 text-2xl">
+        <h1 class="my-8 text-2xl mt-4 md:mt-0">
             <RouterLink to="/">🌸</RouterLink> {{ t('home.favoriteList') }}
         </h1>
-        <h1 class="my-8 text-2xl">
+        <h1 class="my-8 text-2xl mt-4 md:mt-0">
             <RouterLink to="/progress">🌸</RouterLink> {{ t('navigation.progress') }}
         </h1>
     </div>

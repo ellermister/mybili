@@ -1,5 +1,5 @@
 <template>
-    <div class="flex items-center justify-between my-8">
+    <div class="flex items-center justify-between my-8 mt-4 md:mt-0">
         <nav aria-label="Breadcrumb" class="min-w-0">
             <ol class="flex items-center space-x-1 md:space-x-2 overflow-hidden">
                 <li v-for="(item, index) in items" :key="index" class="flex items-center">

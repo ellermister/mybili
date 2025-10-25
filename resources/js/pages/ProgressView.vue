@@ -4,10 +4,10 @@
             <div class="m-4">
 
                 <div class="flex justify-between">
-                    <h1 class="my-8 text-2xl">
+                    <h1 class="my-8 text-2xl mt-0">
                         <RouterLink to="/">🌸</RouterLink> {{ t('progress.title') }} {{ $route.params.id }}
                     </h1>
-                    <div class="flex gap-4 my-8 text-2xl">
+                    <div class="flex gap-4 my-8 text-2xl mt-0">
                         <RouterLink to="/videos" class="hover:text-blue-600 transition-colors">
                             🎬 {{ t('navigation.videoManagement') }}
                         </RouterLink>

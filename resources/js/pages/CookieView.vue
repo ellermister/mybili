@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-col align-items justify-center mt-8">
+    <div class="flex flex-col align-items justify-center mt-8 mt-0">
         <h2 class="my-4">{{ t('cookie.fileStatus') }}：<span class="text-white p-2"
                 :class="{ 'bg-green-600': state.exist, 'bg-red-600': !state.exist }">{{ state.exist ? t('cookie.exist') : t('cookie.notExist')
                 }}</span></h2>

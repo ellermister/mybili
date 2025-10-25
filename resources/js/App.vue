@@ -107,7 +107,7 @@
         </div>
       </transition>
 
-      <main class="bg-white rounded-lg shadow-lg p-6">
+      <main class="bg-white md:rounded-lg shadow-lg p-2 md:p-6">
         <router-view></router-view>
       </main>
     </div>
