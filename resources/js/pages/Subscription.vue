@@ -273,8 +273,7 @@ const getDominantColor = (subscription: any): string => {
     if (!dominantColor) {
         return '#f3f4f6';
     }
-    // console.log('dominantColor' , dominantColor);
-    // return dominantColor
+
     try {
         // 解析 hex 颜色
         const hex = dominantColor.replace('#', '');

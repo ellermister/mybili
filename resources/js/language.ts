@@ -364,6 +364,8 @@ const messages = {
         // 订阅管理页面
         subscription: {
             title: '订阅',
+            editMode: '编辑模式',
+            allSubscriptions: '所有订阅',
             createSubscription: '创建订阅',
             viewSwitch: '视图',
             unifiedView: '统一',
@@ -771,6 +773,8 @@ const messages = {
         // 订阅管理页面
         subscription: {
             title: 'Subscription',
+            editMode: 'Edit Mode',
+            allSubscriptions: 'All Subscriptions',
             createSubscription: 'Create Subscription',
             viewSwitch: 'View',
             unifiedView: 'Unified',

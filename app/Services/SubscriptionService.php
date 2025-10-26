@@ -10,6 +10,7 @@ use App\Models\SubscriptionVideo;
 use App\Models\Video;
 use App\Services\BilibiliService;
 use App\Services\VideoManager\Contracts\VideoServiceInterface;
+use Http;
 use Log;
 
 class SubscriptionService
@@ -65,8 +66,22 @@ class SubscriptionService
         $subscription->delete();
     }
 
+
+    /**
+     * 获取重定向后的URL
+     */
+    public function getRedirectURL($url)
+    {
+        $response = Http::get($url);
+        return empty($response->effectiveUri()->__toString()) ? $url : $response->effectiveUri()->__toString();
+    }
+
     public function addSubscription($type, $url)
     {
+        if(preg_match("#https://b23.tv#", $url)){
+            $url = $this->getRedirectURL($url);
+        }
+        
         if ($type == 'seasons') {
             if (! preg_match('#/(\d+)/lists/(\d+)#', $url, $matches)) {
                 throw new \Exception('invalid seasons url');
@@ -97,9 +112,10 @@ class SubscriptionService
             UpdateSubscriptionJob::dispatch($subscription, true);
             return $subscription;
         } else {
-            if (! preg_match('#/(\d+)/upload#', $url, $matches)) {
+            if (! preg_match('#/(\d+)/upload#', $url, $matches) && !preg_match('#https://space.bilibili.com/(\d+)#', $url, $matches)) {
                 throw new \Exception('invalid up url');
             }
+            dd($matches);
             $mid                = $matches[1];
             $subscription       = Subscription::query()->where('mid', $mid)->where('type', 'up')->firstOrNew();
             $subscription->type = 'up';

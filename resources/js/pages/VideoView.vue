@@ -66,7 +66,7 @@
                             <!-- 预留头像位置 -->
                             <div
                                 class="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span class="text-white font-semibold text-sm">UP</span>
+                                <img :src="videoInfo.upper.cover_info?.image_url" alt="UP主头像" class="w-full h-full object-cover rounded-full">
                             </div>
                             <div class="min-w-0 flex-1" @click="openUpperSpace(videoInfo.upper.mid)">
                                 <div class="flex items-center space-x-2">

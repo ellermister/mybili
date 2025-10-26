@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 use App\Jobs\DownloadCoverImageJob;
 use App\Models\FavoriteList;
 use App\Models\Subscription;
+use App\Models\Upper;
 use App\Models\Video;
 use Illuminate\Console\Command;
 
@@ -69,6 +70,18 @@ class ScanCoverImage extends Command
                         dispatch(new DownloadCoverImageJob($video->cover, 'video', $video));
                     } else {
                         $this->warn("Video cover is empty (ID: {$video->id})");
+                    }
+                });
+            } else if ($target == 'upper') {
+                $builder = Upper::query();
+                if ($id) {
+                    $builder->where('mid', $id);
+                }
+                $builder->each(function ($upper) {
+                    if ($upper->face) {
+                        dispatch(new DownloadCoverImageJob($upper->face, 'avatar', $upper));
+                    } else {
+                        $this->warn("Upper cover is empty (MID: {$upper->mid})");
                     }
                 });
             } else {
