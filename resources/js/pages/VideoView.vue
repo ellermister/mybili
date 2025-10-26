@@ -15,7 +15,7 @@
             <div class="flex flex-col lg:flex-row gap-4">
                 <!-- Main Player -->
                 <div class="flex-1">
-                    <div ref="playerContainer" id="playerContainer" class="-mx-2 md:mx-0 bg-white shadow-lg overflow-hidden md:border border-gray-200/50">
+                    <div ref="playerContainer" id="playerContainer" class="-mx-6 md:mx-0 bg-white shadow-lg overflow-hidden md:border border-gray-200/50">
                         <Player ref="playerRef" @ready="onPlayerReady" :danmaku="danmaku" :url="currentPart?.url ?? ''" />
                     </div>
                 </div>
