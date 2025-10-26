@@ -16,7 +16,7 @@ class CookieController extends Controller
 
     public function uploadCookieFile(Request $request)
     {
-        if (config('services.bilibili.setting_only')) {
+        if (config('services.bilibili.setting_read_only')) {
             abort(403);
         }
 

@@ -44,7 +44,7 @@ class SubscriptionController extends Controller
 
     public function store(Request $request)
     {
-        if (config('services.bilibili.setting_only')) {
+        if (config('services.bilibili.setting_read_only')) {
             abort(403);
         }
         $this->subscriptionService->addSubscription($request->type, $request->url);
@@ -53,7 +53,7 @@ class SubscriptionController extends Controller
 
     public function update(Request $request, int $id)
     {
-        if (config('services.bilibili.setting_only')) {
+        if (config('services.bilibili.setting_read_only')) {
             abort(403);
         }
         $subscription = Subscription::find($id);
@@ -66,7 +66,7 @@ class SubscriptionController extends Controller
 
     public function destroy(int $id)
     {
-        if (config('services.bilibili.setting_only')) {
+        if (config('services.bilibili.setting_read_only')) {
             abort(403);
         }
         $subscription = Subscription::find($id);

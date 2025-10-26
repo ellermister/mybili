@@ -62,7 +62,7 @@ class SettingsController extends Controller
 
     public function saveSettings(Request $request)
     {
-        if (config('services.bilibili.setting_only')) {
+        if (config('services.bilibili.setting_read_only')) {
             abort(403);
         }
         $data = $request->validate([

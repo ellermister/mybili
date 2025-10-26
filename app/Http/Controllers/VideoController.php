@@ -48,6 +48,9 @@ class VideoController extends Controller
 
     public function destroy(Request $request, string $id)
     {
+        if (config('services.bilibili.setting_read_only')) {
+            abort(403);
+        }
         // 补充其他ID
         $extend_ids = $request->input('extend_ids');
         if ($extend_ids && is_array($extend_ids)) {
