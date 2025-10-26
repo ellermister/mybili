@@ -11,7 +11,7 @@ import SubscriptionVideoView from './pages/SubscriptionVideo.vue';
 import VideoManagement from './pages/VideoManagement.vue';
 
 const routes = [
-  { path: '/', component: Home },
+  { path: '/', component: Home, meta: { keepAlive: true }  },
   { path: '/fav/:id', component: FavlistView, name:'favlist-id', meta: { keepAlive: true } },
   { path: '/fav/:id/video/:video_id', component: VideoView, name:'favlist-video-id' },
   { path: '/video/:id', component: VideoView, name:'video-id' },

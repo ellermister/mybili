@@ -6,6 +6,7 @@ use App\Contracts\DownloadImageServiceInterface;
 use App\Contracts\TelegramBotServiceInterface;
 use App\Services\DownloadImageService;
 use App\Services\TelegramBotService;
+use App\Services\ColorExtractionService;
 use App\Services\VideoManager\Contracts\DanmakuServiceInterface;
 use App\Services\VideoManager\Contracts\FavoriteServiceInterface;
 use App\Services\VideoManager\Contracts\VideoServiceInterface;
@@ -28,7 +29,15 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(DanmakuServiceInterface::class, DanmakuService::class);
         $this->app->singleton(FavoriteServiceInterface::class, FavoriteService::class);
         $this->app->singleton(VideoServiceInterface::class, VideoService::class);
-
+        
+        // 颜色提取服务 - 使用配置文件中的参数
+        $this->app->singleton(ColorExtractionService::class, function ($app) {
+            return new ColorExtractionService(
+                method: config('color.extraction_method', 'octree'),
+                sampleSize: config('color.sample_size', 100),
+                kmeansK: config('color.kmeans_k', 5)
+            );
+        });
     }
 
     /**

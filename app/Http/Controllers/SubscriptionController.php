@@ -4,17 +4,42 @@ namespace App\Http\Controllers;
 
 use App\Models\Subscription;
 use App\Services\SubscriptionService;
+use App\Services\ColorExtractionService;
 use Illuminate\Http\Request;
+use Storage;
 
 class SubscriptionController extends Controller
 {
-    public function __construct(public SubscriptionService $subscriptionService)
-    {
+    public function __construct(
+        public SubscriptionService $subscriptionService,
+        public ColorExtractionService $colorExtractionService
+    ) {
     }
 
     public function index()
     {
-        return response()->json($this->subscriptionService->getSubscriptions());
+        $sub = $this->subscriptionService->getSubscriptions()->toArray();
+        
+        foreach ($sub as $key => $subscription) {
+            // 只为 UP 主类型提取颜色
+            if ($subscription['type'] === 'up' && isset($subscription['cover_info']['path'])) {
+                $localPath = Storage::disk('public')->path($subscription['cover_info']['path']);
+
+                
+                // 提取颜色
+                $color = $this->colorExtractionService->extractDominantColor($localPath);
+                
+                if ($color) {
+                    $sub[$key]['dominant_color'] = $color['hex'];
+                } else {
+                    $sub[$key]['dominant_color'] = null;
+                }
+            } else {
+                $sub[$key]['dominant_color'] = null;
+            }
+        }
+        
+        return response()->json($sub);
     }
 
     public function store(Request $request)

@@ -9,10 +9,10 @@
                     </h1>
                     <div class="flex gap-4 my-8 text-2xl mt-0">
                         <RouterLink to="/videos" class="hover:text-blue-600 transition-colors">
-                            🎬 {{ t('navigation.videoManagement') }}
+                            🎬<span class="hidden md:inline"> {{ t('navigation.videoManagement') }}</span>
                         </RouterLink>
                         <RouterLink to="/horizon" target="_blank" class="hover:text-blue-600 transition-colors">
-                            🔭 {{ t('progress.viewTasks') }}
+                            🔭<span class="hidden md:inline"> {{ t('progress.viewTasks') }}</span>
                         </RouterLink> 
                     </div>
                 </div>

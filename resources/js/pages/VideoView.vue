@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="m-4">
         <Breadcrumbs :items="breadcrumbItems">
             <template #actions>
                 <div class="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full hidden md:block">

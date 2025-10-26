@@ -1,5 +1,6 @@
 <template>
-    <Breadcrumbs :items="breadcrumbItems">
+    <div class="m-4">
+        <Breadcrumbs :items="breadcrumbItems">
         <template #actions>
             <div class="flex items-center  gap-2">
                 <label class="text-slate-500">{{ t('favorites.downloaded') }}</label>
@@ -27,6 +28,7 @@
                     item.page }}</span>
         </div>
     </div>
+    </div>
 </template>
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
@@ -49,6 +51,7 @@ const isFilterDownloaded = ref(false)
 const breadcrumbItems = computed(() => {
     return [
         { text: t('navigation.home'), to: '/' },
+        { text: t('subscription.title') , to: '/subscription' },
         { text: subscription.value?.name ?? t('common.loading') }
     ]
 })
