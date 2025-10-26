@@ -1,6 +1,7 @@
 <?php
 namespace App\Services\VideoManager;
 
+use App\Models\Danmaku;
 use App\Models\Video;
 use App\Models\VideoPart;
 use App\Services\DownloadVideoService;
@@ -160,6 +161,9 @@ class VideoService implements VideoServiceInterface
             }
         }
         Log::info(sprintf('Delete %d videos', count($deletedIds)), ['ids' => $ids, 'deleted_ids' => $deletedIds]);
+
+        // 删除视频弹幕
+        Danmaku::query()->whereIn('video_id', $deletedIds)->delete();
         return $deletedIds;
     }
 }
