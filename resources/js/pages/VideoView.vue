@@ -35,8 +35,9 @@
                             <button v-for="part in videoInfo?.video_parts" :key="part.id" @click="playPart(part.id)"
                                 class="w-full px-3 py-2 text-left rounded-lg transition-all duration-300 group relative overflow-hidden"
                                 :class="{
-                                    'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow': currentPart?.id === part.id,
-                                    'bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-gray-900': currentPart?.id !== part.id
+                                    'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow': currentPart?.id === part.id && part.downloaded,
+                                    'bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-gray-900': currentPart?.id !== part.id && part.downloaded,
+                                    'bg-gray-100 text-gray-500 cursor-not-allowed': !part.downloaded
                                 }">
                                 <div class="flex items-center justify-between">
                                     <span class="font-medium truncate">{{ part.title }}</span>
@@ -319,7 +320,6 @@ const downloadDanmaku = () => {
 }
 
 const downloadCover = () => {
-    // TODO: Implement cover download functionality
     const coverURL = videoInfo.value?.cover_info?.image_url
     if (coverURL) {
         // 下载图片

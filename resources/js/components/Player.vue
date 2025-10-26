@@ -61,7 +61,10 @@ const saveDanmakuConfig = (config: DanmakuOption) => {
 
 const switchVideo = (param: { url: string, danmaku: any[] }) => {
     if (art.value) {
-        (art.value.plugins as any).artplayerPluginDanmuku.load(param.danmaku)
+        (art.value.plugins as any).artplayerPluginDanmuku.config({
+            danmuku: param.danmaku
+        });
+        (art.value.plugins as any).artplayerPluginDanmuku.load()
         art.value.url = param.url
         art.value.play()
     }

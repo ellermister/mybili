@@ -20,6 +20,7 @@ export interface VideoPartType {
     url: string
     title: string
     part: number
+    downloaded: boolean
 }
 
 export interface Video {

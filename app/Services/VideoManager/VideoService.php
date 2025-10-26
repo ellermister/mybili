@@ -116,11 +116,13 @@ class VideoService implements VideoServiceInterface
             } else {
                 $urlPath = null;
             }
+
             $list[] = [
-                'id'    => $videoPart['cid'],
-                'part'  => $videoPart['page'],
-                'url'   => $urlPath,
-                'title' => $videoPart['part'] ?? 'P' . $videoPart['page'],
+                'id'         => $videoPart['cid'],
+                'part'       => $videoPart['page'],
+                'url'        => $urlPath,
+                'title'      => $videoPart['part'] ?? 'P' . $videoPart['page'],
+                'downloaded' => $videoPart['video_download_path'] ? true : false,
             ];
         }
         return $list;
@@ -150,13 +152,13 @@ class VideoService implements VideoServiceInterface
     public function deleteVideos(array $ids): array
     {
         $deletedIds = [];
-        $videos = Video::query()->whereIn('id', $ids)->get();
+        $videos     = Video::query()->whereIn('id', $ids)->get();
 
         foreach ($videos as $video) {
             $video->parts->each(function (VideoPart $videoPart) {
                 app(DownloadVideoService::class)->deleteVideoPartFile($videoPart);
             });
-            if($video->delete()){
+            if ($video->delete()) {
                 $deletedIds[] = $video->id;
             }
         }
