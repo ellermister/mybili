@@ -115,7 +115,6 @@ class SubscriptionService
             if (! preg_match('#/(\d+)/upload#', $url, $matches) && !preg_match('#https://space.bilibili.com/(\d+)#', $url, $matches)) {
                 throw new \Exception('invalid up url');
             }
-            dd($matches);
             $mid                = $matches[1];
             $subscription       = Subscription::query()->where('mid', $mid)->where('type', 'up')->firstOrNew();
             $subscription->type = 'up';
