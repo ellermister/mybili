@@ -44,7 +44,7 @@ return [
 
         'ignore_cookies'           => env('BILIBILI_IGNORE_COOKIES', false),
 
-        'setting_only'             => env('BILIBILI_SETTING_ONLY', false),
+        'setting_read_only'        => env('BILIBILI_SETTING_READ_ONLY', false),
     ],
 
 ];
