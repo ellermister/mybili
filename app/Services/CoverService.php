@@ -55,21 +55,17 @@ class CoverService extends DownloadImageService
             ]);
         }
         
-        // 3. 检查关联关系是否存在
-        $coverableExists = Coverables::where([
-            'cover_id'        => $cover->id,
-            'coverable_id'    => $model->id,
-            'coverable_type'  => get_class($model),
-        ])->exists();
-        
-        // 4. 不存在则创建关联
-        if (!$coverableExists) {
-            Coverables::create([
-                'cover_id'        => $cover->id,
+        // 3. 创建或更新关联关系（一个模型只能有一个封面）
+        // 使用 updateOrCreate 避免唯一约束冲突，如果封面变更会自动更新
+        Coverables::updateOrCreate(
+            [
                 'coverable_id'    => $model->id,
                 'coverable_type'  => get_class($model),
-            ]);
-        }
+            ],
+            [
+                'cover_id'        => $cover->id,
+            ]
+        );
         
         return $cover;
     }
