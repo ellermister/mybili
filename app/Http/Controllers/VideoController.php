@@ -30,20 +30,41 @@ class VideoController extends Controller
             'multi_part' => 'nullable|string',
             'fav_id'     => 'nullable|integer',
             'page_size'  => 'nullable|integer|min:1',
+            'load_all'   => 'nullable|boolean',
         ]);
-        $page    = $data['page'] ?? 1;
-        $perPage = 30;
-        $result  = $this->videoService->getVideosByPage([
+        $loadAll = filter_var($data['load_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters = [
             'query'      => $data['query'] ?? '',
             'status'     => $data['status'] ?? '',
             'downloaded' => $data['downloaded'] ?? '',
             'multi_part' => $data['multi_part'] ?? '',
             'fav_id'     => $data['fav_id'] ?? '',
-        ], $page, intval($data['page_size'] ?? $perPage));
-        return response()->json([
-            'stat'  => $result['stat'],
-            'list'  => $result['list'],
-        ]);
+        ];
+
+        if ($loadAll) {
+            // 如果需要加载全部，直接获取所有数据
+            $videos = $this->videoService->getVideos($filters);
+            return response()->json([
+                'stat' => $this->videoService->getVideosStat($filters),
+                'list' => $videos,
+            ]);
+        } else {
+            // 否则使用分页
+            $page = $data['page'] ?? 1;
+            $perPage = intval($data['page_size'] ?? 30);
+            $result = $this->videoService->getVideosByPage($filters, $page, $perPage);
+
+            return response()->json([
+                'stat' => $result['stat'],
+                'list' => $result['list'],
+                'pagination' => [
+                    'total' => $result['total'] ?? count($result['list']),
+                    'per_page' => $perPage,
+                    'current_page' => $page,
+                    'last_page' => ceil(($result['total'] ?? count($result['list'])) / $perPage),
+                ],
+            ]);
+        }
     }
 
     public function destroy(Request $request, string $id)
