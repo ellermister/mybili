@@ -94,6 +94,9 @@ class VideoService implements VideoServiceInterface
             }
         }
 
+        // 按 fav_time 或 created_at 降序排序以保持与 progress 视图一致的展示顺序
+        $query->orderByRaw('COALESCE(fav_time, created_at) DESC');
+
         $stat = [
             'count'      => (clone $query)->count(),
             'downloaded' => (clone $query)->where('video_downloaded_num', '>', 0)->count(),

@@ -50,6 +50,15 @@
                     <div class="bg-blue-600 h-2.5 rounded-full" :style="{ width: progress + '%' }"></div>
                 </div>
 
+                <!-- 初始加载骨架占位（在第一次 fetch 完成前） -->
+                <div v-if="!dataLoaded" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div v-for="n in 8" :key="n" class="animate-pulse p-4 bg-white rounded-lg shadow-sm">
+                        <div class="bg-gray-200 h-40 rounded-md mb-3"></div>
+                        <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                </div>
+
                 <!-- 桌面端筛选器 -->
                 <div class="hidden md:grid grid-cols-4 w-full my-4">
                     <div class="flex flex-col text-center text-white bg-blue-400 hover:bg-gradient-to-r from-purple-500 to-pink-500  py-4 rounded-l-lg"
@@ -132,8 +141,8 @@
                     </div>
                 </div>
 
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-4 w-full gap-4" ref="videoGridRef">
-                    <div class="flex flex-col relative" v-for="item in dataList">
+                <div v-if="dataLoaded" class="mt-4 grid grid-cols-1 md:grid-cols-4 w-full gap-4" ref="videoGridRef">
+                    <div class="flex flex-col relative" v-for="item in dataList" :key="item.id">
                         <RouterLink :to="{ name: 'video-id', params: { id: item.id } }">
                             <Image class="rounded-lg w-full h-auto md:w-96 md:h-56 hover:scale-105 transition-all duration-300" :src="item.cover_info?.image_url ?? '/assets/images/notfound.webp'"
                                 :class="{ 'grayscale-image': item.video_downloaded_num == 0 }" :title="item.title" />
@@ -146,6 +155,37 @@
                         <span v-if="item.page > 1"
                             class="text-sm text-white bg-gray-600 rounded-lg w-10 text-center  absolute top-2 right-2">{{
                                 item.page }}</span>
+                    </div>
+                </div>
+
+                <!-- 底部加载更多指示（当后台仍在追加时显示） -->
+                <div v-if="loadingMore && dataLoaded" class="mt-6 flex items-center justify-center gap-3">
+                    <svg class="w-5 h-5 animate-spin text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <div class="text-sm text-gray-600">正在后台加载更多视频…（{{ videoList.length }} / {{ stat.count }}）</div>
+                </div>
+
+                <!-- 轻量浮动加载卡片（右下角，吸睛但轻） -->
+                <div v-if="dataLoaded" class="fixed right-6 bottom-6 z-50">
+                    <div class="bg-white/80 backdrop-blur-sm border border-gray-100 shadow-md rounded-xl px-4 py-2 flex items-center gap-3 w-64">
+                        <div class="flex-shrink-0">
+                            <svg v-if="loadingMore" class="w-5 h-5 animate-spin text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            <svg v-else class="w-5 h-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414-1.414L8 11.172 4.707 7.879a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-sm font-medium text-gray-800">视频加载</div>
+                            <div class="text-xs text-gray-500">{{ videoList.length }} / {{ stat.count }}</div>
+                            <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden mt-2">
+                                <div class="bg-gradient-to-r from-indigo-500 to-pink-500 h-2" :style="{ width: (stat.count ? (videoList.length / stat.count * 100) + '%' : '0%') }"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -171,6 +211,13 @@ const progress = ref(0)
 const dataLoaded = ref(false)
 const isInitialLoad = ref(true)
 const showCachedOnly = ref(false)
+const currentPage = ref(0)
+
+// 分页 / 渐进加载设置
+const PAGE_SIZE = 24
+const LOAD_INTERVAL_MS = 180 // 每次追加一页的间隔（ms），可微调
+let loadTimer: number | null = null
+const loadingMore = ref(false)
 
 const stat = ref({
     count: 0,
@@ -286,35 +333,96 @@ watch(() => route.query.filter, () => {
     initFilterFromUrl();
 }, { immediate: true });
 
-onMounted(() => {
+onMounted(async () => {
     // 初始化过滤器状态
     initFilterFromUrl();
     // 添加事件监听器
     window.addEventListener('scroll', handleScroll);
+
+    // 加载第一页并在后台逐页加载剩余页面
+    await fetchPage(1)
+    if (videoList.value.length < (stat.value.count || 0)) {
+        startBackgroundLoad()
+    }
 });
 
 onUnmounted(() => {
     // 移除事件监听器
     window.removeEventListener('scroll', handleScroll);
+    // 清理后台加载定时器
+    stopBackgroundLoad();
 });
 
-// 数据加载
-fetch(`/api/progress`).then(async (rsp) => {
-    if (rsp.ok) {
+// 数据加载：按页从后端请求（后端已支持 page 和 page_size）
+const fetchPage = async (page: number) => {
+    if (loadingMore.value) return
+    loadingMore.value = true
+    try {
+        const rsp = await fetch(`/api/progress?page=${page}&page_size=${PAGE_SIZE}`)
+        if (!rsp.ok) return
         const jsonData = await rsp.json()
-        videoList.value = jsonData.data
-        stat.value = jsonData.stat
+        const items: VideoType[] = jsonData.data || jsonData.list || []
 
-        progress.value = parseInt((stat.value.downloaded / stat.value.count * 100).toFixed(2))
-        
-        console.log('Loading, video count:', jsonData.data.length);
-        
-        // 数据加载完成后恢复滚动位置
-        dataLoaded.value = true
-        restoreScrollPosition()
-        isInitialLoad.value = false;
+        // 追加到渲染列表
+        if (page === 1) {
+            videoList.value = items
+        } else {
+            videoList.value = videoList.value.concat(items)
+        }
+
+        // 更新统计信息
+        if (jsonData.stat) {
+            stat.value = jsonData.stat
+            progress.value = stat.value.count > 0 ? parseInt((stat.value.downloaded / stat.value.count * 100).toFixed(2)) : 0
+        }
+
+        currentPage.value = page
+
+        // 设置已加载标志（首次加载完毕）
+        if (!dataLoaded.value) {
+            dataLoaded.value = true
+            isInitialLoad.value = false
+            restoreScrollPosition()
+        }
+    } catch (e) {
+        console.error('Fetch page error', e)
+    } finally {
+        loadingMore.value = false
     }
-})
+}
+
+// 启动后台分页追加（按页请求下一页直到全部加载完毕）
+// 优化：提高优先级 —— 立即开始加载下一页（不再等待 requestIdleCallback）
+const startBackgroundLoad = () => {
+    if (loadingMore.value) return
+
+    const scheduleNext = async () => {
+        const loaded = videoList.value.length
+        const total = stat.value.count || 0
+        if (loaded >= total) {
+            loadingMore.value = false
+            if (loadTimer) { clearTimeout(loadTimer); loadTimer = null }
+            return
+        }
+
+        const nextPage = currentPage.value + 1
+        await fetchPage(nextPage)
+
+        // 安排下一页加载（稍作延迟以避免完全占满主线程）
+        loadTimer = window.setTimeout(scheduleNext, LOAD_INTERVAL_MS)
+    }
+
+    // 立即开始：比 requestIdleCallback 更高的优先级
+    scheduleNext()
+}
+
+const stopBackgroundLoad = () => {
+    if (loadTimer) {
+        clearTimeout(loadTimer)
+        loadTimer = null
+    }
+    loadingMore.value = false
+}
 
 // 监听数据加载状态变化，恢复滚动位置
 watch(dataLoaded, (newValue) => {

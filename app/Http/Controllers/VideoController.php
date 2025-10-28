@@ -89,22 +89,26 @@ class VideoController extends Controller
         abort(404);
     }
 
-    public function progress()
+    public function progress(Request $request)
     {
-        $list = $this->videoService->getVideos()
-            ->sortBy(function ($video) {
-                // 优先使用 fav_time，如果不存在或为 null 则使用 created_at
-                return Carbon::parse($video->fav_time ?? $video->created_at)->timestamp;
-            }, SORT_REGULAR, true) // true 表示降序排序
-            ->values()
-            ->all();
+        // 支持分页以便前端按页请求，节省带宽与渲染开销
+        $data = $request->validate([
+            'page'      => 'nullable|integer|min:1',
+            'page_size' => 'nullable|integer|min:1',
+        ]);
 
-        $data = [
-            'data' => $list,
-            'stat' => $this->videoService->getVideosStat([]),
-        ];
+        $page = $data['page'] ?? 1;
+        $perPage = $data['page_size'] ?? 30;
 
-        return response()->json($data, 200, [], JSON_UNESCAPED_UNICODE);
+        $result = $this->videoService->getVideosByPage([], $page, intval($perPage));
+
+        // 返回结构与其他接口保持一致：data 列表和 stat
+        return response()->json([
+            'data' => $result['list'],
+            'stat' => $result['stat'],
+            'page' => intval($page),
+            'page_size' => intval($perPage),
+        ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
     /**
