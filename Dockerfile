@@ -111,7 +111,7 @@ COPY --from=composer/composer:2-bin /composer /usr/bin/composer
 
 COPY --from=build /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=build /usr/local/bin/ffprobe /usr/local/bin/ffprobe
-COPY --from=build /usr/local/bin/yt-dlp_linux /usr/local/bin/yt-dlp
+COPY --from=build /usr/local/bin/yt-dlp_linux /usr/local/bin/yt-dlp_linux
 COPY --from=build /usr/local/bin/frankenphp /usr/local/bin/frankenphp
 COPY --from=build /usr/local/bin/supervisord /usr/local/bin/supervisord
 COPY --from=build /usr/local/bin/supervisord_static /usr/local/bin/supervisord_static
