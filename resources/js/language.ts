@@ -358,7 +358,9 @@ const messages = {
             confirmDeleteMessage: '确定要删除这个视频吗？此操作无法撤销。',
             confirmBatchDeleteMessage: '确定要删除选中的 {count} 个视频吗？此操作无法撤销。',
             deleteSuccess: '删除成功',
-            noMoreVideos: '没有更多视频了'
+            noMoreVideos: '没有更多视频了',
+            loadAll: '加载全部视频',
+            loadingAllVideos: '正在加载所有视频...',
         },
 
         // 订阅管理页面
@@ -767,7 +769,9 @@ const messages = {
             confirmDeleteMessage: 'Are you sure you want to delete this video? This action cannot be undone.',
             confirmBatchDeleteMessage: 'Are you sure you want to delete {count} selected videos? This action cannot be undone.',
             deleteSuccess: 'Delete successful',
-            noMoreVideos: 'No more videos'
+            noMoreVideos: 'No more videos',
+            loadAll: 'Load All Videos',
+            loadingAllVideos: 'Loading all videos...',
         },
 
         // 订阅管理页面

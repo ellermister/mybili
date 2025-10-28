@@ -17,7 +17,7 @@ export interface VideoListParams {
     status?: string;
     downloaded?: string;
     multi_part?: string;
-    fav_id?: string;
+    load_all?: boolean;
 }
 
 export async function getVideoList(data: VideoListParams): Promise<VideoListResponse> {
@@ -25,6 +25,12 @@ export async function getVideoList(data: VideoListParams): Promise<VideoListResp
     const filteredData = Object.fromEntries(
         Object.entries(data).filter(([_, v]) => v != null && v !== '')
     );
+
+    // 特殊处理布尔值
+    if (filteredData.load_all !== undefined) {
+        filteredData.load_all = filteredData.load_all ? '1' : '0';
+    }
+    
     const params = new URLSearchParams(filteredData as Record<string, string>);
     const url = `/api/videos${params.toString() ? '?' + params.toString() : ''}`;
 

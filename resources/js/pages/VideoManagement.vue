@@ -77,6 +77,30 @@
                     </div>
 
                     <div class="flex flex-wrap gap-3 mt-4">
+                        <div class="flex items-center gap-3">
+                            <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                :class="[
+                                    loadAll ? 'bg-blue-600' : 'bg-gray-200',
+                                    (loading || loadAll) ? 'opacity-50 cursor-not-allowed bg-gray-400' : 'cursor-pointer hover:bg-gray-300'
+                                ]"
+                                role="switch"
+                                :aria-checked="loadAll"
+                                :aria-disabled="loading || loadAll"
+                                @click="!loading && !loadAll && toggleLoadAll()">
+                                <span class="inline-block h-4 w-4 transform rounded-full transition-transform"
+                                    :class="[
+                                        loadAll ? 'translate-x-6' : 'translate-x-1',
+                                        (loading || loadAll) ? 'bg-gray-200' : 'bg-white'
+                                    ]" />
+                            </div>
+                            <label class="text-sm whitespace-nowrap"
+                                :class="[
+                                    (loading || loadAll) ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 cursor-pointer hover:text-gray-900'
+                                ]"
+                                @click="!loading && !loadAll && toggleLoadAll()">
+                                {{ t('videoManagement.loadAll') }}
+                            </label>
+                        </div>
                         <button @click="selectAll"
                             class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">
                             {{ selectedVideos.size === filteredVideos.length && filteredVideos.length > 0
@@ -116,12 +140,15 @@
                     </div>
                 </div>
 
-                <div v-if="loading" class="text-center py-12">
-                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-                    <p class="mt-4 text-gray-600">{{ t('common.loading') }}</p>
+                <!-- 加载遮罩 -->
+                <div v-if="loading" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+                    <div class="bg-white rounded-lg p-8 flex flex-col items-center">
+                        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                        <p class="mt-4 text-gray-600">{{ loadAll ? t('videoManagement.loadingAllVideos') : t('common.loading') }}</p>
+                    </div>
                 </div>
 
-                <div v-else-if="filteredVideos.length === 0" class="text-center py-12">
+                <div v-if="filteredVideos.length === 0" class="text-center py-12">
                     <div class="text-6xl mb-4">📭</div>
                     <p class="text-gray-600 text-lg">{{ t('videoManagement.noVideos') }}</p>
                 </div>
@@ -238,12 +265,15 @@ import { getFavList, type Favorite, type Video as VideoType } from '@/api/fav'
 const { t } = useI18n()
 
 const videoList = ref<VideoType[]>([])
+const allVideosCache = ref<VideoType[]>([]) // 本地缓存已加载的视频
+const isInitialLoad = ref(true)
 const loading = ref(true)
 const searchQuery = ref('')
 const selectedVideos = ref(new Set<number>())
 const showDeleteDialog = ref(false)
 const deleteTarget = ref<VideoType | null>(null)
 const favList = ref<Favorite[]>([])
+const loadAll = ref(false)
 
 const currentPage = ref(1)
 const hasMore = ref(true)
@@ -264,13 +294,60 @@ const filters = ref({
     multiPart: 'all',
 })
 
+// 保持原有 videoList 渲染逻辑，filteredVideos 仍引用 videoList
 const filteredVideos = computed(() => videoList.value)
 
-const handleSearch = () => resetAndLoad()
+// 根据当前 filters/search 在缓存上本地筛选并返回结果
+const applyFiltersToCache = (): VideoType[] => {
+    let list = allVideosCache.value.slice();
+    const q = searchQuery.value?.trim().toLowerCase();
+
+    if (q) {
+        list = list.filter(v => (v.title || '').toLowerCase().includes(q))
+    }
+
+    if (filters.value.favId) {
+        list = list.filter(v => v.fav_lists?.some(f => f.id.toString() === filters.value.favId))
+    }
+
+    if (filters.value.status && filters.value.status !== 'all') {
+        list = list.filter(v => {
+            switch (filters.value.status) {
+                case 'valid': return !v.invalid && !v.frozen
+                case 'invalid': return v.invalid
+                case 'frozen': return v.frozen
+                default: return true
+            }
+        })
+    }
+
+    if (filters.value.downloaded && filters.value.downloaded !== 'all') {
+        list = list.filter(v => filters.value.downloaded === 'yes' ? v.video_downloaded_num > 0 : v.video_downloaded_num === 0)
+    }
+
+    if (filters.value.multiPart && filters.value.multiPart !== 'all') {
+        list = list.filter(v => filters.value.multiPart === 'yes' ? v.page > 1 : v.page === 1)
+    }
+
+    return list
+}
+
+const handleSearch = () => {
+    // 优先使用缓存进行本地搜索以避免触发网络请求
+    if (allVideosCache.value.length > 0) {
+        videoList.value = applyFiltersToCache()
+        return
+    }
+    resetAndLoad()
+}
 
 const clearSearch = () => {
     searchQuery.value = ''
-    resetAndLoad()
+    if (allVideosCache.value.length > 0) {
+        videoList.value = applyFiltersToCache()
+    } else {
+        resetAndLoad()
+    }
 }
 
 const resetFilters = () => {
@@ -282,7 +359,11 @@ const resetFilters = () => {
         multiPart: 'all'
     }
     selectedVideos.value.clear()
-    resetAndLoad()
+    if (allVideosCache.value.length > 0) {
+        videoList.value = applyFiltersToCache()
+    } else {
+        resetAndLoad()
+    }
 }
 
 const resetAndLoad = () => {
@@ -325,7 +406,12 @@ const handleDelete = async () => {
 
     try {
         await deleteVideo(idsToDelete[0], idsToDelete.slice(1))
+        // 从当前显示列表移除
         videoList.value = videoList.value.filter(v => !idsToDelete.includes(v.id))
+        // 同步更新缓存（如果存在）
+        if (allVideosCache.value.length > 0) {
+            allVideosCache.value = allVideosCache.value.filter(v => !idsToDelete.includes(v.id))
+        }
         updateStats()
         selectedVideos.value.clear()
         deleteTarget.value = null
@@ -346,14 +432,44 @@ const updateStats = () => {
 
 const loadingTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 
-const loadVideos = async (sleep: number = 500, isReset: boolean = false) => {
-    if (!isReset && (isLoadingMore.value || !hasMore.value)) return
+const toggleLoadAll = async () => {
+    // 如果已经是加载所有状态或正在加载中，不允许切换
+    if (loadAll.value || loading.value) return;
 
-    if (loadingTimeout.value) clearTimeout(loadingTimeout.value)
+    loadAll.value = true;
+    loading.value = true;
+    
+    try {
+        // 请求不带筛选参数的全量数据以便缓存真正的全部视频
+        const response = await getVideoList({
+            load_all: true,
+        });
+        
+        const newVideos = response.list ?? [];
+        // 更新缓存并使用缓存进行渲染（尽量保留原有 videoList 用法）
+        allVideosCache.value = newVideos
+        videoList.value = applyFiltersToCache()
+        stat.value = response.stat ?? stat.value;
+        hasMore.value = false;
+        isInitialLoad.value = false;
+        // 成功加载后保持开关打开状态
+    } catch (error) {
+        console.error('Failed to load all videos:', error);
+        loadAll.value = false;
+        resetAndLoad();
+    } finally {
+        loading.value = false;
+    }
+};
+
+const loadVideos = async (sleep: number = 500, isReset: boolean = false) => {
+    if (!isReset && (isLoadingMore.value || !hasMore.value)) return;
+
+    if (loadingTimeout.value) clearTimeout(loadingTimeout.value);
     
     loadingTimeout.value = setTimeout(async () => {
         try {
-            isReset ? (loading.value = true) : (isLoadingMore.value = true)
+            isReset ? (loading.value = true) : (isLoadingMore.value = true);
 
             const jsonData = await getVideoList({
                 query: searchQuery.value,
@@ -362,26 +478,38 @@ const loadVideos = async (sleep: number = 500, isReset: boolean = false) => {
                 downloaded: filters.value.downloaded,
                 multi_part: filters.value.multiPart,
                 fav_id: filters.value.favId,
-            })
+                load_all: false,
+            });
 
-            const newVideos = jsonData.list ?? []
+            const newVideos = jsonData.list ?? [];
 
             if (newVideos.length === 0) {
-                hasMore.value = false
+                hasMore.value = false;
             } else {
-                videoList.value = isReset ? newVideos : [...videoList.value, ...newVideos]
+                if (isReset) {
+                    videoList.value = newVideos;
+                    // 首次加载时用数据填充缓存
+                    if (isInitialLoad.value) {
+                        allVideosCache.value = newVideos.slice()
+                        isInitialLoad.value = false
+                    }
+                } else {
+                    videoList.value = [...videoList.value, ...newVideos];
+                    // 将新页追加到缓存
+                    allVideosCache.value = [...allVideosCache.value, ...newVideos];
+                }
             }
 
             if (isReset || currentPage.value === 1) {
-                stat.value = jsonData.stat ?? stat.value
+                stat.value = jsonData.stat ?? stat.value;
             }
         } catch (error) {
-            console.error('Failed to load videos:', error)
+            console.error('Failed to load videos:', error);
         } finally {
-            loading.value = false
-            isLoadingMore.value = false
+            loading.value = false;
+            isLoadingMore.value = false;
         }
-    }, sleep)
+    }, sleep);
 }
 
 const loadNextPage = () => {
@@ -401,9 +529,29 @@ const handleScroll = () => {
     }
 }
 
-watch(() => [filters.value.status, filters.value.downloaded, filters.value.multiPart, filters.value.favId], resetAndLoad, { deep: true })
+// 当筛选条件变化时，优先使用缓存做本地过滤，避免频繁网络请求；若缓存为空则重新加载
+watch([
+    () => filters.value.status,
+    () => filters.value.downloaded,
+    () => filters.value.multiPart,
+    () => filters.value.favId
+], () => {
+    if (allVideosCache.value.length > 0) {
+        videoList.value = applyFiltersToCache()
+        // 更新统计数据
+        stat.value.count = videoList.value.length
+        stat.value.valid = videoList.value.filter(v => !v.invalid).length
+        stat.value.invalid = videoList.value.filter(v => v.invalid).length
+        stat.value.frozen = videoList.value.filter(v => v.frozen).length
+        stat.value.downloaded = videoList.value.filter(v => v.video_downloaded_num > 0).length
+    } else {
+        resetAndLoad()
+    }
+}, { deep: true })
 
 onMounted(() => {
+    // 确保页面加载时开关状态为关闭
+    loadAll.value = false;
     getFavList().then(res => favList.value = res)
     window.addEventListener('scroll', handleScroll)
     loadVideos(0, true)
