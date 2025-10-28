@@ -4,16 +4,10 @@ FROM node:${NODE_VERSION}-bullseye-slim AS build
 
 WORKDIR /app
 
-COPY . .
-
-RUN npm install -g pnpm
-RUN pnpm install
-RUN pnpm build
-
 #ffmpeg - 支持多架构
 ARG TARGETPLATFORM
 
-RUN apt update && apt install -y xz-utils curl
+RUN apt update && apt install -y xz-utils curl wget tar
 
 # 根据目标平台下载对应的 ffmpeg
 # 如果 TARGETPLATFORM 为空（非 buildx 环境），则使用 uname 检测当前架构
@@ -37,18 +31,6 @@ RUN PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
     chmod +x /usr/local/bin/ffmpeg && \
     cp /tmp/ffprobe /usr/local/bin/ffprobe && \
     chmod +x /usr/local/bin/ffprobe
-
-
-FROM phpswoole/swoole:php8.3-alpine
-
-# 重新声明 ARG，确保能从构建参数接收版本号
-ARG APP_VERSION=1.0.0
-ARG WEBSITE_ID
-ARG TARGETPLATFORM
-
-WORKDIR /app
-
-ENV PHPRC=/etc/php.ini
 
 # 根据目标平台下载对应的 yt-dlp
 # 如果 TARGETPLATFORM 为空（非 buildx 环境），则使用 uname 检测当前架构
@@ -88,17 +70,9 @@ RUN PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
     chmod 775 /usr/local/bin/frankenphp && \
     chown root:root /usr/local/bin/frankenphp
 
-ENV COMPOSER_ALLOW_SUPERUSER=1
-
-COPY --from=composer/composer:2-bin /composer /usr/bin/composer
-
-COPY --from=build /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
-COPY --from=build /usr/local/bin/ffprobe /usr/local/bin/ffprobe
-
 # 根据目标平台下载对应的 supervisord
 # 如果 TARGETPLATFORM 为空（非 buildx 环境），则使用 uname 检测当前架构
-RUN apk add --no-cache curl tar && \
-    PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
+RUN PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
     case "${PLATFORM}" in \
         "linux/amd64"|"linux/x86_64") \
             SUPERVISORD_URL="https://github.com/ochinchina/supervisord/releases/download/v0.7.3/supervisord_0.7.3_Linux_64-bit.tar.gz" \
@@ -112,9 +86,35 @@ RUN apk add --no-cache curl tar && \
     esac && \
     curl -L ${SUPERVISORD_URL} -o /tmp/supervisord.tar.gz && \
     tar -xzf /tmp/supervisord.tar.gz -C /usr/local/bin/ --strip-components=1 && \
-    chmod +x /usr/local/bin/supervisord && \
-    rm -f /tmp/supervisord.tar.gz && \
-    apk del curl tar
+    chmod +x /usr/local/bin/supervisord
+
+COPY . .
+
+RUN npm install -g pnpm
+RUN pnpm install
+RUN pnpm build
+
+FROM phpswoole/swoole:php8.3-alpine
+
+# 重新声明 ARG，确保能从构建参数接收版本号
+ARG APP_VERSION=1.0.0
+ARG WEBSITE_ID
+ARG TARGETPLATFORM
+
+WORKDIR /app
+
+ENV PHPRC=/etc/php.ini
+
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
+COPY --from=composer/composer:2-bin /composer /usr/bin/composer
+
+COPY --from=build /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
+COPY --from=build /usr/local/bin/ffprobe /usr/local/bin/ffprobe
+COPY --from=build /usr/local/bin/yt-dlp_linux /usr/local/bin/yt-dlp
+COPY --from=build /usr/local/bin/frankenphp /usr/local/bin/frankenphp
+COPY --from=build /usr/local/bin/supervisord /usr/local/bin/supervisord
+COPY --from=build /usr/local/bin/supervisord_static /usr/local/bin/supervisord_static
 
 RUN docker-php-ext-install pcntl
 
