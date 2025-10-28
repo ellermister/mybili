@@ -169,23 +169,43 @@
 
                 <!-- 轻量浮动加载卡片（右下角，吸睛但轻） -->
                 <div v-if="dataLoaded" class="fixed right-6 bottom-6 z-50">
-                    <div class="bg-white/80 backdrop-blur-sm border border-gray-100 shadow-md rounded-xl px-4 py-2 flex items-center gap-3 w-64">
+                    <div class="bg-white/80 backdrop-blur-sm border border-gray-100 shadow-md rounded-xl px-4 py-3 flex items-center gap-3 w-72 group">
                         <div class="flex-shrink-0">
-                            <svg v-if="loadingMore" class="w-5 h-5 animate-spin text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <svg v-if="isPaused" class="w-5 h-5 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />
+                            </svg>
+                            <svg v-else-if="videoList.length >= (stat.count || 0)" class="w-5 h-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414-1.414L8 11.172 4.707 7.879a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8z" clip-rule="evenodd" />
+                            </svg>
+                            <svg v-else class="w-5 h-5 animate-spin text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                             </svg>
-                            <svg v-else class="w-5 h-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414-1.414L8 11.172 4.707 7.879a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8z" clip-rule="evenodd" />
-                            </svg>
                         </div>
-                        <div class="flex-1">
-                            <div class="text-sm font-medium text-gray-800">视频加载</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium text-gray-800">
+                                <span v-if="isPaused">已暂停加载</span>
+                                <span v-else-if="videoList.length >= (stat.count || 0)">加载完成</span>
+                                <span v-else>正在加载视频</span>
+                            </div>
                             <div class="text-xs text-gray-500">{{ videoList.length }} / {{ stat.count }}</div>
                             <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden mt-2">
-                                <div class="bg-gradient-to-r from-indigo-500 to-pink-500 h-2" :style="{ width: (stat.count ? (videoList.length / stat.count * 100) + '%' : '0%') }"></div>
+                                <div class="bg-gradient-to-r from-indigo-500 to-pink-500 h-2 transition-all" :class="{ 'opacity-50': isPaused }" :style="{ width: (stat.count ? (videoList.length / stat.count * 100) + '%' : '0%') }"></div>
                             </div>
                         </div>
+                        <!-- 暂停/继续按钮 -->
+                        <button v-if="videoList.length < (stat.count || 0)"
+                            @click="toggleLoading"
+                            class="flex-shrink-0 p-1.5 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            :title="isPaused ? '继续加载' : '暂停加载'"
+                        >
+                            <svg v-if="isPaused" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
+                            </svg>
+                            <svg v-else class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -212,6 +232,7 @@ const dataLoaded = ref(false)
 const isInitialLoad = ref(true)
 const showCachedOnly = ref(false)
 const currentPage = ref(0)
+const isPaused = ref(false)
 
 // 分页 / 渐进加载设置
 const PAGE_SIZE = 24
@@ -355,7 +376,7 @@ onUnmounted(() => {
 
 // 数据加载：按页从后端请求（后端已支持 page 和 page_size）
 const fetchPage = async (page: number) => {
-    if (loadingMore.value) return
+    if (loadingMore.value || isPaused.value) return
     loadingMore.value = true
     try {
         const rsp = await fetch(`/api/progress?page=${page}&page_size=${PAGE_SIZE}`)
@@ -395,6 +416,7 @@ const fetchPage = async (page: number) => {
 // 优化：提高优先级 —— 立即开始加载下一页（不再等待 requestIdleCallback）
 const startBackgroundLoad = () => {
     if (loadingMore.value) return
+    isPaused.value = false
 
     const scheduleNext = async () => {
         const loaded = videoList.value.length
@@ -421,7 +443,21 @@ const stopBackgroundLoad = () => {
         clearTimeout(loadTimer)
         loadTimer = null
     }
+    isPaused.value = true
     loadingMore.value = false
+}
+
+// 切换暂停/继续加载
+const toggleLoading = () => {
+    if (isPaused.value) {
+        // 继续加载
+        if (videoList.value.length < (stat.value.count || 0)) {
+            startBackgroundLoad()
+        }
+    } else {
+        // 暂停加载
+        stopBackgroundLoad()
+    }
 }
 
 // 监听数据加载状态变化，恢复滚动位置
