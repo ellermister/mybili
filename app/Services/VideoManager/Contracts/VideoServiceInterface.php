@@ -23,4 +23,7 @@ interface VideoServiceInterface
 
     public function deleteVideos(array $ids): array;
 
+    public function getVideosCache(): array;
+    public function updateVideosCache(?array $videos = null): void;
+
 }

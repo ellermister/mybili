@@ -5,7 +5,6 @@ use App\Services\DanmakuConverterService;
 use App\Services\VideoManager\Contracts\DanmakuServiceInterface;
 use App\Services\VideoManager\Contracts\FavoriteServiceInterface;
 use App\Services\VideoManager\Contracts\VideoServiceInterface;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class VideoController extends Controller
@@ -91,20 +90,12 @@ class VideoController extends Controller
 
     public function progress()
     {
-        $list = $this->videoService->getVideos()
-            ->sortBy(function ($video) {
-                // 优先使用 fav_time，如果不存在或为 null 则使用 created_at
-                return Carbon::parse($video->fav_time ?? $video->created_at)->timestamp;
-            }, SORT_REGULAR, true) // true 表示降序排序
-            ->values()
-            ->all();
-
+        $list = $this->videoService->getVideosCache();
         $data = [
             'data' => $list,
             'stat' => $this->videoService->getVideosStat([]),
         ];
-
-        return response()->json($data, 200, [], JSON_UNESCAPED_UNICODE);
+        return response()->json($data, 200, []);
     }
 
     /**

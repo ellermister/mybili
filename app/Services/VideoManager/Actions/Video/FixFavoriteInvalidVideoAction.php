@@ -2,6 +2,7 @@
 namespace App\Services\VideoManager\Actions\Video;
 
 use App\Contracts\DownloadImageServiceInterface as ContractsDownloadImageServiceInterface;
+use App\Events\VideoUpdated;
 use App\Jobs\DownloadCoverImageJob;
 use App\Models\Video;
 use App\Services\BilibiliService;
@@ -44,9 +45,9 @@ class FixFavoriteInvalidVideoAction
                 continue;
             }
 
-            $existVideo = Video::where('id', $videoId)->first();
+            $existVideo = Video::query()->where('id', $videoId)->first();
             if ($existVideo) {
-                $oldVideoData        = $existVideo->toArray();
+                $oldVideoData        = $existVideo->getAttributes();
                 $existVideo->invalid = true;
                 $existVideo->fill([
                     'title' => $videoTitle,
@@ -59,6 +60,8 @@ class FixFavoriteInvalidVideoAction
                 if ($oldVideoData['cover'] != $videoCover) {
                     dispatch(new DownloadCoverImageJob($videoCover, 'video', $existVideo));
                 }
+
+                event(new VideoUpdated($oldVideoData, $existVideo->getAttributes()));
             }
         }
         Log::info('Fix fav invalid video count', ['count' => $count]);

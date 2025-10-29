@@ -141,7 +141,15 @@ const messages = {
             frozenVideos: '冻结视频',
             frozenVideosDescription: '当你收藏的视频缓存了之后, 如果视频被删除下架那么就会将该视频归纳为冻结',
             published: '发布',
-            favorited: '收藏'
+            favorited: '收藏',
+            // 搜索相关
+            searchPlaceholder: '搜索视频标题 (Ctrl+F)',
+            searchPlaceholderMobile: '搜索视频标题',
+            searchButtonTitle: '搜索视频',
+            searchButtonTitlePC: '搜索视频 (Ctrl+F)',
+            searchResultsFound: '找到 {count} 个结果',
+            searchNoResults: '未找到匹配的视频',
+            searchNavigateHint: '按 Enter 或 F3 跳转到下一个结果'
         },
 
         // 收藏夹页面
@@ -551,7 +559,15 @@ const messages = {
             frozenVideos: 'Frozen Videos',
             frozenVideosDescription: 'When your favorited videos are cached, if the video is deleted or taken down, it will be categorized as frozen',
             published: 'Published',
-            favorited: 'Favorited'
+            favorited: 'Favorited',
+            // 搜索相关
+            searchPlaceholder: 'Search video title (Ctrl+F)',
+            searchPlaceholderMobile: 'Search video title',
+            searchButtonTitle: 'Search videos',
+            searchButtonTitlePC: 'Search videos (Ctrl+F)',
+            searchResultsFound: 'Found {count} results',
+            searchNoResults: 'No matching videos found',
+            searchNavigateHint: 'Press Enter or F3 to jump to next result'
         },
 
         // 收藏夹页面

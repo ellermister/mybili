@@ -1,6 +1,7 @@
 <?php
 namespace App\Services\VideoManager;
 
+use App\Events\VideoUpdated;
 use App\Models\Danmaku;
 use App\Models\Video;
 use App\Models\VideoPart;
@@ -11,6 +12,8 @@ use Log;
 
 class VideoService implements VideoServiceInterface
 {
+
+    public $ttl = 86400; // 1 day
 
     public function count(): int
     {
@@ -36,6 +39,8 @@ class VideoService implements VideoServiceInterface
         if (isset($conditions['frozen'])) {
             $query->where('frozen', $conditions['frozen']);
         }
+        // 默认按时间逆序排列：优先使用 fav_time，如果不存在或为 null 则使用 created_at
+        $query->orderByRaw('COALESCE(fav_time, created_at) DESC');
         return $query->get();
     }
 
@@ -130,14 +135,22 @@ class VideoService implements VideoServiceInterface
 
     public function getVideosStat(array $conditions = []): array
     {
-        $stat = [
-            'count'      => Video::count(),
-            'downloaded' => Video::where('video_downloaded_num', '>', 0)->count(),
-            'invalid'    => Video::where('invalid', 1)->count(),
-            'valid'      => Video::where('invalid', 0)->count(),
-            'frozen'     => Video::where('frozen', 1)->count(),
+        // 使用单次查询合并所有 COUNT，减少数据库往返
+        $stats = Video::selectRaw('
+            COUNT(*) as count,
+            SUM(CASE WHEN video_downloaded_num > 0 THEN 1 ELSE 0 END) as downloaded,
+            SUM(CASE WHEN invalid = 1 THEN 1 ELSE 0 END) as invalid,
+            SUM(CASE WHEN invalid = 0 THEN 1 ELSE 0 END) as valid,
+            SUM(CASE WHEN frozen = 1 THEN 1 ELSE 0 END) as frozen
+        ')->first();
+
+        return [
+            'count'      => (int) $stats->count,
+            'downloaded' => (int) $stats->downloaded,
+            'invalid'    => (int) $stats->invalid,
+            'valid'      => (int) $stats->valid,
+            'frozen'     => (int) $stats->frozen,
         ];
-        return $stat;
     }
 
     public function getVideoPartFileSize(VideoPart $videoPart): int
@@ -160,6 +173,7 @@ class VideoService implements VideoServiceInterface
             });
             if ($video->delete()) {
                 $deletedIds[] = $video->id;
+                event(new VideoUpdated($video->getAttributes(), []));
             }
         }
         Log::info(sprintf('Delete %d videos', count($deletedIds)), ['ids' => $ids, 'deleted_ids' => $deletedIds]);
@@ -167,5 +181,28 @@ class VideoService implements VideoServiceInterface
         // 删除视频弹幕
         Danmaku::query()->whereIn('video_id', $deletedIds)->delete();
         return $deletedIds;
+    }
+
+    public function updateVideosCache(?array $videos = null): void
+    {
+        if ($videos && is_array($videos) && count($videos) > 0) {
+            $list = $videos;
+        } else {
+            $list = $this->getVideos()->toArray();
+        }
+        redis()->set('video_list', json_encode($list));
+        redis()->expire('video_list', $this->ttl);
+        Log::info('Update videos cache success', ['count' => count($list)]);
+    }
+
+    public function getVideosCache(): array
+    {
+        $list = redis()->get('video_list');
+        if ($list) {
+            return json_decode($list, true);
+        }
+        $videos = $this->getVideos()->values()->toArray();
+        $this->updateVideosCache($videos);
+        return $videos;
     }
 }
