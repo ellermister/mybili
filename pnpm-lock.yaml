@@ -14,12 +14,15 @@ importers:
       artplayer-plugin-danmuku:
         specifier: ^5.2.0
         version: 5.2.0
+      virtua:
+        specifier: ^0.46.4
+        version: 0.46.4(vue@3.4.38(typescript@5.8.3))
       vue-i18n:
         specifier: ^11.1.7
         version: 11.1.7(vue@3.4.38(typescript@5.8.3))
-      vue-virtual-scroller:
-        specifier: 2.0.0-beta.8
-        version: 2.0.0-beta.8(vue@3.4.38(typescript@5.8.3))
+      vue-virtual-sortable:
+        specifier: ^3.0.3
+        version: 3.0.3
     devDependencies:
       '@tsconfig/node20':
         specifier: ^20.1.4
@@ -954,9 +957,6 @@ packages:
     resolution: {integrity: sha512-qOOzS1cBTWYF4BH8fVePDBOO9iptMnGUEZwNc/cMWnTV2nVLZ7VoNWEPHkYczZA0pdoA7dl6e7FL659nX9S2aw==}
     engines: {node: '>=16 || 14 >=14.17'}
 
-  mitt@2.1.0:
-    resolution: {integrity: sha512-ILj2TpLiysu2wkBbWjAmww7TkZb65aiQO+DkVdUTBpBXq+MHYiETENkKFMtsJZX1Lf4pe4QOrTSjIfUwN5lRdg==}
-
   muggle-string@0.4.1:
     resolution: {integrity: sha512-VNTrAak/KhO2i8dqqnqnAHOa3cYBwXEZe9h+D5h/1ZqFSTEFHdM65lR7RoIqq3tBBYavsOXV84NoHXZ0AkPyqQ==}
 
@@ -1125,6 +1125,9 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
+  sortable-dnd@0.6.23:
+    resolution: {integrity: sha512-n9X103uvYX9QGL1CAmpg8ULFnBjQflqADHOBiBeNhaLUCqKciIsZF4AC6EC0I5egJDb0kc6ufTmhDYOYZW7z+g==}
+
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
@@ -1230,6 +1233,26 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
+  virtua@0.46.4:
+    resolution: {integrity: sha512-2adGT8c3N2BrFUIUnLp5jYWgIPSgTC4AbHDwgVQA8IAK1lDWC79KcF/WEhfgfV8vbGJjMGtMPhkTCZGxzd0Jaw==}
+    peerDependencies:
+      react: '>=16.14.0'
+      react-dom: '>=16.14.0'
+      solid-js: '>=1.0'
+      svelte: '>=5.0'
+      vue: '>=3.2'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      solid-js:
+        optional: true
+      svelte:
+        optional: true
+      vue:
+        optional: true
+
   vite-plugin-full-reload@1.2.0:
     resolution: {integrity: sha512-kz18NW79x0IHbxRSHm0jttP4zoO9P9gXh+n6UTwlNKnviTTEpOlum6oS9SmecrTtSr+muHEn5TUuC75UovQzcA==}
 
@@ -1285,16 +1308,6 @@ packages:
       vue:
         optional: true
 
-  vue-observe-visibility@2.0.0-alpha.1:
-    resolution: {integrity: sha512-flFbp/gs9pZniXR6fans8smv1kDScJ8RS7rEpMjhVabiKeq7Qz3D9+eGsypncjfIyyU84saU88XZ0zjbD6Gq/g==}
-    peerDependencies:
-      vue: ^3.0.0
-
-  vue-resize@2.0.0-alpha.1:
-    resolution: {integrity: sha512-7+iqOueLU7uc9NrMfrzbG8hwMqchfVfSzpVlCMeJQe4pyibqyoifDNbKTZvwxZKDvGkB+PdFeKvnGZMoEb8esg==}
-    peerDependencies:
-      vue: ^3.0.0
-
   vue-router@4.5.1:
     resolution: {integrity: sha512-ogAF3P97NPm8fJsE4by9dwSYtDwXIY1nFY9T6DyQnGHd1E2Da94w9JIolpe42LJGIl0DwOHBi8TcRPlPGwbTtw==}
     peerDependencies:
@@ -1306,10 +1319,8 @@ packages:
     peerDependencies:
       typescript: '>=5.0.0'
 
-  vue-virtual-scroller@2.0.0-beta.8:
-    resolution: {integrity: sha512-b8/f5NQ5nIEBRTNi6GcPItE4s7kxNHw2AIHLtDp+2QvqdTjVN0FgONwX9cr53jWRgnu+HRLPaWDOR2JPI5MTfQ==}
-    peerDependencies:
-      vue: ^3.2.0
+  vue-virtual-sortable@3.0.3:
+    resolution: {integrity: sha512-GwASUB1d4u0ZxpqIXBwypzndVyKPQ3phcF+s0Vw6r4o0InBNsgKv4pi2HMgVXOnCijARjxiXwzAFp5WbBb+5sg==}
 
   vue@3.4.38:
     resolution: {integrity: sha512-f0ZgN+mZ5KFgVv9wz0f4OgVKukoXtS3nwET4c2vLBGQR50aI8G0cqbFtLlX9Yiyg3LFGBitruPHt2PxwTduJEw==}
@@ -2176,8 +2187,6 @@ snapshots:
 
   minipass@7.1.2: {}
 
-  mitt@2.1.0: {}
-
   muggle-string@0.4.1: {}
 
   mz@2.7.0:
@@ -2339,6 +2348,8 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
+  sortable-dnd@0.6.23: {}
+
   source-map-js@1.2.1: {}
 
   source-map-support@0.5.21:
@@ -2459,6 +2470,10 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
+  virtua@0.46.4(vue@3.4.38(typescript@5.8.3)):
+    optionalDependencies:
+      vue: 3.4.38(typescript@5.8.3)
+
   vite-plugin-full-reload@1.2.0:
     dependencies:
       picocolors: 1.1.1
@@ -2492,14 +2507,6 @@ snapshots:
     optionalDependencies:
       vue: 3.4.38(typescript@5.8.3)
 
-  vue-observe-visibility@2.0.0-alpha.1(vue@3.4.38(typescript@5.8.3)):
-    dependencies:
-      vue: 3.4.38(typescript@5.8.3)
-
-  vue-resize@2.0.0-alpha.1(vue@3.4.38(typescript@5.8.3)):
-    dependencies:
-      vue: 3.4.38(typescript@5.8.3)
-
   vue-router@4.5.1(vue@3.4.38(typescript@5.8.3)):
     dependencies:
       '@vue/devtools-api': 6.6.4
@@ -2511,12 +2518,9 @@ snapshots:
       '@vue/language-core': 2.2.10(typescript@5.8.3)
       typescript: 5.8.3
 
-  vue-virtual-scroller@2.0.0-beta.8(vue@3.4.38(typescript@5.8.3)):
+  vue-virtual-sortable@3.0.3:
     dependencies:
-      mitt: 2.1.0
-      vue: 3.4.38(typescript@5.8.3)
-      vue-observe-visibility: 2.0.0-alpha.1(vue@3.4.38(typescript@5.8.3))
-      vue-resize: 2.0.0-alpha.1(vue@3.4.38(typescript@5.8.3))
+      sortable-dnd: 0.6.23
 
   vue@3.4.38(typescript@5.8.3):
     dependencies:

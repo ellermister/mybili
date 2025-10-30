@@ -838,6 +838,7 @@ const messages = {
 };
 
 export default {
+    legacy: false,
     locale: getLocale(), // 默认语言
     fallbackLocale: 'zh-CN', // 回退语言
     messages

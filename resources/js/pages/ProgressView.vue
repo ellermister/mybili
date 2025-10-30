@@ -112,7 +112,7 @@
                     <div class="flex flex-col text-center text-white bg-blue-400 hover:bg-gradient-to-r from-purple-500 to-pink-500  py-4 rounded-l-lg"
                         :class="{ 'bg-gradient-to-r': filter.class == null }" @click="setFilter(null)">
                         <span class="text-2xl" :title="t('progress.allVideosDescription')">{{ t('progress.allVideos')
-                            }}</span>
+                        }}</span>
                         <span class="text-xl font-semibold">{{ stat.count }}</span>
                     </div>
                     <div class="flex flex-col text-center text-white bg-blue-400 hover:bg-gradient-to-r from-purple-500 to-pink-500 py-4"
@@ -136,11 +136,9 @@
                 </div>
 
                 <!-- 移动端筛选器 -->
-                <div ref="filterRef" class="md:hidden w-full transition-all duration-300"
-                    :class="isScrolled ? 'sticky top-0 z-50 my-0' : 'my-4'">
+                <div ref="filterRef" class="md:hidden w-full my-4">
                     <!-- 完整模式：当前选中的筛选器显示 -->
-                    <div v-if="!isScrolled"
-                        class="mb-4 p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg text-white shadow-lg">
+                    <div class="mb-4 p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg text-white shadow-lg">
                         <div class="flex items-center space-x-3">
                             <div class="w-3 h-3 bg-white rounded-full"></div>
                             <div>
@@ -155,7 +153,7 @@
                     </div>
 
                     <!-- 筛选器选项 - 完整模式 -->
-                    <div v-if="!isScrolled" class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-3">
                         <div class="bg-white rounded-lg p-4 shadow-sm border-2 transition-all"
                             :class="filter.class == null ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'"
                             @click="setFilter(null)">
@@ -193,80 +191,54 @@
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- 最小模式：Tab样式筛选器 -->
-                    <div v-else class="bg-white border-b border-gray-300 shadow-md">
-                        <div class="grid grid-cols-4 divide-x divide-gray-300">
-                            <button
-                                class="flex flex-col items-center justify-center py-3 px-1 transition-all duration-200 relative"
-                                :class="filter.class == null ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-gray-900 active:bg-gray-50'"
-                                @click="setFilter(null)">
-                                <span class="text-xl leading-none">📺</span>
-                                <span v-if="filter.class == null"
-                                    class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></span>
-                            </button>
-                            <button
-                                class="flex flex-col items-center justify-center py-3 px-1 transition-all duration-200 relative"
-                                :class="filter.class == 'valid' ? 'bg-green-50 text-green-600' : 'text-gray-600 hover:text-gray-900 active:bg-gray-50'"
-                                @click="setFilter('valid')">
-                                <span class="text-xl leading-none">✅</span>
-                                <span v-if="filter.class == 'valid'"
-                                    class="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600"></span>
-                            </button>
-                            <button
-                                class="flex flex-col items-center justify-center py-3 px-1 transition-all duration-200 relative"
-                                :class="filter.class == 'invalid' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:text-gray-900 active:bg-gray-50'"
-                                @click="setFilter('invalid')">
-                                <span class="text-xl leading-none">❌</span>
-                                <span v-if="filter.class == 'invalid'"
-                                    class="absolute bottom-0 left-0 right-0 h-0.5 bg-red-600"></span>
-                            </button>
-                            <button
-                                class="flex flex-col items-center justify-center py-3 px-1 transition-all duration-200 relative"
-                                :class="filter.class == 'frozen' ? 'bg-orange-50 text-orange-600' : 'text-gray-600 hover:text-gray-900 active:bg-gray-50'"
-                                @click="setFilter('frozen')">
-                                <span class="text-xl leading-none">🧊</span>
-                                <span v-if="filter.class == 'frozen'"
-                                    class="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600"></span>
-                            </button>
-                        </div>
+                <!-- 最小模式：Tab样式筛选器 - 固定在顶部 -->
+                <div v-if="isScrolled"
+                    class="md:hidden bg-white border-b border-gray-300 shadow-md fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out"
+                    :style="{ opacity: showMiniFilter ? 1 : 0, transform: showMiniFilter ? 'translateY(0)' : 'translateY(-10px)' }">
+                    <div class="grid grid-cols-4 divide-x divide-gray-300">
+                        <button
+                            class="flex flex-col items-center justify-center py-3 px-1 transition-all duration-200 relative"
+                            :class="filter.class == null ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-gray-900 active:bg-gray-50'"
+                            @click="setFilter(null)">
+                            <span class="text-xl leading-none">📺</span>
+                            <span v-if="filter.class == null"
+                                class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></span>
+                        </button>
+                        <button
+                            class="flex flex-col items-center justify-center py-3 px-1 transition-all duration-200 relative"
+                            :class="filter.class == 'valid' ? 'bg-green-50 text-green-600' : 'text-gray-600 hover:text-gray-900 active:bg-gray-50'"
+                            @click="setFilter('valid')">
+                            <span class="text-xl leading-none">✅</span>
+                            <span v-if="filter.class == 'valid'"
+                                class="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600"></span>
+                        </button>
+                        <button
+                            class="flex flex-col items-center justify-center py-3 px-1 transition-all duration-200 relative"
+                            :class="filter.class == 'invalid' ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:text-gray-900 active:bg-gray-50'"
+                            @click="setFilter('invalid')">
+                            <span class="text-xl leading-none">❌</span>
+                            <span v-if="filter.class == 'invalid'"
+                                class="absolute bottom-0 left-0 right-0 h-0.5 bg-red-600"></span>
+                        </button>
+                        <button
+                            class="flex flex-col items-center justify-center py-3 px-1 transition-all duration-200 relative"
+                            :class="filter.class == 'frozen' ? 'bg-orange-50 text-orange-600' : 'text-gray-600 hover:text-gray-900 active:bg-gray-50'"
+                            @click="setFilter('frozen')">
+                            <span class="text-xl leading-none">🧊</span>
+                            <span v-if="filter.class == 'frozen'"
+                                class="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600"></span>
+                        </button>
                     </div>
                 </div>
 
-                <DynamicScroller class="mt-4 w-full scroller-container" :items="groupedDataList" :min-item-size="380"
-                    key-field="id" :buffer="200" :emit-update="true" #default="{ item, active, index }">
-                    <DynamicScrollerItem :item="item" :active="active" :data-index="index">
-                        <template #default>
-                            <div class="virtual-row grid grid-cols-1 md:grid-cols-4 w-full gap-4 pb-4">
-                                <div class="flex flex-col relative" v-for="video in item.videos" :key="video.id"
-                                    :data-video-id="video.id">
-                                    <RouterLink :to="{ name: 'video-id', params: { id: video.id } }">
-                                        <div class="image-container rounded-lg overflow-hidden" :style="{
-                                            aspectRatio: '4/3'
-                                        }">
-                                            <Image
-                                                class="w-full h-full object-cover hover:scale-105 transition-all duration-300"
-                                                :src="video.cover_info?.image_url ?? '/assets/images/notfound.webp'"
-                                                :class="{ 'grayscale-image': video.video_downloaded_num == 0 }"
-                                                :title="video.title" />
-                                        </div>
-                                    </RouterLink>
-                                    <span class="mt-4 text-center h-12 line-clamp-2" :title="video.title">{{ video.title
-                                        }}</span>
-                                    <div class="mt-2 flex justify-between text-xs text-gray-400 px-1">
-                                        <span>{{ t('progress.published') }}: {{ formatTimestamp(video.pubtime,
-                                            "yyyy.mm.dd") }}</span>
-                                        <span v-if="video.fav_time > 0">{{ t('progress.favorited') }}: {{
-                                            formatTimestamp(video.fav_time, "yyyy.mm.dd") }}</span>
-                                    </div>
-                                    <span v-if="video.page > 1"
-                                        class="text-sm text-white bg-gray-600 rounded-lg w-10 text-center absolute top-2 right-2">{{
-                                            video.page }}</span>
-                                </div>
-                            </div>
-                        </template>
-                    </DynamicScrollerItem>
-                </DynamicScroller>
+                <virtualList :sortable="false" :draggable="''" class="scroller-container" v-model="groupedDataList"
+                    data-key="'id'" :keeps=60 :size=340>
+                    <template v-slot:item="{ record, index, dataKey }">
+                        <ProgressVideoRow :source="record" :key="index" />
+                    </template>
+                </virtualList>
             </div>
 
         </div>
@@ -276,21 +248,23 @@
 import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller';
-import Image from '@/components/Image.vue';
-import { formatTimestamp, image } from "../lib/helper"
 import type { Cover } from '../api/cover';
+import ProgressVideoRow from '../components/ProgressVideoRow.vue';
+// @ts-ignore 缺少类型声明，按行忽略类型检查
+import VirtualList from 'vue-virtual-sortable';
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const videoGridRef = ref<HTMLElement>();
+
 
 const videoList = ref<VideoType[]>([])
 const progress = ref(0)
 const showCachedOnly = ref(false)
 const isScrolled = ref(false) // 是否已滚动
 const filterRef = ref<HTMLElement>() // 筛选器元素的引用
+const isRestoringScroll = ref(false) // 是否正在恢复滚动位置
+const showMiniFilter = computed(() => !isRestoringScroll.value && isScrolled.value)
 const searchQuery = ref('') // 搜索关键词
 const showMobileSearch = ref(false) // 移动端搜索框显示状态
 const showDesktopSearch = ref(false) // PC端搜索框显示状态
@@ -417,54 +391,67 @@ watch(() => route.query.filter, () => {
     initFilterFromUrl();
 }, { immediate: true });
 
-// 滚动监听处理函数
-const handleScroll = () => {
-    if (window.innerWidth >= 768) { // 只在移动端生效
+// 使用 IntersectionObserver 监测筛选器是否离开可视区（仅移动端）
+let filterObserver: IntersectionObserver | null = null;
+const setupFilterObserver = () => {
+    // 清理旧的 observer
+    if (filterObserver) {
+        filterObserver.disconnect();
+        filterObserver = null;
+    }
+
+    // 桌面端不需要监听
+    if (window.innerWidth >= 768) {
         isScrolled.value = false;
         return;
     }
 
-    const scrollY = window.scrollY || window.pageYOffset;
+    // 确保元素存在
+    if (!filterRef.value) return;
 
-    // 获取筛选器元素
-    if (!filterRef.value) {
-        return;
-    }
+    // 创建新的 observer
+    filterObserver = new IntersectionObserver((entries) => {
+        if (isRestoringScroll.value) return;
+        const entry = entries[0];
+        // 当筛选器离开视口时，显示小筛选器
+        const newIsScrolled = !entry.isIntersecting;
+        if (isScrolled.value !== newIsScrolled) {
+            isScrolled.value = newIsScrolled;
+        }
+    }, {
+        root: null,
+        threshold: 0,
+        rootMargin: '-1px 0px 0px 0px' // 只要筛选器顶部离开视口就触发
+    });
 
-    // 获取筛选器完整模式的高度（大约是250-300px）
-    // 当滚动超过筛选器完整模式的高度时，切换到最小模式
-    // 或者在筛选器距离顶部很近时也切换到最小模式
-    const filterRect = filterRef.value.getBoundingClientRect();
-    const filterHeight = filterRef.value.offsetHeight;
-
-    // 当滚动距离超过筛选器高度，或者筛选器已经接近顶部时，切换到最小模式
-    isScrolled.value = scrollY > 200 || (filterRect.top < 100 && scrollY > 50);
+    filterObserver.observe(filterRef.value);
 };
 
 onMounted(() => {
     // 初始化过滤器状态
     initFilterFromUrl();
-
-    // 添加滚动监听
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    // 添加窗口大小变化监听
-    window.addEventListener('resize', handleScroll, { passive: true });
+    // 初始化 IntersectionObserver
+    setupFilterObserver();
+    // 监听窗口大小变化，重新设置 Observer
+    window.addEventListener('resize', setupFilterObserver, { passive: true });
     // 添加键盘事件监听（搜索功能）
     document.addEventListener('keydown', handleKeyDown);
-    // 初始检查一次
-    nextTick(() => {
-        handleScroll();
-    });
+    // 初始同步一次（避免首次闪烁）
+    nextTick(setupFilterObserver);
 });
 
 onUnmounted(() => {
-    // 移除滚动监听
-    window.removeEventListener('scroll', handleScroll);
+    // 断开 Observer
+    if (filterObserver) {
+        filterObserver.disconnect();
+        filterObserver = null;
+    }
     // 移除窗口大小变化监听
-    window.removeEventListener('resize', handleScroll);
+    window.removeEventListener('resize', setupFilterObserver);
     // 移除键盘事件监听
     document.removeEventListener('keydown', handleKeyDown);
 });
+
 
 
 // 数据加载
@@ -476,7 +463,6 @@ fetch(`/api/progress`).then(async (rsp) => {
         stat.value = jsonData.stat
 
         progress.value = parseInt((stat.value.downloaded / stat.value.count * 100).toFixed(2))
-        console.log('Loading, video count:', jsonData.data.length);
     }
 })
 
@@ -632,7 +618,7 @@ const scrollToSearchResult = () => {
                 // 如果元素还没渲染，尝试滚动到对应的行
                 const scroller = document.querySelector('.scroller-container') as HTMLElement
                 if (scroller) {
-                    const rowHeight = 380 // 估算的行高
+                    const rowHeight = 340 // 估算的行高
                     scroller.scrollTo({
                         top: targetRow * rowHeight,
                         behavior: 'smooth'
@@ -640,6 +626,7 @@ const scrollToSearchResult = () => {
                     // 延迟后再尝试定位具体元素
                     setTimeout(() => {
                         const elements = document.querySelectorAll(`[data-video-id="${targetVideo.id}"]`)
+                        console.log(elements)
                         if (elements.length > 0) {
                             (elements[0] as HTMLElement).scrollIntoView({
                                 behavior: 'smooth',
@@ -682,35 +669,12 @@ watch(showDesktopSearch, (show) => {
 </script>
 
 <style scoped>
-.grayscale-image {
-    filter: grayscale(100%) brightness(80%);
-}
-
 .scroller-container {
-    height: calc(100vh - 400px);
+    height: calc(100vh - 200px);
     /* 视口高度减去顶部内容的高度 */
     min-height: 500px;
     /* 最小高度保证可用性 */
     overflow-y: auto;
-}
-
-/* 图片容器 - 使用 aspect-ratio 预先撑起空间 */
-.image-container {
-    width: 100%;
-    position: relative;
-    background-color: #f3f4f6;
-    /* 加载时的占位背景色 */
-}
-
-.image-container img {
-    display: block;
-}
-
-/* 虚拟列表行容器 - 防止高度测量问题导致的重叠 */
-.virtual-row {
-    box-sizing: border-box;
-    overflow: visible;
-    will-change: transform;
 }
 
 /* 移动端调整 */
@@ -721,28 +685,27 @@ watch(showDesktopSearch, (show) => {
     }
 }
 
-/* 搜索结果高亮 */
-.search-highlight {
-    animation: searchHighlight 2s ease-in-out;
-    outline: 3px solid #3b82f6;
-    outline-offset: 2px;
-    border-radius: 8px;
-}
-
 @keyframes searchHighlight {
     0% {
         background-color: rgba(59, 130, 246, 0.3);
-        outline-color: #3b82f6;
+        box-shadow: inset 0 0 0 3px #3b82f6;
     }
 
     50% {
         background-color: rgba(59, 130, 246, 0.5);
-        outline-color: #2563eb;
+        box-shadow: inset 0 0 0 3px #2563eb;
     }
 
     100% {
         background-color: transparent;
-        outline-color: transparent;
+        box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0);
     }
+}
+</style>
+<style>
+.search-highlight {
+    position: relative;
+    border-radius: 8px;
+    background-color: rgba(59, 130, 246, 0.3);
 }
 </style>
