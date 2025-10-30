@@ -26,6 +26,7 @@ class UpdateFav extends Command
     {--update-fav-videos= : 触发收藏夹列表中视频更新，发现新视频}
     {--update-fav-videos-page= : 更新指定收藏夹的指定页码}
     {--update-video-parts= : 触发拉取更新现有视频分P资料}
+    {--update-video-parts-video-id= : 触发拉取更新指定视频ID的分P资料}
     {--download-video-part= : 触发下载现有视频分P}
     {--fix-invalid-fav-videos= : 修复指定收藏夹的无效视频}
     {--fix-invalid-fav-videos-page= : 修复指定收藏夹的指定页码}
@@ -62,8 +63,12 @@ class UpdateFav extends Command
 
         if ($this->option('update-video-parts')) {
             $startTime = microtime(true);
-            $count = 0;
-            Video::chunk(100, function ($videos) use ($updateVideoPartsAction, &$count) {
+            $count     = 0;
+            $builder   = Video::query();
+            if ($this->option('update-video-parts-video-id')) {
+                $builder->where('id', $this->option('update-video-parts-video-id'));
+            }
+            $builder->chunk(100, function ($videos) use ($updateVideoPartsAction, &$count) {
                 foreach ($videos as $video) {
                     $currentFav = $video->favorite;
                     if ($this->shouldExcludeByFavForMultiFav($currentFav)) {
