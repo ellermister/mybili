@@ -79,7 +79,7 @@ class UpdateFav extends Command
                         Log::info($message, ['favs' => collect($currentFav->pluck('id'))->toArray()]);
                         continue;
                     }
-                    $this->info(sprintf('[%s] update video parts: %s id: %s, count: %s', $video['title'], $video['id'], $count));
+                    $this->info(sprintf('in update video parts: %s id: %s, count: %s', $video['title'], $video['id'], $count));
                     $updateVideoPartsAction->execute($video);
                     $count++;
                 }
