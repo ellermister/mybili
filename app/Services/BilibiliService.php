@@ -435,10 +435,11 @@ class BilibiliService
             Log::error("通过网页获取视频分P信息失败: " . $e->getMessage());
             try {
                 $parsedParts = $this->getVideoPartFromApi($strId);
+                Log::info("通过API获取视频分P信息成功: " . $strId, ['parsedParts' => $parsedParts]);
             } catch (\Exception $e) {
                 Log::error("通过API获取视频分P信息失败: " . $e->getMessage());
+                throw new \Exception("获取视频分P信息失败: " . $e->getMessage());
             }
-            throw new \Exception("获取视频分P信息失败");
         }
 
         return array_map(function ($item) {
