@@ -6,15 +6,14 @@ use App\Services\SettingsService;
 use Arr;
 use GuzzleHttp\Client;
 use Log;
-use PDO;
 
 class BilibiliService
 {
 
-    const API_HOST = 'https://api.bilibili.com';
+    const API_HOST     = 'https://api.bilibili.com';
     const APP_API_HOST = 'https://app.biliapi.com';
-    const APP_KEY = '1d8b6e7d45233436';
-    const APP_SECRET = '560c52ccd288fed045859ed18bffd973';
+    const APP_KEY      = '1d8b6e7d45233436';
+    const APP_SECRET   = '560c52ccd288fed045859ed18bffd973';
 
     protected $favVideosPageSize;
 
@@ -42,12 +41,12 @@ class BilibiliService
         return new Client([
             'headers' => [
                 'User-Agent' => 'bili-universal/77100100 CFNetwork/1404.0.5 Darwin/22.3.0',
-                'Buvid' => 'XY' . bin2hex(random_bytes(16)),
+                'Buvid'      => 'XY' . bin2hex(random_bytes(16)),
                 'Display-ID' => 'MAC-' . strtoupper(bin2hex(random_bytes(6))),
-                'Device-ID' => bin2hex(random_bytes(20)),
-                'Channel' => 'AppStore',
-                'App-Key' => 'iphone',
-                'Env' => 'prod',
+                'Device-ID'  => bin2hex(random_bytes(20)),
+                'Channel'    => 'AppStore',
+                'App-Key'    => 'iphone',
+                'Env'        => 'prod',
             ],
         ]);
     }
@@ -163,19 +162,19 @@ class BilibiliService
     {
         // 添加appkey参数
         $params['appkey'] = $appkey;
-        
+
         // 按照key重排参数
         ksort($params);
-        
+
         // 序列化参数
         $query = http_build_query($params);
-        
+
         // 计算api签名
         $sign = md5($query . $appsec);
-        
+
         // 添加签名参数
         $params['sign'] = $sign;
-        
+
         return $params;
     }
 
@@ -408,25 +407,13 @@ class BilibiliService
         throw new \Exception("未找到视频分P信息");
     }
 
-    private function getVideoPartFromApi(string $bvid)
+    private function getVideoPartFromApi(string $id)
     {
-        $cookies = parse_netscape_cookie_content($this->settingsService->get(SettingKey::COOKIES_CONTENT));
-
-        $client   = $this->getClient();
-        $url      = self::API_HOST . "/x/web-interface/wbi/view/detail?platform=web&bvid={$bvid}";
-        $response = $client->request('GET', $url, [
-            'headers' => [
-                'Referer'    => "https://www.bilibili.com/video/{$bvid}",
-                "user-agent" => "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0",
-            ],
-            'cookies' => $cookies,
-        ]);
-        $content = $response->getBody()->getContents();
-        $result  = json_decode($content, true);
-        if ($result['code'] !== 0) {
-            throw new \Exception("获取视频信息失败:" . $result['message']);
+        $info = $this->getVideoInfo($id);
+        if ($info && isset($info['pages']) && is_array($info['pages'])) {
+            return $info['pages'];
         }
-        return $result['data']['View']['pages'];
+        return null;
     }
 
     /**
@@ -438,19 +425,19 @@ class BilibiliService
         $parsedParts = null;
         try {
             // api 接口太敏感，优先从网页获取
-            if(str_starts_with(strtolower($strId), 'bv')){
-                $bvid = $strId;
+            if (str_starts_with(strtolower($strId), 'bv')) {
+                $bvid        = $strId;
                 $parsedParts = $this->getVideoPartFromWebpage($bvid);
-            }else{
-                $parsedParts = $this->getVideoPartFromWebpage('av'.$strId);
+            } else {
+                $parsedParts = $this->getVideoPartFromWebpage('av' . $strId);
             }
         } catch (\Exception $e) {
             Log::error("通过网页获取视频分P信息失败: " . $e->getMessage());
-            // try {
-            //     $parsedParts = $this->getVideoPartFromApi($bvid);
-            // } catch (\Exception $e) {
-            //     Log::error("通过API获取视频分P信息失败: " . $e->getMessage());
-            // }
+            try {
+                $parsedParts = $this->getVideoPartFromApi($strId);
+            } catch (\Exception $e) {
+                Log::error("通过API获取视频分P信息失败: " . $e->getMessage());
+            }
             throw new \Exception("获取视频分P信息失败");
         }
 
@@ -478,17 +465,17 @@ class BilibiliService
         }
         $mid = $dedeUserID->getValue();
 
-        $pn     = 1;
-        $ps     = 20;
-        $client = $this->getClient();
+        $pn        = 1;
+        $ps        = 20;
+        $client    = $this->getClient();
         $favorites = [];
-        while(true){
+        while (true) {
             $response = $client->request('GET', self::API_HOST . "/x/v3/fav/folder/created/list?pn={$pn}&ps={$ps}&up_mid={$mid}");
 
             $result = json_decode($response->getBody()->getContents(), true);
 
             if ($result && $result['code'] == 0) {
-    
+
                 if ($result['data'] == null) {
                     Log::error(sprintf("Account cookie is invalid when accessing the get fav folder api."));
                     return [];
@@ -517,13 +504,13 @@ class BilibiliService
     public function pullFavVideoList(int $favId, ?int $page = null)
     {
         $client = $this->getClient();
-        $pn = $page ?? 1;
+        $pn     = $page ?? 1;
         $videos = [];
 
         while (true) {
             $url = self::API_HOST . "/x/v3/fav/resource/list?media_id=$favId&pn=$pn&ps={$this->favVideosPageSize}&keyword=&order=mtime&type=0&tid=0&platform=web";
             Log::info("pullFavVideoList fetch $url");
-            
+
             try {
                 $response = $client->request('GET', $url);
                 $result   = json_decode($response->getBody()->getContents(), true);
@@ -561,18 +548,18 @@ class BilibiliService
 
     public function getSeasonsList(int $mid, int $seasonId, int $page = 1)
     {
-        try{
+        try {
             $pageSize = 30;
-            $client = $this->getClient();
-            $url = self::API_HOST . "/x/polymer/web-space/seasons_archives_list?mid={$mid}&season_id={$seasonId}&sort_reverse=false&page_size={$pageSize}&page_num={$page}";
+            $client   = $this->getClient();
+            $url      = self::API_HOST . "/x/polymer/web-space/seasons_archives_list?mid={$mid}&season_id={$seasonId}&sort_reverse=false&page_size={$pageSize}&page_num={$page}";
             $response = $client->request('GET', $url);
-            $result = json_decode($response->getBody()->getContents(), true);
-            if (is_array($result) && isset($result['data']) && is_array($result['data'])){
+            $result   = json_decode($response->getBody()->getContents(), true);
+            if (is_array($result) && isset($result['data']) && is_array($result['data'])) {
                 return $result['data'];
             }
             Log::error("get seasons list failed", ['mid' => $mid, 'season_id' => $seasonId, 'page' => $page, 'result' => $result]);
             throw new \Exception("get seasons list failed");
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             Log::error("API request failed: " . $e->getMessage());
             if (strpos($e->getMessage(), '429') !== false || strpos($e->getMessage(), '412') !== false) {
                 Log::warning("Rate limit detected, waiting 60 seconds before retry");
@@ -585,16 +572,16 @@ class BilibiliService
     public function getSeriesMeta(int $seriesId)
     {
         $client = $this->getClient();
-        $url = self::API_HOST . "/x/series/series?series_id={$seriesId}";
-        try{
+        $url    = self::API_HOST . "/x/series/series?series_id={$seriesId}";
+        try {
             $response = $client->request('GET', $url);
-            $result = json_decode($response->getBody()->getContents(), true);
-            if(is_array($result) && isset($result['data']) && is_array($result['data'])){
+            $result   = json_decode($response->getBody()->getContents(), true);
+            if (is_array($result) && isset($result['data']) && is_array($result['data'])) {
                 return $result['data'];
             }
             Log::error("get series meta failed", ['series_id' => $seriesId, 'result' => $result]);
             throw new \Exception("get series meta failed");
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             Log::error("API request failed: " . $e->getMessage());
             if (strpos($e->getMessage(), '429') !== false || strpos($e->getMessage(), '412') !== false) {
                 Log::warning("Rate limit detected, waiting 60 seconds before retry");
@@ -606,18 +593,18 @@ class BilibiliService
 
     public function getSeriesList(int $mid, int $seriesId, int $page = 1)
     {
-        try{
+        try {
             $pageSize = 30;
-            $client = $this->getClient();
-            $url = self::API_HOST . "/x/series/archives?mid={$mid}&series_id={$seriesId}&only_normal=true&sort=desc&ps={$pageSize}&pn={$page}";
+            $client   = $this->getClient();
+            $url      = self::API_HOST . "/x/series/archives?mid={$mid}&series_id={$seriesId}&only_normal=true&sort=desc&ps={$pageSize}&pn={$page}";
             $response = $client->request('GET', $url);
-            $result = json_decode($response->getBody()->getContents(), true);
-            if(is_array($result) && isset($result['data']) && is_array($result['data'])){
+            $result   = json_decode($response->getBody()->getContents(), true);
+            if (is_array($result) && isset($result['data']) && is_array($result['data'])) {
                 return $result['data'];
             }
             Log::error("get series list failed", ['mid' => $mid, 'series_id' => $seriesId, 'page' => $page, 'result' => $result]);
             throw new \Exception("get series list failed");
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             Log::error("API request failed: " . $e->getMessage());
             if (strpos($e->getMessage(), '429') !== false || strpos($e->getMessage(), '412') !== false) {
                 Log::warning("Rate limit detected, waiting 60 seconds before retry");
@@ -630,45 +617,45 @@ class BilibiliService
     public function getUpVideos(int $mid, ?int $offsetAid)
     {
         $client = $this->getAppClient();
-        
+
         // 准备基础参数
         $params = [
-            'vmid' => $mid,
+            'vmid'  => $mid,
             'order' => 'pubdate',
-            'ps' => 20,
-            'ts' => time()
+            'ps'    => 20,
+            'ts'    => time(),
         ];
-        
+
         // 如果有偏移aid，添加到参数中
         if ($offsetAid !== null) {
             $params['aid'] = $offsetAid;
         }
-        
+
         // 进行APP签名
         $signedParams = $this->appSign($params, self::APP_KEY, self::APP_SECRET);
-        
+
         // 构建查询字符串
         $query = http_build_query($signedParams);
-        $url = self::APP_API_HOST . "/x/v2/space/archive/cursor?" . $query;
-        
-        try{
+        $url   = self::APP_API_HOST . "/x/v2/space/archive/cursor?" . $query;
+
+        try {
             $response = $client->request('GET', $url);
-            $result = json_decode($response->getBody()->getContents(), true);
-            if($result['code'] !== 0){
+            $result   = json_decode($response->getBody()->getContents(), true);
+            if ($result['code'] !== 0) {
                 throw new \Exception("get up videos failed: " . $result['message']);
             }
-            if(is_array($result['data']['item']) && count($result['data']['item']) > 0){
+            if (is_array($result['data']['item']) && count($result['data']['item']) > 0) {
                 $lastAid = intval(end($result['data']['item'])['param']);
-            }else{
+            } else {
                 $lastAid = null;
             }
 
             return [
                 'has_next' => $result['data']['has_next'],
-                'list' => $result['data']['item'] ?? [],
+                'list'     => $result['data']['item'] ?? [],
                 'last_aid' => $lastAid,
             ];
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             Log::error("API request failed: " . $e->getMessage());
             if (strpos($e->getMessage(), '429') !== false || strpos($e->getMessage(), '412') !== false) {
                 Log::warning("Rate limit detected, waiting 60 seconds before retry");
@@ -680,20 +667,20 @@ class BilibiliService
 
     public function getVideoInfo(string $strId): array
     {
-        try{
+        try {
             $client = $this->getClient();
-            if(str_starts_with(strtolower($strId), 'bv')){
+            if (str_starts_with(strtolower($strId), 'bv')) {
                 $url = self::API_HOST . "/x/web-interface/view?bvid={$strId}";
-            }else{
+            } else {
                 $url = self::API_HOST . "/x/web-interface/view?aid={$strId}";
             }
             $response = $client->request('GET', $url);
-            $result = json_decode($response->getBody()->getContents(), true);
-            if($result['code'] !== 0){
+            $result   = json_decode($response->getBody()->getContents(), true);
+            if ($result['code'] !== 0) {
                 throw new \Exception("get video info failed: " . $result['message'], $result['code']);
             }
             return $result['data'];
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             Log::error("API request failed: " . $e->getMessage());
             if (strpos($e->getMessage(), '429') !== false || strpos($e->getMessage(), '412') !== false) {
                 Log::warning("Rate limit detected, waiting 60 seconds before retry");
@@ -705,14 +692,14 @@ class BilibiliService
 
     public function getUperCard(int $mid): array
     {
-        $client = $this->getClient();
-        $url = self::API_HOST . "/x/web-interface/card?mid={$mid}";
+        $client   = $this->getClient();
+        $url      = self::API_HOST . "/x/web-interface/card?mid={$mid}";
         $response = $client->request('GET', $url);
-        $result = json_decode($response->getBody()->getContents(), true);
-        if($result['code'] !== 0){
+        $result   = json_decode($response->getBody()->getContents(), true);
+        if ($result['code'] !== 0) {
             throw new \Exception("get uper card failed: " . $result['message'], $result['code']);
         }
-        if(isset($result['data']) && isset($result['data']['card'])){
+        if (isset($result['data']) && isset($result['data']['card'])) {
             return $result['data']['card'];
         }
         return [];
@@ -720,8 +707,8 @@ class BilibiliService
 
     public function getVideoFestivalJumpUrl(string $strId): ?string
     {
-        $data = $this->getVideoInfo($strId); 
-        if(isset($data['festival_jump_url'])){
+        $data = $this->getVideoInfo($strId);
+        if (isset($data['festival_jump_url'])) {
             return $data['festival_jump_url'];
         }
         return null;
@@ -730,14 +717,14 @@ class BilibiliService
     public function getFavFolderResources(int $favId, int $page = 1)
     {
         $client = $this->getClient();
-        $url = self::API_HOST . "/x/v3/fav/folder/resources?media_id={$favId}&pn={$page}&ps={$this->favVideosPageSize}&build=85900200&c_locale=en&device=phone&disable_rcmd=0&mobi_app=iphone&platform=ios&s_locale=en";
+        $url    = self::API_HOST . "/x/v3/fav/folder/resources?media_id={$favId}&pn={$page}&ps={$this->favVideosPageSize}&build=85900200&c_locale=en&device=phone&disable_rcmd=0&mobi_app=iphone&platform=ios&s_locale=en";
 
         $response = $client->request('GET', $url);
-        $result = json_decode($response->getBody()->getContents(), true);
-        $test = Arr::only($result['data'],['has_more','total','has_invalid']);
+        $result   = json_decode($response->getBody()->getContents(), true);
+        $test     = Arr::only($result['data'], ['has_more', 'total', 'has_invalid']);
 
-        if(is_array($result) && $result['code'] == 0){
-            return $result['data']['list'] ? (array)$result['data']['list'] : [];
+        if (is_array($result) && $result['code'] == 0) {
+            return $result['data']['list'] ? (array) $result['data']['list'] : [];
         }
         return [];
     }
