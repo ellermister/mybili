@@ -16,7 +16,7 @@ class UpperService
 
     public function saveUpperInfo(int $mid, string $name, string $face)
     {
-        $upper = Upper::query()->where(['mid' => $mid])->firstOrNew();
+        $upper = Upper::query()->firstOrNew(['mid' => $mid]);
         if (str_contains($name, '注销')) {
             if (str_contains(strval($upper->name ?? ''), '注销')) {
                 return;
