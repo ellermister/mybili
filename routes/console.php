@@ -79,3 +79,6 @@ Schedule::call(function () {
 ->name('update-subscription')
 ->withoutOverlapping()
 ->everyTenMinutes();
+
+
+Schedule::command('app:update-no-parts-valid-video')->hourly();

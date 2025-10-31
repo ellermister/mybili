@@ -39,7 +39,7 @@ class PullVideoInfoAction
 
             $videoData = $this->mapVideoInfoToVideoData($aid, $videoInfo);
 
-            if(isset($videoInfo['owner']) && isset($videoInfo['owner']['mid'])){
+            if (isset($videoInfo['owner']) && isset($videoInfo['owner']['mid'])) {
                 event(new UpperTryUpdated($videoInfo['owner']));
             }
 
@@ -52,7 +52,7 @@ class PullVideoInfoAction
             Log::error("PullVideoInfoJob failed: " . $e->getMessage());
 
             // 处理404错误，标记视频为无效
-            if ($e->getCode() == -404) {
+            if (in_array($e->getCode(), [-404, -403, 62002, 62004, 62012])) {
                 $this->markVideoAsInvalidByBvid($bvid);
             }
             throw $e;
@@ -66,22 +66,22 @@ class PullVideoInfoAction
     {
         $isInvalid = $videoInfo['state'] != 0;
 
-        if(isset($videoInfo['owner']) && isset($videoInfo['owner']['mid'])){
+        if (isset($videoInfo['owner']) && isset($videoInfo['owner']['mid'])) {
             $upperId = $videoInfo['owner']['mid'];
-        }else{
+        } else {
             $upperId = null;
         }
 
         return [
-            'link'    => sprintf('bilibili://video/%s', $aid),
-            'title'   => $videoInfo['title'],
-            'intro'   => $videoInfo['desc'],
-            'cover'   => $videoInfo['pic'],
-            'bvid'    => $videoInfo['bvid'],
-            'pubtime' => Carbon::createFromTimestamp($videoInfo['pubdate']),
-            'invalid' => $isInvalid,
-            'frozen'  => false,
-            'page'    => count($videoInfo['pages']),
+            'link'     => sprintf('bilibili://video/%s', $aid),
+            'title'    => $videoInfo['title'],
+            'intro'    => $videoInfo['desc'],
+            'cover'    => $videoInfo['pic'],
+            'bvid'     => $videoInfo['bvid'],
+            'pubtime'  => Carbon::createFromTimestamp($videoInfo['pubdate']),
+            'invalid'  => $isInvalid,
+            'frozen'   => false,
+            'page'     => count($videoInfo['pages']),
             'upper_id' => $upperId,
         ];
     }
@@ -99,7 +99,7 @@ class PullVideoInfoAction
 
         $oldVideo       = $video->getAttributes();
         $video->invalid = true;
-        $video->frozen  = true;
+        $video->frozen  = $video->video_downloaded_num == 0 ? false : true;
         $video->save();
 
         event(new VideoUpdated($oldVideo, $video->getAttributes()));
