@@ -10,6 +10,11 @@ class UpdateFavVideosJob extends BaseScheduledRateLimitedJob
     public $queue = 'default';
 
     /**
+     * 任务失败前等待的时间（以秒为单位）
+     */
+    public $backoff = [60, 300, 600];
+
+    /**
      * Create a new job instance.
      */
     public function __construct(public array $fav, public ?int $page = null)
