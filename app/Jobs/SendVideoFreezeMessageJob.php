@@ -14,7 +14,6 @@ class SendVideoFreezeMessageJob implements ShouldQueue
     
     use Queueable;
     
-    public $queue = 'fast';
     
     public array $video;
 
@@ -24,6 +23,7 @@ class SendVideoFreezeMessageJob implements ShouldQueue
     public function __construct(array $video)
     {
         $this->video = $video;
+        $this->queue = 'fast';
     }
 
     /**

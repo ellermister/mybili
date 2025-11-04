@@ -3,15 +3,18 @@ namespace App\Http\Controllers;
 
 use App\Enums\SettingKey;
 use App\Services\BilibiliService;
+use App\Services\CookieControlService;
 use App\Services\SettingsService;
-use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 
 class CookieController extends Controller
 {
 
-    public function __construct(public SettingsService $settingsService, public BilibiliService $bilibiliService)
-    {
+    public function __construct(
+        public SettingsService $settingsService,
+        public BilibiliService $bilibiliService,
+        public CookieControlService $cookieControlService
+    ) {
     }
 
     public function uploadCookieFile(Request $request)
@@ -26,8 +29,16 @@ class CookieController extends Controller
                 // 读取文件内容并存储到设置中
                 $this->settingsService->put(SettingKey::COOKIES_CONTENT, file_get_contents($file->getRealPath()));
                 
+                // 上传成功后，校验 Cookie 有效性
+                $jar      = parse_netscape_cookie_content($this->settingsService->get(SettingKey::COOKIES_CONTENT));
+                $isValid = $this->bilibiliService->checkCookieExpired($jar);
+                if($isValid) {
+                    $this->cookieControlService->clearCookieExpiredNotification();
+                }
+                
                 return response()->json([
                     'success' => true,
+                    'valid'   => $isValid,
                 ]);
             }
         }
@@ -43,26 +54,10 @@ class CookieController extends Controller
 
     public function checkCookieValid()
     {
-        $jar      = parse_netscape_cookie_content($this->settingsService->get(SettingKey::COOKIES_CONTENT));
-        $client   = new Client();
-        $response = $client->request('GET', 'https://api.bilibili.com/x/web-interface/nav', [
-            'headers' => [
-                'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-                'referer'    => 'https://space.bilibili.com/',
-            ],
-            'cookies' => $jar,
-        ]);
-
-        $body = $response->getBody()->getContents();
-        $data = json_decode($body, true);
-
-        $isLogin = false;
-        if ($data['data']['isLogin'] === true) {
-            $isLogin = true;
-        }
-
+        $cookies      = parse_netscape_cookie_content($this->settingsService->get(SettingKey::COOKIES_CONTENT));
+        $isValid = $this->bilibiliService->checkCookieExpired($cookies);
         return response()->json([
-            'logged' => $isLogin,
+            'logged' => $isValid,
         ]);
     }
 }

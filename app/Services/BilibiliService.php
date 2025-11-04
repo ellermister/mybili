@@ -5,7 +5,12 @@ use App\Enums\SettingKey;
 use App\Services\SettingsService;
 use Arr;
 use GuzzleHttp\Client;
+use GuzzleHttp\Cookie\CookieJar;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Utils;
 use Log;
+use Psr\Http\Message\ResponseInterface;
 
 class BilibiliService
 {
@@ -19,7 +24,8 @@ class BilibiliService
 
     public function __construct(
         public SettingsService $settingsService,
-        public BilibiliSuspendService $bilibiliSuspendService
+        public BilibiliSuspendService $bilibiliSuspendService,
+        public CookieControlService $cookieControlService
     ) {
         $this->favVideosPageSize = intval(config('services.bilibili.fav_videos_page_size'));
     }
@@ -27,7 +33,40 @@ class BilibiliService
     private function getClient()
     {
         $cookies = parse_netscape_cookie_content($this->settingsService->get(SettingKey::COOKIES_CONTENT));
+
+        // 创建 HandlerStack 并添加响应状态码检查中间件
+        $stack                = HandlerStack::create();
+        $cookieControlService = $this->cookieControlService;
+        $stack->push(Middleware::mapResponse(function (ResponseInterface $response) use ($cookieControlService) {
+            try {
+                // 读取响应体内容
+                $bodyContent = $response->getBody()->getContents();
+                $data        = json_decode($bodyContent, true);
+
+                // 检查是否为 Cookie 过期错误码
+                if (isset($data['code']) && intval($data['code']) === -101) {
+                    Log::error("Cookie expired: " . ($data['message'] ?? ''));
+                    // 通过 CookieControlService 检查并发送通知（内部会检查 Redis 避免重复）
+                    $cookieControlService->checkAndNotifyCookieExpired();
+                }
+
+                // 重新创建响应对象，因为响应体已被读取
+                return $response->withBody(Utils::streamFor($bodyContent));
+            } catch (\Exception $e) {
+                Log::error("Error checking cookie expired: " . $e->getMessage());
+                // 如果出错，尝试恢复响应体（如果可能的话）
+                try {
+                    $response->getBody()->rewind();
+                } catch (\Exception $rewindException) {
+                    // 如果 rewind 失败，说明响应体已被读取，需要重新创建
+                    // 这种情况下返回原响应，让调用方处理
+                }
+                return $response;
+            }
+        }), 'check_cookie_expired');
+
         return new Client([
+            'handler' => $stack,
             'cookies' => $cookies,
             'headers' => [
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
@@ -722,11 +761,36 @@ class BilibiliService
 
         $response = $client->request('GET', $url);
         $result   = json_decode($response->getBody()->getContents(), true);
-        $test     = Arr::only($result['data'], ['has_more', 'total', 'has_invalid']);
 
         if (is_array($result) && $result['code'] == 0) {
             return $result['data']['list'] ? (array) $result['data']['list'] : [];
         }
         return [];
+    }
+
+    public function checkCookieExpired(CookieJar $cookies):bool
+    {
+        try {
+            $client   = new Client();
+            $response = $client->request('GET', 'https://api.bilibili.com/x/web-interface/nav', [
+                'headers' => [
+                    'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+                    'referer'    => 'https://space.bilibili.com/',
+                ],
+                'cookies' => $cookies,
+            ]);
+
+            $body = $response->getBody()->getContents();
+            $data = json_decode($body, true);
+
+            if ($data['data']['isLogin'] === true) {
+                return true;
+            }
+            Log::error("Cookie expired: " . $data['message'] ?? '', ['response' => $response]);
+        } catch (\Exception $e) {
+            Log::error("Error checking cookie expired: " . $e->getMessage());
+            throw $e;
+        }
+        return false;
     }
 }
