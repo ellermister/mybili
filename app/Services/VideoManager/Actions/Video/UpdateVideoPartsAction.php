@@ -5,6 +5,7 @@ use App\Events\VideoPartUpdated;
 use App\Models\Video;
 use App\Models\VideoPart;
 use App\Services\BilibiliService;
+use App\Services\VideoManager\Actions\Audio\UpdateAudioPartAction;
 use App\Services\VideoManager\Traits\VideoDataTrait;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,10 +21,15 @@ class UpdateVideoPartsAction
     use VideoDataTrait;
 
     /**
-     * 更新视频分P信息
+ * 更新视频分P信息
      */
     public function execute(Video $video): void
     {
+        if ($video->isAudio()) {
+            app(UpdateAudioPartAction::class)->execute($video);
+            return;
+        }
+
         if ($this->videoIsInvalid($video->toArray())) {
             Log::info('Video is invalid, skip update video parts', ['id' => $video->id, 'bvid' => $video->bvid, 'title' => $video->title]);
             return;

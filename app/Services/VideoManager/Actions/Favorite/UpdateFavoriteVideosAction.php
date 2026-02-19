@@ -80,6 +80,7 @@ class UpdateFavoriteVideosAction
                 'page'     => $newValue['page'],
                 'fav_time' => date('Y-m-d H:i:s', $newValue['fav_time']),
                 'upper_id' => $upperId,
+                'type'     => $newValue['type'],
             ];
         }, $videos);
 

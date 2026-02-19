@@ -17,6 +17,7 @@ class BilibiliService
 
     const API_HOST     = 'https://api.bilibili.com';
     const APP_API_HOST = 'https://app.biliapi.com';
+    const WEB_HOST     = 'https://www.bilibili.com';
     const APP_KEY      = '1d8b6e7d45233436';
     const APP_SECRET   = '560c52ccd288fed045859ed18bffd973';
 
@@ -430,7 +431,7 @@ class BilibiliService
     {
         $cookies  = parse_netscape_cookie_content($this->settingsService->get(SettingKey::COOKIES_CONTENT));
         $client   = $this->getClient();
-        $url      = "https://www.bilibili.com/video/{$bvid}";
+        $url      = self::WEB_HOST . "/video/{$bvid}";
         $response = $client->request('GET', $url, [
             'cookies' => $cookies,
         ]);
@@ -766,6 +767,27 @@ class BilibiliService
             return $result['data']['list'] ? (array) $result['data']['list'] : [];
         }
         return [];
+    }
+
+    public function getAudioInfo(int $sid): array
+    {
+        try {
+            $client   = $this->getClient();
+            $url      = self::WEB_HOST . "/audio/music-service-c/web/song/info?sid={$sid}";
+            $response = $client->request('GET', $url);
+            $result   = json_decode($response->getBody()->getContents(), true);
+            if ($result['code'] !== 0) {
+                throw new \Exception("get audio info failed: " . $result['message'], $result['code']);
+            }
+            return $result['data'];
+        } catch (\Exception $e) {
+            Log::error("API request failed (audio): " . $e->getMessage());
+            if (strpos($e->getMessage(), '429') !== false || strpos($e->getMessage(), '412') !== false) {
+                Log::warning("Rate limit detected, waiting before retry");
+                $this->bilibiliSuspendService->setSuspend();
+            }
+            throw $e;
+        }
     }
 
     public function checkCookieExpired(CookieJar $cookies):bool

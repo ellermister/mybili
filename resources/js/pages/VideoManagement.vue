@@ -151,7 +151,7 @@
                         <div @click="toggleSelection(item.id)" class="cursor-pointer">
                             <Image class="rounded-t-lg w-full h-48 object-cover hover:scale-105 transition-all duration-300"
                                 :src="item.cover_info?.image_url ?? '/assets/images/notfound.webp'"
-                                :class="{ 'grayscale-image': item.video_downloaded_num == 0 }" :title="item.title" />
+                                :class="{ 'grayscale-image': item.video_downloaded_num == 0 && item.audio_downloaded_num == 0 }" :title="item.title" />
                         </div>
 
                         <div class="p-3 flex-1 flex flex-col">
@@ -163,7 +163,7 @@
                             <div class="mt-auto pt-3 space-y-1">
                                 <div class="flex justify-between text-xs text-gray-500">
                                     <span>{{ t('videoManagement.published') }}: {{ formatTimestamp(item.pubtime, "yyyy.mm.dd") }}</span>
-                                    <span v-if="item.video_downloaded_num > 0" class="text-green-600 font-medium">
+                                    <span v-if="item.video_downloaded_num > 0 || item.audio_downloaded_num > 0" class="text-green-600 font-medium">
                                         ✓ {{ t('videoManagement.cached') }}
                                     </span>
                                 </div>
@@ -416,9 +416,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.grayscale-image {
-    filter: grayscale(100%) brightness(80%);
-}
+
 
 .line-clamp-2 {
     display: -webkit-box;

@@ -3,7 +3,7 @@
         <RouterLink :to="{ name: 'video-id', params: { id: item.id } }">
             <Image class="rounded-lg w-full h-auto md:w-96 md:h-56 hover:scale-105 transition-all duration-300"
                 :src="item.cover_info?.image_url ?? '/assets/images/notfound.webp'"
-                :class="{ 'grayscale-image': item.video_downloaded_num == 0 }" :title="item.title" />
+                :class="{ 'grayscale-image': item.video_downloaded_num == 0 && item.audio_downloaded_num == 0 }" :title="item.title" />
         </RouterLink>
         <span class="mt-4 text-center h-12 line-clamp-2" :title="item.title">{{ item.title }}</span>
         <div class="mt-2 flex justify-between text-xs text-gray-400 px-1">

@@ -77,11 +77,9 @@ class VideoController extends Controller
     {
         $video = $this->videoService->getVideoInfo($id, true);
         if ($video) {
+            $video->load(['favorite', 'subscriptions', 'upper', 'audioPart']);
             $video->video_parts   = $this->videoService->getAllPartsVideoForUser($video);
             $video->danmaku_count = $this->danmakuService->getVideoDanmakuCount($video);
-            $video->load('favorite');
-            $video->load('subscriptions');
-            $video->load('upper');
 
             return response()->json($video);
         }

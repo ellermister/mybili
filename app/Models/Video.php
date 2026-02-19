@@ -3,6 +3,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\AudioPart;
 
 class Video extends Model
 {
@@ -10,7 +11,7 @@ class Video extends Model
     use SoftDeletes;
 
     protected $table      = 'videos';
-    protected $fillable   = ['id', 'link', 'title', 'intro', 'cover', 'bvid', 'pubtime', 'duration', 'attr', 'invalid', 'frozen', 'page', 'fav_time', 'danmaku_downloaded_at', 'video_downloaded_at','upper_id'];
+    protected $fillable   = ['id', 'link', 'title', 'intro', 'cover', 'bvid', 'pubtime', 'duration', 'attr', 'invalid', 'frozen', 'page', 'fav_time', 'danmaku_downloaded_at', 'video_downloaded_at', 'upper_id', 'type'];
     protected $primaryKey = 'id';
 
     protected $casts = [
@@ -29,11 +30,22 @@ class Video extends Model
         'page'        => 1,
         'fav_time'    => null,
         'upper_id'    => null,
+        'type'        => 2,
     ];
 
     public function parts()
     {
         return $this->hasMany(VideoPart::class, 'video_id', 'id');
+    }
+
+    public function audioPart()
+    {
+        return $this->hasOne(AudioPart::class, 'video_id', 'id');
+    }
+
+    public function isAudio(): bool
+    {
+        return (int) $this->type === 12;
     }
 
     // 访问器：读取时将时间戳转换为 Carbon 对象

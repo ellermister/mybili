@@ -7,7 +7,7 @@
                 }">
                     <Image class="w-full h-full object-cover hover:scale-105 transition-all duration-300"
                         :src="video.cover_info?.image_url ?? '/assets/images/notfound.webp'"
-                        :class="{ 'grayscale-image': video.video_downloaded_num == 0 }" :title="video.title" />
+                        :class="{ 'grayscale-image': video.video_downloaded_num == 0 && video.audio_downloaded_num == 0 }" :title="video.title" />
                 </div>
             </RouterLink>
             <span class="mt-4 text-center h-12 line-clamp-2" :title="video.title">{{ video.title

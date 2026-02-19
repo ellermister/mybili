@@ -131,7 +131,7 @@
                     <!-- External Link -->
                     <div class="flex justify-center pt-2">
                         <a class="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow hover:shadow-lg transform hover:-translate-y-0.5"
-                            :href="bilibiliUrl(videoInfo.bvid)" target="_blank" rel="noopener noreferrer">
+                            :href="bilibiliUrl(videoInfo)" target="_blank" rel="noopener noreferrer">
                             <span class="text-lg">📺</span>
                             <span class="font-semibold">{{ t('video.watchOnBilibili') }}</span>
                             <span class="text-white/80">↗</span>
@@ -260,8 +260,11 @@ const breadcrumbItems = computed(() => {
     }
 })
 
-const bilibiliUrl = (bvid: string) => {
-    return `https://www.bilibili.com/video/${bvid}`
+const bilibiliUrl = (video: Video) => {
+    if (video.type === 12) {
+        return `https://www.bilibili.com/audio/au${video.id}`
+    }
+    return `https://www.bilibili.com/video/${video.bvid}`
 }
 
 const upperSpaceUrl = (mid: number) => {
@@ -279,6 +282,11 @@ const downloadFile = (url: string, name: string) => {
     a.click()
 }
 
+const getMediaExtension = (url: string) => {
+    const ext = url.split('.').pop()?.split('?')[0]
+    return ext || 'mp4'
+}
+
 const downloadVideo = () => {
     const parts = videoInfo.value?.video_parts
     if (parts) {
@@ -286,8 +294,7 @@ const downloadVideo = () => {
             const part = parts[i]
             const url = part.url
             if (url) {
-                // 下载视频
-                downloadFile(url, part.title + ".mp4")
+                downloadFile(url, part.title + '.' + getMediaExtension(url))
             }
         }
     }

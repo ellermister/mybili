@@ -16,7 +16,8 @@
             <div class="flex flex-col relative" v-for="item in showVideoList">
                 <RouterLink :to="{ name: 'favlist-video-id', params: { id: id, video_id: item.id } }">
                     <Image class="rounded-lg w-full h-auto md:w-96 md:h-56 hover:scale-105 transition-all duration-300"
-                        :src="item.cover_info?.image_url ?? '/assets/images/notfound.webp'" :title="item.title" />
+                        :src="item.cover_info?.image_url ?? '/assets/images/notfound.webp'" :title="item.title"
+                        :class="{ 'grayscale-image': item.video_downloaded_num == 0 && item.audio_downloaded_num == 0 }" />
                 </RouterLink>
                 <div class="absolute top-4 left-4" v-if="item.frozen == 1">💾</div>
                 <span class="mt-4 text-center  h-12 line-clamp-2" :title="item.title">{{ item.title }}</span>
@@ -60,8 +61,7 @@ const breadcrumbItems = computed(() => {
 const showVideoList = computed(() => {
     return (favorite.value?.videos ?? []).filter((value: Video) => {
         if (isFilterDownloaded.value) {
-            console.log(value.video_downloaded_num)
-            return value.video_downloaded_num > 0;
+            return value.video_downloaded_num > 0 || value.audio_downloaded_num > 0;
         }
         return true;
     })

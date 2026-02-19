@@ -1,3 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.grayscale-image {
+    filter: grayscale(100%) brightness(80%);
+}

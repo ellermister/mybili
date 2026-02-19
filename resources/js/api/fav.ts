@@ -36,10 +36,12 @@ export interface Video {
     frozen: number;
     page: number;
     fav_time: number;
+    type: number;
     created_at: string;
     updated_at: string;
     video_downloaded_at: string;
     video_downloaded_num: number;
+    audio_downloaded_num: number;
     favorite: Favorite[]|null;
     video_parts: VideoPartType[]|null;
     danmaku_count: number
