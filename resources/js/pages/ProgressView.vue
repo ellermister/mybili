@@ -23,6 +23,9 @@
                         <RouterLink to="/videos" class="hover:text-blue-600 transition-colors">
                             🎬<span class="hidden md:inline"> {{ t('navigation.videoManagement') }}</span>
                         </RouterLink>
+                        <RouterLink to="/download-queue" class="hover:text-blue-600 transition-colors">
+                            📥<span class="hidden md:inline"> 下载队列</span>
+                        </RouterLink>
                         <RouterLink to="/horizon" target="_blank" class="hover:text-blue-600 transition-colors">
                             🔭<span class="hidden md:inline"> {{ t('progress.viewTasks') }}</span>
                         </RouterLink>

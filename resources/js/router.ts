@@ -9,6 +9,7 @@ import SettingsView from './pages/SettingsView.vue';
 import SubscriptionView from './pages/Subscription.vue';
 import SubscriptionVideoView from './pages/SubscriptionVideo.vue';
 import VideoManagement from './pages/VideoManagement.vue';
+import DownloadQueueView from './pages/DownloadQueueView.vue';
 
 const routes = [
   { path: '/', component: Home, meta: { keepAlive: true }  },
@@ -18,6 +19,7 @@ const routes = [
   { path: '/about', component: About },
   { path: '/progress', component: ProgressView, name: 'progress', meta: { keepAlive: true } },
   { path: '/videos', component: VideoManagement, name: 'video-management' },
+  { path: '/download-queue', component: DownloadQueueView, name: 'download-queue' },
   { path: '/cookie', component: CookieView },
   { path: '/settings', component: SettingsView },
   { path: '/subscription', component: SubscriptionView, name: 'subscription' },

@@ -2,6 +2,7 @@
 namespace App\Jobs;
 
 use App\Models\AudioPart;
+use App\Services\DownloadQueueService;
 use App\Services\VideoManager\Actions\Audio\DownloadAudioPartFileAction;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -13,9 +14,7 @@ class DownloadAudioJob extends BaseScheduledRateLimitedJob
     use Dispatchable, InteractsWithQueue, SerializesModels;
 
     public $queue = 'slow';
-
     public $tries = 3;
-
     public $backoff = [1800, 3600, 7200];
 
     public function __construct(public AudioPart $audioPart)
@@ -40,6 +39,16 @@ class DownloadAudioJob extends BaseScheduledRateLimitedJob
     public function process(): void
     {
         app(DownloadAudioPartFileAction::class)->execute($this->audioPart);
+        app(DownloadQueueService::class)->markDoneByAudio($this->audioPart->video_id);
+    }
+
+    public function failed(\Throwable $exception): void
+    {
+        parent::failed($exception);
+        app(DownloadQueueService::class)->markFailedByAudio(
+            $this->audioPart->video_id,
+            $exception->getMessage()
+        );
     }
 
     public function displayName(): string

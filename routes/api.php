@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CookieController;
+use App\Http\Controllers\DownloadQueueController;
 use App\Http\Controllers\FavController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubscriptionController;
@@ -25,3 +26,10 @@ Route::apiResource('/subscription', SubscriptionController::class)->only(['index
 
 // 显示系统校准信息
 Route::get('/system/info', [SystemController::class, 'getSystemInfo']);
+
+// 下载队列管理
+Route::get('/download-queue', [DownloadQueueController::class, 'index']);
+Route::get('/download-queue/stat', [DownloadQueueController::class, 'stat']);
+Route::post('/download-queue/{id}/cancel', [DownloadQueueController::class, 'cancel']);
+Route::post('/download-queue/{id}/retry', [DownloadQueueController::class, 'retry']);
+Route::post('/download-queue/{id}/priority', [DownloadQueueController::class, 'priority']);

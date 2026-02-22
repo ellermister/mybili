@@ -6,9 +6,14 @@
                     <h1 class="my-8 text-2xl">
                         <RouterLink to="/">🌸</RouterLink> {{ t('videoManagement.title') }}
                     </h1>
-                    <RouterLink to="/progress" class="text-blue-600 hover:text-blue-800">
-                        📊 {{ t('navigation.progress') }}
-                    </RouterLink>
+                    <div class="flex items-center gap-3 text-sm">
+                        <RouterLink to="/progress" class="text-blue-600 hover:text-blue-800">
+                            📊 {{ t('navigation.progress') }}
+                        </RouterLink>
+                        <RouterLink to="/download-queue" class="text-blue-600 hover:text-blue-800">
+                            📥 下载队列
+                        </RouterLink>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-lg shadow-md p-6 mb-6">
