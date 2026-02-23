@@ -37,9 +37,9 @@ class DownloadVideoJob extends BaseScheduledRateLimitedJob
 
     public function displayName(): string
     {
-        if($this->videoPart->video->title && $this->videoPart->video->title != $this->videoPart->part){
+        if ($this->videoPart->video->title && $this->videoPart->video->title != $this->videoPart->part) {
             return sprintf('DownloadVideoJob %s-%s %s-%s', $this->videoPart->video_id, $this->videoPart->page, $this->videoPart->video->title, $this->videoPart->part);
-        }else{
+        } else {
             return sprintf('DownloadVideoJob %s-%s %s', $this->videoPart->video_id, $this->videoPart->page, $this->videoPart->part);
         }
     }
