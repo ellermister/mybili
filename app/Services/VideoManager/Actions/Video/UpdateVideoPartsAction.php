@@ -7,7 +7,6 @@ use App\Models\VideoPart;
 use App\Services\BilibiliService;
 use App\Services\VideoManager\Actions\Audio\UpdateAudioPartAction;
 use App\Services\VideoManager\Traits\VideoDataTrait;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class UpdateVideoPartsAction
@@ -25,6 +24,7 @@ class UpdateVideoPartsAction
      */
     public function execute(Video $video): void
     {
+        Log::info('Update video parts', ['id' => $video->id, 'bvid' => $video->bvid, 'title' => $video->title]);
         if ($video->isAudio()) {
             app(UpdateAudioPartAction::class)->execute($video);
             return;
@@ -175,19 +175,6 @@ class UpdateVideoPartsAction
                 }
             }
             Log::info("Updated {$updatedCount} video parts", ['video_id' => $video->id]);
-        }
-
-        // 第四步：更新视频的下载时间
-        try {
-            $this->retryOperation(function () use ($video) {
-                $video->video_downloaded_at = now();
-                $video->save();
-            });
-        } catch (\Exception $e) {
-            Log::error('Failed to update video downloaded_at', [
-                'video_id' => $video->id,
-                'error' => $e->getMessage()
-            ]);
         }
 
         Log::info('Update video parts success', ['id' => $video->id, 'bvid' => $video->bvid, 'title' => $video->title]);

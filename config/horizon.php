@@ -179,8 +179,17 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | 双 Supervisor 说明
+    |--------------------------------------------------------------------------
+    | - default: 处理 default / fast / slow，不限流（如 ProcessDownloadQueue、统计等）
+    | - bilibili-rate-limit: 仅处理 bilibili-rate-limit 队列，限流 Job 执行 B 站 API/下载，
+    |   遇 412 风控时 Job 会 暂停 Horizon supervisor-bilibili-rate-limit, 并在延迟任务后自动恢复
+    */
+
     'defaults' => [
-        'supervisor-1' => [
+        'supervisor-default' => [
             'connection' => 'redis',
             'queue' => ['fast', 'default', 'slow'],
             'balance' => 'auto',
@@ -193,11 +202,23 @@ return [
             'timeout' => 1600,
             'nice' => 0,
         ],
+        'supervisor-bilibili-rate-limit' => [
+            'connection' => 'redis',
+            'queue' => ['bilibili-rate-limit'],
+            'balance' => 'simple',
+            'maxProcesses' => 2,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 128,
+            'tries' => 1,
+            'timeout' => 1600,
+            'nice' => 0,
+        ],
     ],
 
     'environments' => [
         'production' => [
-            'supervisor-1' => [
+            'supervisor-default' => [
                 'connection' => 'redis',
                 'queue' => ['fast', 'default', 'slow'],
                 'balance' => 'auto',
@@ -205,14 +226,30 @@ return [
                 'tries' => 3,
                 'timeout' => 60,
             ],
+            'supervisor-bilibili-rate-limit' => [
+                'connection' => 'redis',
+                'queue' => ['bilibili-rate-limit'],
+                'balance' => 'simple',
+                'processes' => 2,
+                'tries' => 3,
+                'timeout' => 60,
+            ],
         ],
 
         'local' => [
-            'supervisor-1' => [
+            'supervisor-default' => [
                 'connection' => 'redis',
                 'queue' => ['fast', 'default', 'slow'],
                 'balance' => 'auto',
                 'processes' => 10,
+                'tries' => 3,
+                'timeout' => 60,
+            ],
+            'supervisor-bilibili-rate-limit' => [
+                'connection' => 'redis',
+                'queue' => ['bilibili-rate-limit'],
+                'balance' => 'simple',
+                'processes' => 2,
                 'tries' => 3,
                 'timeout' => 60,
             ],

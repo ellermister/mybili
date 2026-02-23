@@ -150,11 +150,11 @@ class SubscriptionService
         return $subscription;
     }
 
-    public function updateSubscriptions()
+    public function updateSubscriptions($pullAll = false)
     {
-        $subscriptions = Subscription::where('status', Subscription::STATUS_ACTIVE)->where('last_check_at', '<', now()->subMinutes(20))->get();
+        $subscriptions = Subscription::where('status', Subscription::STATUS_ACTIVE)->get();
         foreach ($subscriptions as $subscription) {
-            $this->updateSubscription($subscription, false);
+            $this->updateSubscription($subscription, $pullAll);
         }
     }
 

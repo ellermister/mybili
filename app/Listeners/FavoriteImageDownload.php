@@ -32,7 +32,6 @@ class FavoriteImageDownload
                 Log::info('Cover is already coverable, skip download', ['cover' => $newCover, 'resourceId' => $resourceId]);
                 return;
             }
-
             $this->coverService->downloadCoverImageJob($newCover, 'favorite', $resource);
             Log::info('Trigger fav image download job success', ['cover' => $newCover, 'resourceId' => $resourceId]);
         }

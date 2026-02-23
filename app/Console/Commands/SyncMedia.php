@@ -26,6 +26,7 @@ class SyncMedia extends Command
         {--fav-page= : 仅更新指定收藏夹的页码，不传则全量}
         {--subscriptions : 更新订阅}
         {--subscription= : 仅更新指定订阅 ID，不传则按策略更新全部}
+        {--pull-all : 更新订阅时，拉取全部视频}
         {--video-parts : 更新现有视频分P 资料}
         {--video-id= : 仅处理指定视频 ID，不传则处理全部}
         {--download : 触发下载检查并排队下载}
@@ -111,6 +112,7 @@ class SyncMedia extends Command
     protected function runSubscriptions(): void
     {
         $subId = $this->option('subscription') ? (int) $this->option('subscription') : null;
+        $pullAll = $this->option('pull-all') ? true : false;
         $svc   = app(SubscriptionService::class);
 
         if ($subId !== null) {
@@ -120,10 +122,10 @@ class SyncMedia extends Command
                 return;
             }
             $this->info('更新订阅: ' . $sub->name . ' id: ' . $sub->id);
-            $svc->updateSubscription($sub, false);
+            $svc->updateSubscription($sub, $pullAll);
         } else {
             $this->info('更新全部订阅（按策略）');
-            $svc->updateSubscriptions();
+            $svc->updateSubscriptions($pullAll);
         }
     }
 

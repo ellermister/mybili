@@ -5,37 +5,42 @@ class RateLimitConfig
 {
 
     /**
-     * Job频率限制配置
+     * Job 频率限制配置（用于 Laravel RateLimiter）
+     * max_requests = 时间窗口内最多执行次数，window_seconds = 时间窗口（秒）
+     * 窗口时间不易过大，避免爆发性消费
      */
     public static function getJobConfig(): array
     {
-        // max_requests 最大请求数
-        // window_seconds 时间窗口（秒）
-        // max_wait_seconds 最大等待时间（秒）
         return [
-            'update_fav_videos_job' => [
-                'max_requests'     => 12,
-                'window_seconds'   => 60,
-                'max_wait_seconds' => 600,
+            'update_job'   => [
+                'max_requests'   => 6,
+                'window_seconds' => 6,
             ],
-            'update_fav_list_job'   => [
-                'max_requests'     => 12,
-                'window_seconds'   => 60,
-                'max_wait_seconds' => 600,
+            'download_job' => [
+                'max_requests'   => 2,
+                'window_seconds' => 12,
             ],
         ];
     }
 
     /**
-     * 获取Job配置
+     * 获取 Job 限流配置（download 类可通过 config('services.bilibili.limit_download_video_job') 覆盖）
      */
     public static function getJobRateLimitConfig(string $jobType): array
     {
         $config = self::getJobConfig();
-        return $config[$jobType] ?? [
-            'max_requests'     => 5,
-            'window_seconds'   => 60,
-            'max_wait_seconds' => 300,
+        $base   = $config[$jobType] ?? [
+            'max_requests'   => 5,
+            'window_seconds' => 60,
         ];
+
+        if (in_array($jobType, ['download_video_job', 'download_audio_job'], true)) {
+            $override = config('services.bilibili.limit_download_video_job');
+            if ($override !== null && $override !== '') {
+                $base['max_requests'] = (int) $override;
+            }
+        }
+
+        return $base;
     }
 }

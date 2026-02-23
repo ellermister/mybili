@@ -3,11 +3,11 @@ namespace App\Listeners;
 
 use App\Contracts\TelegramBotServiceInterface;
 use App\Events\VideoPartDownloaded;
-use App\Services\VideoDownloadService;
 use App\Services\VideoManager\Contracts\VideoServiceInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Laravel\Horizon\Contracts\Silenced;
 
-class SendVideoDownloadedMessage implements ShouldQueue
+class SendVideoDownloadedMessage implements ShouldQueue, Silenced
 {
     public $queue = 'fast';
 

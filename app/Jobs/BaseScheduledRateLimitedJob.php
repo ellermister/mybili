@@ -2,238 +2,153 @@
 
 namespace App\Jobs;
 
-use App\Services\ScheduledRateLimiterService;
 use App\Services\RateLimitConfig;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Redis;
 
 /**
- * 基于预安排执行时间的频率限制Job基类
- * 在任务触发时就安排好执行时间，避免重试和阻塞
+ * 基于 Laravel RateLimiter 的限流 Job 基类
+ * 执行时检查限流与风控挂起，超限则 release 延迟重试，不再在派发时排期到未来时间
+ * 通过滑动窗口有一个弊端，就是当排队任务过多时，会被窗口过期时瞬时爆发执行多个任务，有可能会触发风控，先运行一段时间看看
  */
 abstract class BaseScheduledRateLimitedJob implements ShouldQueue
 {
     use Queueable;
 
     /**
-     * 最大重试次数（通常不需要重试）
+     * 限流键前缀，与 getRateLimitKey() 组合
      */
+    private const RATE_LIMIT_KEY_PREFIX = 'job:';
+
     public $tries = 1;
 
-    /**
-     * 重复检查的过期时间（秒）
-     */
-    public const DUPLICATE_CHECK_TTL = 3600; // 1小时
+    // 重复检查 TTL, 不用考虑特大视频文件下载的情况，视频下载通过数据表进行去重，这里忽略
+    public const DUPLICATE_CHECK_TTL = 600;
 
-    /**
-     * Job的重复检查键，用于清理
-     */
     public string $duplicateCheckKey = '';
 
-    /**
-     * 获取限流键名
-     * 
-     * @return string
-     */
     abstract protected function getRateLimitKey(): string;
 
     /**
-     * 获取最大处理数量
-     * 
-     * @return int
+     * 覆盖 Dispatchable::dispatch()，使所有子类任何调用方式都自动进入限流队列
+     * 无论是 Job::dispatch(...) 还是 dispatch(new Job(...))，队列都由此统一设定
      */
-    protected function getMaxProcessCount(): int
+    public static function dispatch(...$arguments)
+    {
+        $delay = rand(0, 20);
+        return (new PendingDispatch(new static(...$arguments)))
+            ->onQueue('bilibili-rate-limit')
+            ->delay($delay);
+    }
+
+    /**
+     * 子类可覆盖以自定义限流参数，默认从 RateLimitConfig 读取
+     */
+    protected function getMaxAttempts(): int
     {
         $config = RateLimitConfig::getJobRateLimitConfig($this->getRateLimitKey());
         return $config['max_requests'];
     }
 
-    /**
-     * 获取时间窗口（秒）
-     * 
-     * @return int
-     */
-    protected function getTimeWindow(): int
+    protected function getDecaySeconds(): int
     {
         $config = RateLimitConfig::getJobRateLimitConfig($this->getRateLimitKey());
         return $config['window_seconds'];
     }
 
-    /**
-     * 生成重复检查的唯一键
-     * 
-     * @param array $args Job构造函数参数
-     * @return string
-     */
     private static function generateDuplicateCheckKey(array $args): string
     {
         $className = static::class;
-        $argsHash = md5(serialize($args));
+        $argsHash  = md5(serialize($args));
         return "job_duplicate_check:{$className}:{$argsHash}";
     }
 
-    /**
-     * 检查是否已存在相同的Job
-     * 
-     * @param array $args Job构造函数参数
-     * @return bool
-     */
     private static function isDuplicateJob(array $args): bool
     {
-        $key = self::generateDuplicateCheckKey($args);
-        return Redis::exists($key);
+        return Redis::exists(self::generateDuplicateCheckKey($args));
     }
 
-    /**
-     * 标记Job为已创建
-     * 
-     * @param array $args Job构造函数参数
-     * @return void
-     */
     private static function markJobAsCreated(array $args): void
     {
-        $key = self::generateDuplicateCheckKey($args);
-        Redis::setex($key, self::DUPLICATE_CHECK_TTL, time());
+        Redis::setex(self::generateDuplicateCheckKey($args), self::DUPLICATE_CHECK_TTL, (string) time());
     }
 
-    /**
-     * 获取延迟执行时间（秒）
-     * 
-     * @return int
-     */
-    public function getDelaySeconds()
-    {
-        $scheduledRateLimiter = app(ScheduledRateLimiterService::class);
-        $key = $this->getRateLimitKey();
-        $maxCount = $this->getMaxProcessCount();
-        $window = $this->getTimeWindow();
-
-        $delaySeconds = $scheduledRateLimiter->scheduleAndGetDelaySeconds($key, $maxCount, $window);
-
-        Log::info("Job delay calculation", [
-            'job' => static::class,
-            'rate_limit_key' => $key,
-            'max_count' => $maxCount,
-            'window' => $window,
-            'delay_seconds' => $delaySeconds,
-            'scheduled_time' => $delaySeconds > 0 ? date('Y-m-d H:i:s', time() + $delaySeconds) : 'immediate'
-        ]);
-
-        return $delaySeconds;
-    }
-
-    /**
-     * 设置Job的重复检查键
-     * 
-     * @param array $args
-     * @return void
-     */
     public function setJobArgs(array $args): void
     {
         $this->duplicateCheckKey = self::generateDuplicateCheckKey($args);
     }
 
-    /**
-     * 清理重复检查标记
-     * 
-     * @return void
-     */
     public function clearDuplicateCheck(): void
     {
-        if (!empty($this->duplicateCheckKey)) {
+        if ($this->duplicateCheckKey !== '') {
             Redis::del($this->duplicateCheckKey);
-            
-            Log::info("Cleared duplicate check key", [
-                'job' => static::class,
-                'key' => $this->duplicateCheckKey
-            ]);
+            Log::info('Cleared duplicate check key', ['job' => static::class, 'key' => $this->duplicateCheckKey]);
         }
     }
 
-    /**
-     * 执行Job
-     */
     public function handle(): void
     {
+        $limitKey     = self::RATE_LIMIT_KEY_PREFIX . $this->getRateLimitKey();
+        $maxAttempts  = $this->getMaxAttempts();
+        $decaySeconds = $this->getDecaySeconds();
+
+        if (RateLimiter::tooManyAttempts($limitKey, $maxAttempts)) {
+            $availableIn = RateLimiter::availableIn($limitKey);
+            Log::info('Job released due to rate limit', [
+                'job'           => static::class,
+                'limit_key'     => $limitKey,
+                'available_in'  => $availableIn,
+            ]);
+            $this->release($availableIn);
+            return;
+        }
+
+        RateLimiter::hit($limitKey, $decaySeconds);
+
         try {
             $this->process();
-            // 任务处理成功，清理重复检查标记
             $this->clearDuplicateCheck();
-        } catch (\Exception $e) {
-            Log::error("Job processing failed: " . $e->getMessage(), [
-                'job' => static::class,
-                'exception' => $e
+        } catch (\Throwable $e) {
+            Log::error('Job processing failed: ' . $e->getMessage(), [
+                'job'       => static::class,
+                'exception' => $e,
             ]);
             throw $e;
         }
     }
 
-    /**
-     * 任务最终失败时的处理（重试次数用完后调用）
-     * 
-     * @param \Throwable $exception
-     * @return void
-     */
     public function failed(\Throwable $exception): void
     {
-        // 任务最终失败，清理重复检查标记
         $this->clearDuplicateCheck();
-        
-        Log::error("Job finally failed after all retries", [
-            'job' => static::class,
-            'exception' => $exception->getMessage()
+        Log::error('Job finally failed after all retries', [
+            'job'       => static::class,
+            'exception' => $exception->getMessage(),
         ]);
     }
 
-
-    /**
-     * 具体的处理逻辑，由子类实现
-     */
     abstract protected function process(): void;
 
     /**
-     * 创建并分发Job，自动处理频率限制
-     * 
-     * @param mixed ...$args Job构造函数参数
-     * @return void
+     * 创建并派发 Job（立即入队，限流在 handle 时通过 release 实现）
      */
     public static function dispatchWithRateLimit(...$args): void
     {
-        // 检查是否已存在相同的Job
         if (self::isDuplicateJob($args)) {
-            Log::info("Duplicate job detected, skipping dispatch", [
-                'job' => static::class,
-                'args' => $args
-            ]);
+            Log::info('Duplicate job detected, skipping dispatch', ['job' => static::class, 'args' => $args]);
             return;
         }
 
-        // 标记Job为已创建
         self::markJobAsCreated($args);
 
         $job = new static(...$args);
-        
-        // 将参数存储到Job实例中，用于后续清理
         $job->setJobArgs($args);
-        
-        $delaySeconds = $job->getDelaySeconds();
-        
-        if ($delaySeconds > 0) {
-            // 使用延迟执行
-            dispatch($job)->delay(now()->addSeconds($delaySeconds));
-            Log::info("Job dispatched with delay", [
-                'job' => static::class,
-                'delay_seconds' => $delaySeconds,
-                'scheduled_time' => now()->addSeconds($delaySeconds)->format('Y-m-d H:i:s')
-            ]);
-        } else {
-            // 立即执行
-            dispatch($job);
-            Log::info("Job dispatched immediately", [
-                'job' => static::class
-            ]);
-        }
+
+        $delay = rand(0, 20);
+        dispatch($job)->onQueue('bilibili-rate-limit')->delay($delay);
+        Log::info('Job dispatched (rate limit applied in handle)', ['job' => static::class, 'delay' => $delay]);
     }
-} 
+}

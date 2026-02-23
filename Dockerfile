@@ -47,7 +47,7 @@ RUN PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
             ;; \
     esac && \
     wget -O /usr/local/bin/yt-dlp_linux \
-        "https://github.com/grqz/yt-dlp/releases/download/ie%2Fbilibili%2Fpi_fallbk/${YT_DLP_ARCH}" && \
+        "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/${YT_DLP_ARCH}" && \
     chmod 775 /usr/local/bin/yt-dlp_linux && \
     chown root:root /usr/local/bin/yt-dlp_linux
 

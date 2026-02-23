@@ -6,44 +6,15 @@ use Log;
 
 class UpdateFavVideosJob extends BaseScheduledRateLimitedJob
 {
-
-    public $queue = 'default';
-
-    /**
-     * 任务失败前等待的时间（以秒为单位）
-     */
     public $backoff = [60, 300, 600];
 
-    /**
-     * Create a new job instance.
-     */
     public function __construct(public array $fav, public ?int $page = null)
     {
-        //
     }
 
-    /**
-     * 获取限流键名
-     */
     protected function getRateLimitKey(): string
     {
-        return 'update_fav_videos_job';
-    }
-
-    /**
-     * 获取最大处理数量 - 每分钟最多5个收藏夹更新
-     */
-    protected function getMaxProcessCount(): int
-    {
-        return 5;
-    }
-
-    /**
-     * 获取时间窗口 - 2分钟
-     */
-    protected function getTimeWindow(): int
-    {
-        return 120;
+        return 'update_job';
     }
 
     /**

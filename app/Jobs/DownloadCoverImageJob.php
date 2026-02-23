@@ -5,11 +5,11 @@ namespace App\Jobs;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
 use App\Services\CoverService;
-
+use Laravel\Horizon\Contracts\Silenced;
 /**
  * 新的下载封面任务处理
  */
-class DownloadCoverImageJob implements ShouldQueue
+class DownloadCoverImageJob implements ShouldQueue, Silenced
 {
 
     public $queue = 'fast';

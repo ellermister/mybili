@@ -40,7 +40,7 @@ class ProcessDownloadQueue extends Command
         }
 
         // 3. 计算可用槽位
-        $concurrency = (int) config('services.bilibili.download_concurrency', 3);
+        $concurrency = (int) config('services.bilibili.download_concurrency', 10);
         $running     = DownloadQueue::where('status', DownloadQueue::STATUS_RUNNING)->count();
         $slots       = $concurrency - $running;
 

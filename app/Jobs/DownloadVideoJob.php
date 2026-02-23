@@ -4,17 +4,11 @@ namespace App\Jobs;
 use App\Models\VideoPart;
 use App\Services\DownloadQueueService;
 use App\Services\VideoManager\Actions\Video\DownloadVideoPartFileAction;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 
 class DownloadVideoJob extends BaseScheduledRateLimitedJob
 {
-    use Dispatchable, InteractsWithQueue, SerializesModels;
 
-    public $queue = 'slow';
-    public $tries = 3;
+    public $tries   = 3;
     public $backoff = [1800, 3600, 7200];
 
     public function __construct(public VideoPart $videoPart)
@@ -23,17 +17,7 @@ class DownloadVideoJob extends BaseScheduledRateLimitedJob
 
     protected function getRateLimitKey(): string
     {
-        return 'download_video_job';
-    }
-
-    protected function getMaxProcessCount(): int
-    {
-        return config('services.bilibili.limit_download_video_job', 20);
-    }
-
-    protected function getTimeWindow(): int
-    {
-        return 60;
+        return 'download_job';
     }
 
     public function process(): void
@@ -53,6 +37,10 @@ class DownloadVideoJob extends BaseScheduledRateLimitedJob
 
     public function displayName(): string
     {
-        return sprintf('DownloadVideoJob %s-%s %s', $this->videoPart->video_id, $this->videoPart->page, $this->videoPart->part);
+        if($this->videoPart->video->title && $this->videoPart->video->title != $this->videoPart->part){
+            return sprintf('DownloadVideoJob %s-%s %s-%s', $this->videoPart->video_id, $this->videoPart->page, $this->videoPart->video->title, $this->videoPart->part);
+        }else{
+            return sprintf('DownloadVideoJob %s-%s %s', $this->videoPart->video_id, $this->videoPart->page, $this->videoPart->part);
+        }
     }
 }

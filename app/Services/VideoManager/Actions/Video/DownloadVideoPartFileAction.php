@@ -47,7 +47,6 @@ class DownloadVideoPartFileAction
 
         $url = config('services.bilibili.id_type') == 'bv' ? sprintf('https://www.bilibili.com/video/%s/', $video->bvid) : sprintf('https://www.bilibili.com/video/av%s/', $video->id);
 
-
         $filePath = $this->downloadVideoService->getVideoPartValidFilePath($videoPart);
         if ($filePath) {
             $this->updateVideoPartDownloaded($videoPart, $filePath);
@@ -111,6 +110,7 @@ class DownloadVideoPartFileAction
 
     public function updateVideoPartDownloaded(VideoPart $videoPart, string $savePath): void
     {
+        $video = Video::where('id', $videoPart->video_id)->first();
         if (is_file($savePath)) {
             $calcHash = hash_file('sha256', $savePath);
             if ($calcHash !== $this->downloadVideoService->getDownloadHash($savePath)) {
@@ -120,13 +120,15 @@ class DownloadVideoPartFileAction
             $videoPart->video_downloaded_at = Carbon::createFromTimestamp(filectime($savePath));
             $videoPart->video_download_path = get_relative_path($savePath);
             $videoPart->save();
+
+            // 真实下载时去更新视频的下载时间
+            $video->video_downloaded_at = Carbon::createFromTimestamp(filectime($savePath));
         } else {
             $videoPart->video_downloaded_at = null;
             $videoPart->video_download_path = null;
             $videoPart->save();
         }
 
-        $video                       = Video::where('id', $videoPart->video_id)->first();
         $video->video_downloaded_num = VideoPart::where('video_id', $video->id)->whereNotNull('video_download_path')->count();
         $video->save();
     }

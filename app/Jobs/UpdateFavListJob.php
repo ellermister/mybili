@@ -6,38 +6,13 @@ use Log;
 
 class UpdateFavListJob extends BaseScheduledRateLimitedJob
 {
-    public $queue = 'default';
-
-    /**
-     * Create a new job instance.
-     */
     public function __construct()
     {
-
     }
 
-    /**
-     * 获取限流键名
-     */
     protected function getRateLimitKey(): string
     {
-        return 'update_fav_list_job';
-    }
-
-    /**
-     * 获取最大处理数量 - 每分钟最多3个收藏列表更新
-     */
-    protected function getMaxProcessCount(): int
-    {
-        return 3;
-    }
-
-    /**
-     * 获取时间窗口 - 3分钟
-     */
-    protected function getTimeWindow(): int
-    {
-        return 180;
+        return 'update_job';
     }
 
     /**

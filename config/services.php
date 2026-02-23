@@ -40,7 +40,11 @@ return [
         'fav_videos_page_size'     => env('BILIBILI_FAV_VIDEOS_PAGE_SIZE', 40),
         'id_type'                  => env('BILIBILI_ID_TYPE', 'bv'),
 
-        'limit_download_video_job' => env('BILIBILI_LIMIT_DOWNLOAD_VIDEO_JOB', 20),
+        // 控制下载任务派发时计算的槽位，也就是并发数，一般用这个，后面考虑是否合并配置
+        'download_concurrency'     => env('BILIBILI_DOWNLOAD_CONCURRENCY', 10),
+
+        // 控制下载任务执行时检查频率的参数，用于检查n秒内是否执行过多，保证执行时不会超过最大(风控)限制
+        'limit_download_video_job' => env('BILIBILI_LIMIT_DOWNLOAD_VIDEO_JOB', 2),
 
         'ignore_cookies'           => env('BILIBILI_IGNORE_COOKIES', false),
 
