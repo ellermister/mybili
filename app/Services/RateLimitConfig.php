@@ -34,7 +34,7 @@ class RateLimitConfig
             'window_seconds' => 60,
         ];
 
-        if (in_array($jobType, ['download_video_job', 'download_audio_job'], true)) {
+        if (in_array($jobType, ['download_job'], true)) {
             $override = config('services.bilibili.limit_download_video_job');
             if ($override !== null && $override !== '') {
                 $base['max_requests'] = (int) $override;

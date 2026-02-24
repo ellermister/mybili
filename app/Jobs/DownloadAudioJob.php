@@ -8,8 +8,7 @@ use App\Services\VideoManager\Actions\Audio\DownloadAudioPartFileAction;
 class DownloadAudioJob extends BaseScheduledRateLimitedJob
 {
 
-    public $tries = 3;
-    public $backoff = [1800, 3600, 7200];
+    public $tries = 1;
 
     public function __construct(public AudioPart $audioPart)
     {
@@ -29,7 +28,7 @@ class DownloadAudioJob extends BaseScheduledRateLimitedJob
     public function failed(\Throwable $exception): void
     {
         parent::failed($exception);
-        app(DownloadQueueService::class)->markFailedByAudio(
+        app(DownloadQueueService::class)->markRetryOrFailedByAudio(
             $this->audioPart->video_id,
             $exception->getMessage()
         );

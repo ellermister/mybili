@@ -40,6 +40,9 @@ class DownloadCoverImageJob implements ShouldQueue, Silenced
      */
     public function handle(CoverService $coverService): void
     {
+        if(empty($this->url)){
+            return;
+        }
         $coverService->downloadCover($this->url, $this->type, $this->model);
     }
 }

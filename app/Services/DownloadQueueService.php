@@ -28,14 +28,15 @@ class DownloadQueueService
         $item = DownloadQueue::updateOrCreate(
             ['unique_key' => $uniqueKey],
             [
-                'type'         => DownloadQueue::TYPE_VIDEO,
-                'video_id'     => $videoPart->video_id,
-                'video_part_id'=> $videoPart->id,
-                'status'       => DownloadQueue::STATUS_PENDING,
-                'priority'     => $priority,
-                'error_msg'    => null,
-                'scheduled_at' => null,
-                'completed_at' => null,
+                'type'          => DownloadQueue::TYPE_VIDEO,
+                'video_id'      => $videoPart->video_id,
+                'video_part_id' => $videoPart->id,
+                'status'        => DownloadQueue::STATUS_PENDING,
+                'priority'      => $priority,
+                'retry_count'   => 0,
+                'error_msg'     => null,
+                'scheduled_at'  => null,
+                'completed_at'  => null,
             ]
         );
 
@@ -66,6 +67,7 @@ class DownloadQueueService
                 'video_part_id' => null,
                 'status'        => DownloadQueue::STATUS_PENDING,
                 'priority'      => $priority,
+                'retry_count'   => 0,
                 'error_msg'     => null,
                 'scheduled_at'  => null,
                 'completed_at'  => null,
@@ -149,6 +151,66 @@ class DownloadQueueService
     }
 
     /**
+     * Job 失败后：未超过最大重试次数则重回 pending，等待 ProcessDownloadQueue 重新派发；
+     * 超过次数后标记为永久 failed，释放槽位且不再重试。
+     */
+    public function markRetryOrFailedByVideoPart(int $videoPartId, string $error): void
+    {
+        $key  = DownloadQueue::buildUniqueKey(DownloadQueue::TYPE_VIDEO, $videoPartId);
+        $item = DownloadQueue::where('unique_key', $key)->first();
+        if (! $item) {
+            return;
+        }
+
+        $retryCount = $item->retry_count + 1;
+
+        if ($retryCount >= DownloadQueue::MAX_RETRIES) {
+            $item->update([
+                'status'       => DownloadQueue::STATUS_FAILED,
+                'retry_count'  => $retryCount,
+                'completed_at' => now(),
+                'error_msg'    => mb_substr($error, 0, 500),
+            ]);
+            Log::warning('DownloadVideoJob permanently failed', ['video_part_id' => $videoPartId, 'retries' => $retryCount, 'error' => $error]);
+        } else {
+            $item->update([
+                'status'      => DownloadQueue::STATUS_PENDING,
+                'retry_count' => $retryCount,
+                'error_msg'   => mb_substr("[retry {$retryCount}] " . $error, 0, 500),
+            ]);
+            Log::info('DownloadVideoJob failed, reset to pending for retry', ['video_part_id' => $videoPartId, 'retry_count' => $retryCount]);
+        }
+    }
+
+    public function markRetryOrFailedByAudio(int $videoId, string $error): void
+    {
+        $key  = DownloadQueue::buildUniqueKey(DownloadQueue::TYPE_AUDIO, $videoId);
+        $item = DownloadQueue::where('unique_key', $key)->first();
+        if (! $item) {
+            return;
+        }
+
+        $retryCount = $item->retry_count + 1;
+
+        if ($retryCount >= DownloadQueue::MAX_RETRIES) {
+            $item->update([
+                'status'       => DownloadQueue::STATUS_FAILED,
+                'retry_count'  => $retryCount,
+                'completed_at' => now(),
+                'error_msg'    => mb_substr($error, 0, 500),
+            ]);
+            Log::warning('DownloadAudioJob permanently failed', ['video_id' => $videoId, 'retries' => $retryCount, 'error' => $error]);
+        } else {
+            $item->update([
+                'status'      => DownloadQueue::STATUS_PENDING,
+                'retry_count' => $retryCount,
+                'error_msg'   => mb_substr("[retry {$retryCount}] " . $error, 0, 500),
+            ]);
+            Log::info('DownloadAudioJob failed, reset to pending for retry', ['video_id' => $videoId, 'retry_count' => $retryCount]);
+        }
+    }
+
+    /**
      * 取消任务（只有 pending 状态可取消）
      */
     public function cancel(int $id): bool
@@ -172,6 +234,7 @@ class DownloadQueueService
         }
         $item->update([
             'status'       => DownloadQueue::STATUS_PENDING,
+            'retry_count'  => 0,
             'error_msg'    => null,
             'scheduled_at' => null,
             'completed_at' => null,
