@@ -98,12 +98,12 @@ abstract class BaseScheduledRateLimitedJob implements ShouldQueue
 
         if (RateLimiter::tooManyAttempts($limitKey, $maxAttempts)) {
             $availableIn = RateLimiter::availableIn($limitKey);
-            Log::info('Job released due to rate limit', [
-                'job'           => static::class,
-                'limit_key'     => $limitKey,
-                'available_in'  => $availableIn,
+            Log::info('Job rate limited', [
+                'job'          => static::class,
+                'limit_key'    => $limitKey,
+                'available_in' => $availableIn,
             ]);
-            $this->release($availableIn);
+            $this->onRateLimited($availableIn);
             return;
         }
 
@@ -128,6 +128,16 @@ abstract class BaseScheduledRateLimitedJob implements ShouldQueue
             'job'       => static::class,
             'exception' => $exception->getMessage(),
         ]);
+    }
+
+    /**
+     * 限流时的处理策略，子类可覆盖。
+     * 默认调用 release() 重排，会消耗 attempts（需配合 retryUntil() 使用）。
+     * 有 DB 槽位的下载 Job 应覆盖此方法，直接归还槽位后干净退出，不消耗 attempts。
+     */
+    protected function onRateLimited(int $availableIn): void
+    {
+        $this->release($availableIn);
     }
 
     abstract protected function process(): void;

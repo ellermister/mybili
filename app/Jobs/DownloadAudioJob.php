@@ -19,6 +19,11 @@ class DownloadAudioJob extends BaseScheduledRateLimitedJob
         return 'download_job';
     }
 
+    protected function onRateLimited(int $availableIn): void
+    {
+        app(DownloadQueueService::class)->markPendingByAudio($this->audioPart->video_id);
+    }
+
     public function process(): void
     {
         app(DownloadAudioPartFileAction::class)->execute($this->audioPart);

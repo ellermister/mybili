@@ -98,6 +98,28 @@ class DownloadQueueService
         ]);
     }
 
+    /**
+     * 限流时归还槽位：running → pending，不消耗 retry_count。
+     * Job 干净退出，由 ProcessDownloadQueue 下次轮询重新派发。
+     */
+    public function markPendingByVideoPart(int $videoPartId): void
+    {
+        $key  = DownloadQueue::buildUniqueKey(DownloadQueue::TYPE_VIDEO, $videoPartId);
+        $item = DownloadQueue::where('unique_key', $key)->first();
+        if ($item && $item->status === DownloadQueue::STATUS_RUNNING) {
+            $item->update(['status' => DownloadQueue::STATUS_PENDING]);
+        }
+    }
+
+    public function markPendingByAudio(int $videoId): void
+    {
+        $key  = DownloadQueue::buildUniqueKey(DownloadQueue::TYPE_AUDIO, $videoId);
+        $item = DownloadQueue::where('unique_key', $key)->first();
+        if ($item && $item->status === DownloadQueue::STATUS_RUNNING) {
+            $item->update(['status' => DownloadQueue::STATUS_PENDING]);
+        }
+    }
+
     public function markDoneByVideoPart(int $videoPartId): void
     {
         $key  = DownloadQueue::buildUniqueKey(DownloadQueue::TYPE_VIDEO, $videoPartId);

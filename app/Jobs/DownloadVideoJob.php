@@ -20,6 +20,11 @@ class DownloadVideoJob extends BaseScheduledRateLimitedJob
         return 'download_job';
     }
 
+    protected function onRateLimited(int $availableIn): void
+    {
+        app(DownloadQueueService::class)->markPendingByVideoPart($this->videoPart->id);
+    }
+
     public function process(): void
     {
         try{
