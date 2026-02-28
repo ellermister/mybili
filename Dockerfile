@@ -37,17 +37,17 @@ RUN PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
 RUN PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
     case "${PLATFORM}" in \
         "linux/amd64"|"linux/x86_64") \
-            YT_DLP_ARCH="yt-dlp_linux" \
+            YT_DLP_ARCH="yt-dlp_musllinux" \
             ;; \
         "linux/arm64"|"linux/aarch64") \
-            YT_DLP_ARCH="yt-dlp_linux_aarch64" \
+            YT_DLP_ARCH="yt-dlp_musllinux_aarch64" \
             ;; \
         *) \
             echo "Unsupported platform: ${PLATFORM}" && exit 1 \
             ;; \
     esac && \
     wget -O /usr/local/bin/yt-dlp_linux \
-        "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/${YT_DLP_ARCH}" && \
+        "https://github.com/yt-dlp/yt-dlp/releases/latest/download/${YT_DLP_ARCH}" && \
     chmod 775 /usr/local/bin/yt-dlp_linux && \
     chown root:root /usr/local/bin/yt-dlp_linux
 
