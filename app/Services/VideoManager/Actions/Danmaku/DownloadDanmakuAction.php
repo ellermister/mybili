@@ -80,6 +80,10 @@ class DownloadDanmakuAction
             // 检查是否在被排除的收藏夹中, 是否在订阅中排除。
             $video = $videoPart->video;
             if ($video) {
+                if ($this->downloadFilterService->shouldExcludeByFavTime($video)) {
+                    Log::info('Download danmaku excluded by favorite time', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
+                    return;
+                }
                 if ($this->downloadFilterService->shouldExcludeByVideo($video)) {
                     Log::info('Download excluded by favorite and subscription', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
                     return;

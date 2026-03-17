@@ -32,6 +32,11 @@ class CheckVideoPartFileToDownloadAction
             return;
         }
 
+        if ($this->downloadFilterService->shouldExcludeByFavTime($video)) {
+            Log::info('Download excluded by favorite time', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
+            return;
+        }
+
         // 检查是否能下载该收藏夹或订阅的视频：只要有一个收藏夹或订阅未被过滤就继续下载
         if ($this->downloadFilterService->shouldExcludeByVideo($video)) {
             Log::info('Download excluded by favorite and subscription', ['id' => $videoPart->cid, 'title' => $videoPart->part]);

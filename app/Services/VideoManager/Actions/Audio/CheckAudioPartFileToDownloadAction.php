@@ -39,6 +39,11 @@ class CheckAudioPartFileToDownloadAction
                 return;
             }
 
+            if ($this->downloadFilterService->shouldExcludeByFavTime($video)) {
+                Log::info('Audio download excluded by favorite time', ['sid' => $audioPart->sid]);
+                return;
+            }
+
             if ($this->downloadFilterService->shouldExcludeByDuration((int) $video->duration)) {
                 Log::info('Audio download excluded by duration', ['sid' => $audioPart->sid, 'duration' => $video->duration]);
                 return;
