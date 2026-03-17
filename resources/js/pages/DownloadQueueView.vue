@@ -361,8 +361,10 @@ function startAutoRefresh() {
             stat.value = res.stat
             // 增量合并：用新数据更新现有条目状态，同时插入新增条目
             const newMap = new Map(res.list.map(i => [i.id, i]))
-            // 更新已有条目
-            items.value = items.value.map(i => newMap.has(i.id) ? newMap.get(i.id)! : i)
+            // 更新已有条目（不在新列表里的直接移除，避免列表不缩减导致“不同步”）
+            items.value = items.value
+                .filter(i => newMap.has(i.id))
+                .map(i => newMap.get(i.id)!)
             // 过滤掉不再属于当前 tab 的条目（如 running→done）
             const validStatuses = tabToStatusParam(activeTab.value).split(',')
             items.value = items.value.filter(i => validStatuses.includes(i.status))

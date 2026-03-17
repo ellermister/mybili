@@ -23,6 +23,16 @@ class PullVideoInfoJob extends BaseScheduledRateLimitedJob
         return 'update_job';
     }
 
+    protected static function enableSkipIfSucceededRecently(): bool
+    {
+        return true;
+    }
+
+    protected static function skipIfSucceededRecentlyTtlSeconds(): int
+    {
+        return 10800; // 3 hours
+    }
+
     public function process(): void
     {
         app(PullVideoInfoAction::class)->execute($this->bvid);

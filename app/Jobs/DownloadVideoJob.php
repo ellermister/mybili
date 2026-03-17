@@ -37,6 +37,11 @@ class DownloadVideoJob extends BaseScheduledRateLimitedJob
             return;
         }
         app(DownloadQueueService::class)->markDoneByVideoPart($this->videoPart->id);
+
+        // 下载完成后立刻触发一次队列消费，避免等下一分钟的计划任务（拆分为独立 Job）
+        TriggerProcessDownloadQueueJob::dispatch()
+            ->delay(now()->addSeconds(1))
+            ->onQueue('fast');
     }
 
     public function failed(\Throwable $exception): void

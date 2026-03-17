@@ -28,6 +28,7 @@ abstract class BaseScheduledRateLimitedJob implements ShouldQueue
     public const DUPLICATE_CHECK_TTL = 7200;
 
     public string $duplicateCheckKey = '';
+    public string $recentSuccessKey = '';
 
     abstract protected function getRateLimitKey(): string;
 
@@ -63,6 +64,13 @@ abstract class BaseScheduledRateLimitedJob implements ShouldQueue
         return "job_duplicate_check:{$className}:{$argsHash}";
     }
 
+    private static function generateRecentSuccessKey(array $args): string
+    {
+        $className = static::class;
+        $argsHash  = md5(serialize($args));
+        return "job_recent_success:{$className}:{$argsHash}";
+    }
+
     private static function isDuplicateJob(array $args): bool
     {
         return Redis::exists(self::generateDuplicateCheckKey($args));
@@ -76,6 +84,7 @@ abstract class BaseScheduledRateLimitedJob implements ShouldQueue
     public function setJobArgs(array $args): void
     {
         $this->duplicateCheckKey = self::generateDuplicateCheckKey($args);
+        $this->recentSuccessKey  = self::generateRecentSuccessKey($args);
     }
 
     public function clearDuplicateCheck(): void
@@ -107,6 +116,7 @@ abstract class BaseScheduledRateLimitedJob implements ShouldQueue
 
         try {
             $this->process();
+            $this->markRecentSuccessIfEnabled();
             $this->clearDuplicateCheck();
         } catch (\Throwable $e) {
             Log::error('Job processing failed: ' . $e->getMessage(), [
@@ -139,10 +149,43 @@ abstract class BaseScheduledRateLimitedJob implements ShouldQueue
     abstract protected function process(): void;
 
     /**
+     * 近 1 小时成功执行过则跳过派发（默认关闭，子类可开启）
+     */
+    protected static function enableSkipIfSucceededRecently(): bool
+    {
+        return false;
+    }
+
+    protected static function skipIfSucceededRecentlyTtlSeconds(): int
+    {
+        return 3600;
+    }
+
+    private function markRecentSuccessIfEnabled(): void
+    {
+        if (! static::enableSkipIfSucceededRecently()) {
+            return;
+        }
+        if ($this->recentSuccessKey === '') {
+            return;
+        }
+        $ttl = static::skipIfSucceededRecentlyTtlSeconds();
+        if ($ttl <= 0) {
+            return;
+        }
+        Redis::setex($this->recentSuccessKey, $ttl, (string) time());
+    }
+
+    /**
      * 创建并派发 Job（立即入队，如果重复则跳过）
      */
     public static function dispatchWithRateLimit(...$args): void
     {
+        if (static::enableSkipIfSucceededRecently() && Redis::exists(self::generateRecentSuccessKey($args))) {
+            Log::info('Job succeeded recently, skipping dispatch', ['job' => static::class, 'args' => $args]);
+            return;
+        }
+
         if (self::isDuplicateJob($args)) {
             Log::info('Duplicate job detected, skipping dispatch', ['job' => static::class, 'args' => $args]);
             return;
