@@ -43,16 +43,24 @@ class CoverService extends DownloadImageService
             $imageInfo = $this->getImageInfo($localPath);
             
             // 创建封面记录
-            $cover = Cover::create([
-                'url'       => $url,
-                'type'      => $type,
-                'filename'  => $filename,
-                'path'      => get_relative_path($localPath),
-                'mime_type' => $imageInfo['mime_type'],
-                'size'      => $imageInfo['size'],
-                'width'     => $imageInfo['width'],
-                'height'    => $imageInfo['height'],
-            ]);
+            try {
+                $cover = Cover::create([
+                    'url'       => $url,
+                    'type'      => $type,
+                    'filename'  => $filename,
+                    'path'      => get_relative_path($localPath),
+                    'mime_type' => $imageInfo['mime_type'],
+                    'size'      => $imageInfo['size'],
+                    'width'     => $imageInfo['width'],
+                    'height'    => $imageInfo['height'],
+                ]);
+            } catch (\Exception $e) {
+                // 如果是并发写入导致唯一键冲突，重新查询
+                $cover = Cover::where('filename', $filename)->first();
+                if (!$cover) {
+                    throw $e;
+                }
+            }
         }
         
         // 3. 创建或更新关联关系（一个模型只能有一个封面）
@@ -112,6 +120,10 @@ class CoverService extends DownloadImageService
     public function isCoverable(string $url, Model $model): bool
     {
         $filename = $this->convertToFilename($url);
-        return Coverables::where('cover_id', $filename)->where('coverable_id', $model->id)->where('coverable_type', get_class($model))->exists();
+        $cover = Cover::where('filename', $filename)->first();
+        if (!$cover) {
+            return false;
+        }
+        return Coverables::where('cover_id', $cover->id)->where('coverable_id', $model->id)->where('coverable_type', get_class($model))->exists();
     }
 }

@@ -154,7 +154,7 @@ class SubscriptionService
     {
         $subscriptions = Subscription::where('status', Subscription::STATUS_ACTIVE)->get();
         foreach ($subscriptions as $subscription) {
-            $this->updateSubscription($subscription, $pullAll);
+            \App\Jobs\UpdateSubscriptionJob::dispatchWithRateLimit($subscription, $pullAll);
         }
     }
 

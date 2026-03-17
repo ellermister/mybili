@@ -24,10 +24,8 @@ abstract class BaseScheduledRateLimitedJob implements ShouldQueue
      */
     private const RATE_LIMIT_KEY_PREFIX = 'job:';
 
-    public $tries = 1;
-
-    // 重复检查 TTL, 不用考虑特大视频文件下载的情况，视频下载通过数据表进行去重，这里忽略
-    public const DUPLICATE_CHECK_TTL = 600;
+    // 重复检查 TTL, 设为较长时间（如2小时），配合任务执行完毕后清理，避免堆积任务时重复派发
+    public const DUPLICATE_CHECK_TTL = 7200;
 
     public string $duplicateCheckKey = '';
 
@@ -39,10 +37,8 @@ abstract class BaseScheduledRateLimitedJob implements ShouldQueue
      */
     public static function dispatch(...$arguments)
     {
-        $delay = rand(0, 20);
         return (new PendingDispatch(new static(...$arguments)))
-            ->onQueue('bilibili-rate-limit')
-            ->delay($delay);
+            ->onQueue('bilibili-rate-limit');
     }
 
     /**
@@ -143,7 +139,7 @@ abstract class BaseScheduledRateLimitedJob implements ShouldQueue
     abstract protected function process(): void;
 
     /**
-     * 创建并派发 Job（立即入队，限流在 handle 时通过 release 实现）
+     * 创建并派发 Job（立即入队，如果重复则跳过）
      */
     public static function dispatchWithRateLimit(...$args): void
     {
@@ -157,8 +153,7 @@ abstract class BaseScheduledRateLimitedJob implements ShouldQueue
         $job = new static(...$args);
         $job->setJobArgs($args);
 
-        $delay = rand(0, 20);
-        dispatch($job)->onQueue('bilibili-rate-limit')->delay($delay);
-        Log::info('Job dispatched (rate limit applied in handle)', ['job' => static::class, 'delay' => $delay]);
+        dispatch($job)->onQueue('bilibili-rate-limit');
+        Log::info('Job dispatched (rate limit applied in handle)', ['job' => static::class]);
     }
 }

@@ -2,6 +2,7 @@
 namespace App\Services;
 
 use App\Enums\SettingKey;
+use App\Models\Video;
 use Log;
 
 class DownloadFilterService
@@ -59,6 +60,29 @@ class DownloadFilterService
             return false;
         }
         return in_array($favId, $favExclude['selected']);
+    }
+
+    /**
+     * 只要视频关联的收藏夹或订阅中，有任意一个未被排除，就允许下载。
+     * 若存在关联但全部被排除，则返回 true（应排除下载）。
+     */
+    public function shouldExcludeByVideo(Video $video): bool
+    {
+        $video->loadMissing('favorite', 'subscriptions');
+
+        $hasAnyRelation = $video->favorite->isNotEmpty() || $video->subscriptions->isNotEmpty();
+        if (! $hasAnyRelation) {
+            return false;
+        }
+
+        $hasFavNotExcluded = $video->favorite->contains(
+            fn ($fav) => ! $this->shouldExcludeByFav($fav->id)
+        );
+        $hasSubNotExcluded = $video->subscriptions->contains(
+            fn ($sub) => ! $this->shouldExcludeByFav(-$sub->id)
+        );
+
+        return ! $hasFavNotExcluded && ! $hasSubNotExcluded;
     }
 
     public function isMultiPEnabled()

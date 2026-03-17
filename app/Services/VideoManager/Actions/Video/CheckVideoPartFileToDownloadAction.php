@@ -33,11 +33,7 @@ class CheckVideoPartFileToDownloadAction
         }
 
         // 检查是否能下载该收藏夹或订阅的视频：只要有一个收藏夹或订阅未被过滤就继续下载
-        $video->load('favorite', 'subscriptions');
-        $hasFavNotExcluded = $video->favorite->contains(fn ($fav) => ! $this->downloadFilterService->shouldExcludeByFav($fav->id));
-        $hasSubNotExcluded = $video->subscriptions->contains(fn ($sub) => ! $this->downloadFilterService->shouldExcludeByFav(-$sub->id));
-        $hasAnyRelation = $video->favorite->isNotEmpty() || $video->subscriptions->isNotEmpty();
-        if ($hasAnyRelation && ! $hasFavNotExcluded && ! $hasSubNotExcluded) {
+        if ($this->downloadFilterService->shouldExcludeByVideo($video)) {
             Log::info('Download excluded by favorite and subscription', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
             return;
         }

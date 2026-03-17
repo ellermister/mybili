@@ -86,7 +86,7 @@ class SyncMedia extends Command
     protected function runFavList(): void
     {
         $this->info('派发: 更新收藏夹列表');
-        dispatch(new UpdateFavListJob());
+        UpdateFavListJob::dispatchWithRateLimit();
     }
 
     protected function runFavVideos(FavoriteServiceInterface $favoriteService): void
@@ -121,10 +121,10 @@ class SyncMedia extends Command
                 $this->warn("未找到订阅 id: {$subId}");
                 return;
             }
-            $this->info('更新订阅: ' . $sub->name . ' id: ' . $sub->id);
-            $svc->updateSubscription($sub, $pullAll);
+            $this->info('派发更新订阅: ' . $sub->name . ' id: ' . $sub->id);
+            \App\Jobs\UpdateSubscriptionJob::dispatchWithRateLimit($sub, $pullAll);
         } else {
-            $this->info('更新全部订阅（按策略）');
+            $this->info('派发更新全部订阅（按策略）');
             $svc->updateSubscriptions($pullAll);
         }
     }
@@ -141,13 +141,6 @@ class SyncMedia extends Command
         $start = microtime(true);
         $builder->chunk(100, function ($videos) use ($updateVideoPartsAction, &$count) {
             foreach ($videos as $video) {
-                $video->load('favorite', 'subscriptions');
-                if ($this->shouldExcludeByFavForMultiFav($video->favorite)) {
-                    $msg = sprintf('跳过(过滤): %s id: %s', $video->title, $video->id);
-                    $this->line($msg);
-                    Log::info($msg, ['favs' => $video->favorite->pluck('id')->toArray()]);
-                    continue;
-                }
                 $this->line(sprintf('更新分P: %s id: %s', $video->title, $video->id));
                 $updateVideoPartsAction->execute($video);
                 $count++;
@@ -195,27 +188,8 @@ class SyncMedia extends Command
         }
     }
 
-    protected function shouldExcludeByFavForMultiFav(Collection $favs): bool
-    {
-        $svc   = app(DownloadFilterService::class);
-        $ids   = $favs->pluck('id')->unique();
-        foreach ($ids as $id) {
-            if (! $svc->shouldExcludeByFav($id)) {
-                return false;
-            }
-        }
-        return $ids->isNotEmpty();
-    }
-
     protected function dispatchUpdateFavVideosJob(array $fav, ?int $page = null): void
     {
-        $svc = app(DownloadFilterService::class);
-        if ($svc->shouldExcludeByFav($fav['id'])) {
-            $this->line(sprintf('跳过(过滤): %s id: %s', $fav['title'], $fav['id']));
-            Log::info('sync-media exclude fav', ['fav_id' => $fav['id'], 'title' => $fav['title']]);
-            return;
-        }
-
         $pageSize  = (int) config('services.bilibili.fav_videos_page_size');
         $maxPage   = (int) ceil($fav['media_count'] / $pageSize);
         if ($page !== null) {

@@ -5,15 +5,16 @@ use App\Models\Danmaku;
 use App\Models\Video;
 use App\Models\VideoPart;
 use App\Services\BilibiliService;
+use App\Services\DownloadFilterService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class DownloadDanmakuAction
 {
 
     public function __construct(
-        public BilibiliService $bilibiliService
+        public BilibiliService $bilibiliService,
+        public DownloadFilterService $downloadFilterService
     ) {
     }
 
@@ -64,6 +65,8 @@ class DownloadDanmakuAction
 
     public function execute(VideoPart $videoPart): void
     {
+        $start_time = microtime(true);
+
         //加锁
         $lock = redis()->setnx(sprintf('danmaku_downloading:%s', $videoPart->cid), 1);
         if (! $lock) {
@@ -73,10 +76,23 @@ class DownloadDanmakuAction
         redis()->expire(sprintf('danmaku_downloading:%s', $videoPart->cid), 3600 * 8);
 
         try {
-            Log::info('Download danmaku start', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
-            $video = Video::where('id', $videoPart->video_id)->first();
+            
+            // 检查是否在被排除的收藏夹中, 是否在订阅中排除。
+            $video = $videoPart->video;
+            if ($video) {
+                if ($this->downloadFilterService->shouldExcludeByVideo($video)) {
+                    Log::info('Download excluded by favorite and subscription', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
+                    return;
+                }
+            }
 
-            $start_time   = microtime(true);
+            Log::info('Download danmaku start', ['id' => $videoPart->cid, 'title' => $videoPart->part]);
+            $video ??= Video::where('id', $videoPart->video_id)->first();
+            if (! $video) {
+                Log::info('Video not found or deleted', ['id' => $videoPart->video_id]);
+                return;
+            }
+
             $partDanmakus = $this->bilibiliService->getDanmaku($videoPart->cid, intval($videoPart->duration));
             Log::info('Download danmaku time', ['time' => microtime(true) - $start_time]);
 
@@ -86,7 +102,7 @@ class DownloadDanmakuAction
                 'count'    => count($partDanmakus),
                 'video_id' => $video->id,
                 'bvid'     => $video->bvid,
-                'title'    => $video->title,
+                'video_title'    => $video->title,
             ]);
             $this->saveDanmaku($videoPart->cid, $partDanmakus);
             Log::info('Save danmaku time', ['time' => microtime(true) - $start_time]);
