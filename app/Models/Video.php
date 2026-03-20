@@ -1,9 +1,9 @@
 <?php
 namespace App\Models;
 
+use App\Models\AudioPart;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\AudioPart;
 
 class Video extends Model
 {
@@ -31,6 +31,7 @@ class Video extends Model
         'fav_time'    => null,
         'upper_id'    => null,
         'type'        => 2,
+        'intro'       => '',
     ];
 
     public function parts()
@@ -81,7 +82,7 @@ class Video extends Model
     public function coverImage()
     {
         return $this->morphToMany(Cover::class, 'coverable', 'coverables')
-                    ->withTimestamps();
+            ->withTimestamps();
     }
 
     /**
@@ -92,5 +93,21 @@ class Video extends Model
     public function getCoverInfoAttribute()
     {
         return $this->coverImage()->first();
+    }
+
+    // 是否还需触发新下载任务
+    public function needsMoreDownloadTask(): bool
+    {
+        if($this->trashed()){
+            return false;
+        }
+
+        $maxPage = intval($this->page);
+
+        if (intval($this->audio_downloaded_num + $this->video_downloaded_num) < $maxPage) {
+            return true;
+        }
+
+        return false;
     }
 }
