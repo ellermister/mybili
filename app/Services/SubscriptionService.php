@@ -367,7 +367,12 @@ class SubscriptionService
             }
             $offsetAid = $upVideos['last_aid'];
         }
-        $subscription->total         = $loaded;
+        
+        if($pullAll){
+            $subscription->total         = $loaded;
+        }else{
+            $subscription->total         = SubscriptionVideo::where('subscription_id', $subscription->id)->count();
+        }
         $subscription->last_check_at = now();
         $subscription->save();
         event(new SubscriptionUpdated($oldSubscription, $subscription->toArray()));
