@@ -32,56 +32,38 @@
                     </div>
                 </div>
 
-                <!-- PC端搜索框 -->
-                <div v-if="showDesktopSearch" class="hidden md:block mb-4">
-                    <div class="relative">
-                        <input ref="searchInputRef" v-model="searchQuery" type="text"
-                            :placeholder="t('progress.searchPlaceholder')"
-                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            @keydown.esc="closeSearch" @keydown.enter.prevent="navigateToNextResult" />
-                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">🔍</span>
-                        <button v-if="searchQuery" @click="clearSearch"
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                            ✕
-                        </button>
-                    </div>
-                    <div v-if="searchQuery && searchResults.length > 0"
-                        class="mt-2 text-sm text-gray-600 flex items-center gap-2">
-                        <span>{{ t('progress.searchResultsFound', { count: searchResults.length }) }}</span>
-                        <span v-if="currentSearchIndex >= 0" class="text-blue-600 font-semibold">
-                            ({{ currentSearchIndex + 1 }}/{{ searchResults.length }})
-                        </span>
-                        <span class="text-xs text-gray-500">{{ t('progress.searchNavigateHint') }}</span>
-                    </div>
-                    <div v-if="searchQuery && searchResults.length === 0" class="mt-2 text-sm text-red-600">
-                        {{ t('progress.searchNoResults') }}
-                    </div>
-                </div>
+                <SearchBar
+                    v-if="showDesktopSearch"
+                    ref="desktopSearchBarRef"
+                    class="hidden md:block mb-4"
+                    :model-value="searchQuery"
+                    :placeholder="t('progress.searchPlaceholder')"
+                    :result-count="searchResults.length"
+                    :current-index="currentSearchIndex"
+                    :result-found-text="t('progress.searchResultsFound', { count: searchResults.length })"
+                    :navigate-hint-text="t('progress.searchNavigateHint')"
+                    :no-result-text="t('progress.searchNoResults')"
+                    @update:model-value="searchQuery = $event"
+                    @enter="navigateToNextResult"
+                    @esc="closeSearch"
+                    @clear="clearSearch"
+                />
 
-                <!-- 移动端搜索框 -->
-                <div v-if="showMobileSearch" class="md:hidden mb-4">
-                    <div class="relative">
-                        <input ref="mobileSearchInputRef" v-model="searchQuery" type="text"
-                            :placeholder="t('progress.searchPlaceholderMobile')"
-                            class="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            @keydown.esc="closeSearch" @keydown.enter.prevent="navigateToNextResult" />
-                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">🔍</span>
-                        <button @click="closeSearch"
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                            ✕
-                        </button>
-                    </div>
-                    <div v-if="searchQuery && searchResults.length > 0"
-                        class="mt-2 text-sm text-gray-600 flex items-center gap-2 flex-wrap">
-                        <span>{{ t('progress.searchResultsFound', { count: searchResults.length }) }}</span>
-                        <span v-if="currentSearchIndex >= 0" class="text-blue-600 font-semibold">
-                            ({{ currentSearchIndex + 1 }}/{{ searchResults.length }})
-                        </span>
-                    </div>
-                    <div v-if="searchQuery && searchResults.length === 0" class="mt-2 text-sm text-red-600">
-                        {{ t('progress.searchNoResults') }}
-                    </div>
-                </div>
+                <SearchBar
+                    v-if="showMobileSearch"
+                    ref="mobileSearchBarRef"
+                    class="md:hidden mb-4"
+                    :model-value="searchQuery"
+                    :placeholder="t('progress.searchPlaceholderMobile')"
+                    :result-count="searchResults.length"
+                    :current-index="currentSearchIndex"
+                    :result-found-text="t('progress.searchResultsFound', { count: searchResults.length })"
+                    :no-result-text="t('progress.searchNoResults')"
+                    @update:model-value="searchQuery = $event"
+                    @enter="navigateToNextResult"
+                    @esc="closeSearch"
+                    @clear="closeSearch"
+                />
 
                 <div class="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                     <h2 class="text-xl" :title="t('progress.cacheRateDescription')">{{ t('progress.cacheRate') }} {{
@@ -236,12 +218,18 @@
                     </div>
                 </div>
 
-                <virtualList :sortable="false" :draggable="''" class="scroller-container" v-model="groupedDataList"
-                    data-key="'id'" :keeps=60 :size=340>
-                    <template v-slot:item="{ record, index, dataKey }">
-                        <ProgressVideoRow :source="record" :key="index" />
+                <VirtualGroupedList
+                    class="scroller-container md:px-4 md:-mx-4 md:py-2 py-4 px-2"
+                    :items="dataList"
+                    :columns="progressColumns"
+                    :keeps="60"
+                    :size="340"
+                    :container-class="'scroller-container'"
+                >
+                    <template #item="{ record, index }">
+                        <ProgressVideoRow :source="record" :image-class="progressImageClass" :key="index" />
                     </template>
-                </virtualList>
+                </VirtualGroupedList>
             </div>
 
         </div>
@@ -253,8 +241,9 @@ import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { Cover } from '../api/cover';
 import ProgressVideoRow from '../components/ProgressVideoRow.vue';
-// @ts-ignore 缺少类型声明，按行忽略类型检查
-import VirtualList from 'vue-virtual-sortable';
+import SearchBar from '../components/SearchBar.vue';
+import VirtualGroupedList from '../components/VirtualGroupedList.vue';
+import { PROGRESS_IMAGE_CLASS } from '../constants/videoImageClasses';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -271,9 +260,11 @@ const showMiniFilter = computed(() => !isRestoringScroll.value && isScrolled.val
 const searchQuery = ref('') // 搜索关键词
 const showMobileSearch = ref(false) // 移动端搜索框显示状态
 const showDesktopSearch = ref(false) // PC端搜索框显示状态
-const searchInputRef = ref<HTMLInputElement>() // PC端搜索输入框引用
-const mobileSearchInputRef = ref<HTMLInputElement>() // 移动端搜索输入框引用
+const desktopSearchBarRef = ref<any>(null) // PC端搜索组件引用
+const mobileSearchBarRef = ref<any>(null) // 移动端搜索组件引用
 const currentSearchIndex = ref(-1) // 当前搜索结果索引
+const progressColumns = 4
+const progressImageClass = PROGRESS_IMAGE_CLASS
 
 const stat = ref({
     count: 0,
@@ -371,23 +362,6 @@ const dataList = computed(() => {
     }
 
     return list
-})
-
-// 将数据按行分组，用于虚拟列表
-// 注意：不再固定列数，使用响应式 grid 布局（grid-cols-1 md:grid-cols-4）
-const groupedDataList = computed(() => {
-    const list = dataList.value;
-    const cols = 4; // 固定的分组数，实际渲染由 CSS grid 控制
-    const grouped = [];
-
-    for (let i = 0; i < list.length; i += cols) {
-        grouped.push({
-            id: `row-${i}`, // 为每行生成唯一ID
-            videos: list.slice(i, i + cols)
-        });
-    }
-
-    return grouped;
 })
 
 // 监听路由变化，更新过滤器状态
@@ -509,7 +483,7 @@ const openDesktopSearch = () => {
         // 如果没显示，则显示并聚焦
         showDesktopSearch.value = true
         nextTick(() => {
-            searchInputRef.value?.focus()
+            desktopSearchBarRef.value?.focusInput?.()
         })
     }
 }
@@ -539,7 +513,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
             // 移动端：显示搜索框
             showMobileSearch.value = true
             nextTick(() => {
-                mobileSearchInputRef.value?.focus()
+                mobileSearchBarRef.value?.focusInput?.()
             })
         }
         return false
@@ -657,7 +631,7 @@ watch(searchQuery, () => {
 watch(showMobileSearch, (show) => {
     if (show) {
         nextTick(() => {
-            mobileSearchInputRef.value?.focus()
+            mobileSearchBarRef.value?.focusInput?.()
         })
     }
 })
@@ -666,7 +640,7 @@ watch(showMobileSearch, (show) => {
 watch(showDesktopSearch, (show) => {
     if (show) {
         nextTick(() => {
-            searchInputRef.value?.focus()
+            desktopSearchBarRef.value?.focusInput?.()
         })
     }
 })

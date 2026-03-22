@@ -92,6 +92,12 @@ class Video extends Model
      */
     public function getCoverInfoAttribute()
     {
+        // 优先使用已预加载关系，避免大列表序列化时 N+1 查询
+        if ($this->relationLoaded('coverImage')) {
+            $coverImages = $this->getRelation('coverImage');
+            return $coverImages ? $coverImages->first() : null;
+        }
+
         return $this->coverImage()->first();
     }
 

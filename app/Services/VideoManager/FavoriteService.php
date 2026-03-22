@@ -89,8 +89,27 @@ class FavoriteService implements FavoriteServiceInterface
                 'last_check_at'     => $subscription->last_check_at ? strtotime($subscription->last_check_at) : null,
             ];
 
-            // 加载关联的视频
-            $unifiedContent->videos = $subscription->videos()->orderBy('pubtime', 'desc')->orderBy('created_at', 'desc')->get();
+            // 加载关联的视频（收藏夹列表页仅需轻量字段，避免大列表序列化过重）
+            $videos = $subscription->videos()
+                ->select([
+                    'videos.id',
+                    'videos.title',
+                    'videos.bvid',
+                    'videos.pubtime',
+                    'videos.fav_time',
+                    'videos.page',
+                    'videos.video_downloaded_num',
+                    'videos.audio_downloaded_num',
+                    'videos.frozen',
+                    'videos.cover',
+                    'videos.created_at',
+                ])
+                ->with('coverImage')
+                ->orderBy('videos.pubtime', 'desc')
+                ->orderBy('videos.created_at', 'desc')
+                ->get();
+            $videos->each->setAppends(['cover_info']);
+            $unifiedContent->videos = $videos;
 
             return $unifiedContent;
         } else {
@@ -115,8 +134,27 @@ class FavoriteService implements FavoriteServiceInterface
                 'mid'         => $fav->mid ?? null,
             ];
 
-            // 加载关联的视频
-            $unifiedContent->videos = $fav->videos()->orderBy('fav_time', 'desc')->orderBy('created_at', 'desc')->get();
+            // 加载关联的视频（收藏夹列表页仅需轻量字段，避免大列表序列化过重）
+            $videos = $fav->videos()
+                ->select([
+                    'videos.id',
+                    'videos.title',
+                    'videos.bvid',
+                    'videos.pubtime',
+                    'videos.fav_time',
+                    'videos.page',
+                    'videos.video_downloaded_num',
+                    'videos.audio_downloaded_num',
+                    'videos.frozen',
+                    'videos.cover',
+                    'videos.created_at',
+                ])
+                ->with('coverImage')
+                ->orderBy('videos.fav_time', 'desc')
+                ->orderBy('videos.created_at', 'desc')
+                ->get();
+            $videos->each->setAppends(['cover_info']);
+            $unifiedContent->videos = $videos;
 
             return $unifiedContent;
         }

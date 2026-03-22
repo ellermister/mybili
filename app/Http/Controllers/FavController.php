@@ -41,10 +41,6 @@ class FavController extends Controller
         $content = $this->favoriteService->getUnifiedContentDetail($id);
 
         if ($content) {
-            // 确保视频关联已加载
-            if (isset($content->videos) && method_exists($content->videos, 'load')) {
-                $content->videos->load('parts');
-            }
             return response()->json($content);
         } else {
             return response()->json([]);

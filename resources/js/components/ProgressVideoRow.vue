@@ -5,9 +5,9 @@
                 <div class="image-container rounded-lg overflow-hidden" :style="{
                     aspectRatio: '4/3'
                 }">
-                    <Image class="w-full h-full object-cover hover:scale-105 transition-all duration-300"
+                    <Image :class="[imageClass, { 'grayscale-image': video.video_downloaded_num == 0 && video.audio_downloaded_num == 0 }]"
                         :src="video.cover_info?.image_url ?? '/assets/images/notfound.webp'"
-                        :class="{ 'grayscale-image': video.video_downloaded_num == 0 && video.audio_downloaded_num == 0 }" :title="video.title" />
+                        :title="video.title" />
                 </div>
             </RouterLink>
             <span class="mt-4 text-center h-12 line-clamp-2" :title="video.title">{{ video.title
@@ -28,11 +28,14 @@
 import { useI18n } from 'vue-i18n';
 import { formatTimestamp } from "../lib/helper"
 import Image from './Image.vue';
+import { PROGRESS_IMAGE_CLASS } from '../constants/videoImageClasses';
 const props = defineProps<{
     source: any
+    imageClass?: string
 }>()
 // console.log(props.source);
 const { t } = useI18n();
+const imageClass = props.imageClass ?? PROGRESS_IMAGE_CLASS;
 </script>
 <style scoped>
 
