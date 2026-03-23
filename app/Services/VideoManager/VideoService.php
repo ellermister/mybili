@@ -99,6 +99,14 @@ class VideoService implements VideoServiceInterface
             }
         }
 
+        // 排序
+        if (isset($conditions['sort']) && $conditions['sort'] === 'fav_time') {
+            $query->orderBy('videos.fav_time', 'desc')
+                  ->orderBy('videos.created_at', 'desc');
+        } else {
+            $query->orderByRaw('COALESCE(videos.fav_time, videos.created_at) DESC');
+        }
+
         $stat = [
             'count'      => (clone $query)->count(),
             'downloaded' => (clone $query)->where('video_downloaded_num', '>', 0)->count(),
@@ -107,7 +115,7 @@ class VideoService implements VideoServiceInterface
             'frozen'     => (clone $query)->where('frozen', 1)->count(),
         ];
         return [
-            'list' => $query->offset(($page - 1) * $perPage)->limit($perPage)->get(),
+            'list' => $query->offset(($page - 1) * $perPage)->limit($perPage)->with('coverImage')->get(),
             'stat' => $stat,
         ];
     }

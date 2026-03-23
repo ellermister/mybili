@@ -18,22 +18,29 @@
             class="mt-4 mb-7"
             :model-value="searchQuery"
             :placeholder="'搜索标题 / BV号 / ID（Ctrl+F）'"
-            :result-count="searchMatchIndexes.length"
-            :current-index="currentSearchIndex"
-            :result-found-text="`找到 ${searchMatchIndexes.length} 个结果`"
-            :navigate-hint-text="'按 Enter 或 F3 跳转到下一个结果'"
+            :result-count="stat.count"
+            :current-index="-1"
+            :result-found-text="`找到 ${stat.count} 个结果`"
             :no-result-text="'未找到匹配结果'"
-            :idle-hint-text="'快捷键：Ctrl+F 打开/关闭，Enter/F3 下一个，Shift+F3 上一个，Esc 关闭'"
-            @update:model-value="searchQuery = $event"
-            @enter="navigateToNextResult"
+            :idle-hint-text="'快捷键：Ctrl+F 打开/关闭，Enter 搜索，Esc 关闭'"
+            @update:model-value="onSearchInput"
+            @enter="triggerSearch"
             @esc="closeSearchPanel"
             @clear="clearSearchKeyword"
         />
         <div v-if="showSearchPanel" class="search-panel-divider" aria-hidden="true"></div>
 
+        <div v-if="loading" class="fav-scroller flex items-center justify-center">
+            <div class="text-center">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                <p class="mt-4 text-gray-600">{{ t('common.loading') }}</p>
+            </div>
+        </div>
+
         <VirtualGroupedList
+            v-else
             ref="virtualListRef"
-            :items="visibleVideoList"
+            :items="videoList"
             :columns="columns"
             :keeps="60"
             :size="rowHeight"
@@ -43,10 +50,6 @@
                 <div class="grid grid-cols-1 md:grid-cols-4 w-full gap-4 pb-4">
                     <div
                         class="flex flex-col relative"
-                        :class="{
-                            'search-current': isCurrentMatch(item.id),
-                            'search-highlight': isPulseMatch(item.id),
-                        }"
                         v-for="item in record.videos"
                         :key="item.id"
                         :data-video-id="item.id"
@@ -62,7 +65,7 @@
                         <span
                             class="mt-4 text-center h-12 line-clamp-2"
                             :title="item.title"
-                            v-html="renderTitleWithHighlight(item)"
+                            v-html="renderTitle(item)"
                         ></span>
                         <div class="mt-2 flex justify-between text-xs text-gray-400 px-1">
                             <span>{{ t('favorites.published') }}: {{ formatTimestamp(item.pubtime, "yyyy.mm.dd") }}</span>
@@ -80,6 +83,16 @@
                 </div>
             </template>
         </VirtualGroupedList>
+
+        <div v-if="!loading && videoList.length > 0" class="text-center py-4">
+            <div v-if="isLoadingMore" class="flex items-center justify-center gap-2">
+                <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                <span class="text-gray-600">{{ t('common.loading') }}</span>
+            </div>
+            <div v-else-if="!hasMore" class="text-gray-500 text-sm">
+                {{ `共 ${stat.count} 个视频` }}
+            </div>
+        </div>
     </div>
 </template>
 <script lang="ts" setup>
@@ -94,23 +107,35 @@ import { FAV_IMAGE_CLASS } from '@/constants/videoImageClasses';
 
 import { formatTimestamp } from "../lib/helper"
 import { getFavDetail, type Favorite, type Video } from '@/api/fav';
+import { getVideoList } from '@/api/video';
 
 const { t } = useI18n();
 const route = useRoute();
 const id = Number(route.params.id);
-const favorite = ref<Favorite | null>(null);
+const favMeta = ref<Favorite | null>(null);
 const isFilterDownloaded = ref(false);
 
 const showSearchPanel = ref(false);
 const searchQuery = ref('');
 const searchBarRef = ref<any>(null);
-const currentSearchIndex = ref(-1);
-const highlightedVideoId = ref<number | null>(null);
-const pulseVideoId = ref<number | null>(null);
-const pulseTimer = ref<number | null>(null);
 const columns = ref(4);
 const rowHeight = ref(260);
 const favImageClass = FAV_IMAGE_CLASS;
+
+const videoList = ref<Video[]>([]);
+const currentPage = ref(1);
+const hasMore = ref(true);
+const loading = ref(true);
+const isLoadingMore = ref(false);
+const searchTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+
+const stat = ref({
+    count: 0,
+    downloaded: 0,
+    invalid: 0,
+    valid: 0,
+    frozen: 0,
+});
 
 const updateLayout = () => {
     if (window.innerWidth >= 768) {
@@ -125,36 +150,93 @@ const virtualListRef = ref<any>(null);
 const breadcrumbItems = computed(() => {
     return [
         { text: t('navigation.home'), to: '/' },
-        { text: favorite.value?.title ?? t('common.loading') }
+        { text: favMeta.value?.title ?? t('common.loading') }
     ];
 });
 
-const visibleVideoList = computed(() => {
-    return (favorite.value?.videos ?? []).filter((value: Video) => {
-        if (isFilterDownloaded.value) {
-            return value.video_downloaded_num > 0 || value.audio_downloaded_num > 0;
+const loadVideos = async (isReset = false) => {
+    if (!isReset && (isLoadingMore.value || !hasMore.value)) return;
+
+    isReset ? (loading.value = true) : (isLoadingMore.value = true);
+
+    try {
+        const data = await getVideoList({
+            fav_id: String(id),
+            sort: 'fav_time',
+            page: currentPage.value,
+            query: searchQuery.value.trim(),
+            downloaded: isFilterDownloaded.value ? 'yes' : '',
+        });
+
+        const newVideos = data.list ?? [];
+
+        if (newVideos.length === 0) {
+            hasMore.value = false;
+        } else {
+            videoList.value = isReset ? newVideos : [...videoList.value, ...newVideos];
         }
-        return true;
-    });
-});
 
-const searchMatchIndexes = computed(() => {
-    const query = searchQuery.value.trim().toLowerCase();
-    if (!query) return [];
+        if (isReset || currentPage.value === 1) {
+            stat.value = data.stat ?? stat.value;
+        }
+    } catch (error) {
+        console.error('Failed to load videos:', error);
+    } finally {
+        loading.value = false;
+        isLoadingMore.value = false;
+    }
+};
 
-    const matches: number[] = [];
-    visibleVideoList.value.forEach((video, index) => {
-        const videoId = String(video.id ?? '');
-        const bvid = (video.bvid ?? '').toLowerCase();
-        const title = (video.title ?? '').toLowerCase();
+const resetAndLoad = () => {
+    currentPage.value = 1;
+    hasMore.value = true;
+    videoList.value = [];
+    loadVideos(true);
+};
 
-        if (title.includes(query) || bvid.includes(query) || videoId.includes(query)) {
-            matches.push(index);
+const loadNextPage = () => {
+    if (hasMore.value && !isLoadingMore.value && !loading.value) {
+        currentPage.value++;
+        loadVideos(false);
+    }
+};
+
+const handleScroll = (e: Event) => {
+    const el = e.target as HTMLElement;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 300) {
+        loadNextPage();
+    }
+};
+
+const attachScrollListener = () => {
+    nextTick(() => {
+        const scroller = document.querySelector('.fav-scroller');
+        if (scroller) {
+            scroller.addEventListener('scroll', handleScroll, { passive: true });
         }
     });
+};
 
-    return matches;
-});
+const detachScrollListener = () => {
+    const scroller = document.querySelector('.fav-scroller');
+    if (scroller) {
+        scroller.removeEventListener('scroll', handleScroll);
+    }
+};
+
+// 搜索相关
+const onSearchInput = (value: string) => {
+    searchQuery.value = value;
+    if (searchTimeout.value) clearTimeout(searchTimeout.value);
+    searchTimeout.value = setTimeout(() => {
+        resetAndLoad();
+    }, 500);
+};
+
+const triggerSearch = () => {
+    if (searchTimeout.value) clearTimeout(searchTimeout.value);
+    resetAndLoad();
+};
 
 const openSearchPanel = () => {
     showSearchPanel.value = true;
@@ -166,17 +248,15 @@ const openSearchPanel = () => {
 
 const closeSearchPanel = () => {
     showSearchPanel.value = false;
-    searchQuery.value = '';
-    currentSearchIndex.value = -1;
-    highlightedVideoId.value = null;
-    pulseVideoId.value = null;
+    if (searchQuery.value) {
+        searchQuery.value = '';
+        resetAndLoad();
+    }
 };
 
 const clearSearchKeyword = () => {
     searchQuery.value = '';
-    currentSearchIndex.value = -1;
-    highlightedVideoId.value = null;
-    pulseVideoId.value = null;
+    resetAndLoad();
 };
 
 const toggleSearchPanelByShortcut = () => {
@@ -185,31 +265,6 @@ const toggleSearchPanelByShortcut = () => {
         return;
     }
     openSearchPanel();
-};
-
-const isCurrentMatch = (videoId: number | string) => {
-    return highlightedVideoId.value === Number(videoId);
-};
-
-const isPulseMatch = (videoId: number | string) => {
-    return pulseVideoId.value === Number(videoId);
-};
-
-const triggerPulseHighlight = (videoId: number) => {
-    // 先清空再设置，确保同一个视频也能重播动画
-    pulseVideoId.value = null;
-    nextTick(() => {
-        pulseVideoId.value = videoId;
-    });
-
-    if (pulseTimer.value !== null) {
-        window.clearTimeout(pulseTimer.value);
-    }
-    pulseTimer.value = window.setTimeout(() => {
-        if (pulseVideoId.value === videoId) {
-            pulseVideoId.value = null;
-        }
-    }, 2200);
 };
 
 const escapeHtml = (value: string) => {
@@ -221,22 +276,17 @@ const escapeHtml = (value: string) => {
         .replace(/'/g, '&#39;');
 };
 
-const renderTitleWithHighlight = (video: Video) => {
+const renderTitle = (video: Video) => {
     const title = video.title ?? '';
     const safeTitle = escapeHtml(title);
     const keyword = searchQuery.value.trim();
 
-    // 仅对当前命中项做关键词高亮，避免页面噪音
-    if (!keyword || !isCurrentMatch(video.id)) {
-        return safeTitle;
-    }
+    if (!keyword) return safeTitle;
 
     const lowerTitle = title.toLowerCase();
     const lowerKeyword = keyword.toLowerCase();
     const start = lowerTitle.indexOf(lowerKeyword);
-    if (start === -1) {
-        return safeTitle;
-    }
+    if (start === -1) return safeTitle;
 
     const end = start + keyword.length;
     const before = escapeHtml(title.slice(0, start));
@@ -245,75 +295,22 @@ const renderTitleWithHighlight = (video: Video) => {
     return `${before}<mark class="fav-search-mark">${match}</mark>${after}`;
 };
 
-const scrollToCurrentSearchResult = () => {
-    if (currentSearchIndex.value < 0 || currentSearchIndex.value >= searchMatchIndexes.value.length) {
-        return;
-    }
-
-    const targetVideoIndex = searchMatchIndexes.value[currentSearchIndex.value];
-    const targetVideo = visibleVideoList.value[targetVideoIndex];
-    if (!targetVideo) return;
-    highlightedVideoId.value = Number(targetVideo.id);
-
-    const targetRowIndex = Math.floor(targetVideoIndex / columns.value);
-    if (virtualListRef.value) {
-        virtualListRef.value?.scrollToIndex(targetRowIndex);
-    }
-
-    nextTick(() => {
-        setTimeout(() => {
-            const element = document.querySelector(`[data-video-id="${targetVideo.id}"]`) as HTMLElement | null;
-            if (!element) return;
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            triggerPulseHighlight(Number(targetVideo.id));
-        }, 140);
-    });
-};
-
-const navigateToNextResult = () => {
-    if (searchMatchIndexes.value.length === 0) return;
-    if (currentSearchIndex.value < 0) {
-        currentSearchIndex.value = 0;
-    } else {
-        currentSearchIndex.value = (currentSearchIndex.value + 1) % searchMatchIndexes.value.length;
-    }
-    scrollToCurrentSearchResult();
-};
-
-const navigateToPrevResult = () => {
-    if (searchMatchIndexes.value.length === 0) return;
-    if (currentSearchIndex.value <= 0) {
-        currentSearchIndex.value = searchMatchIndexes.value.length - 1;
-    } else {
-        currentSearchIndex.value -= 1;
-    }
-    scrollToCurrentSearchResult();
-};
-
 const handleKeyDown = (e: KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         toggleSearchPanelByShortcut();
-        return;
-    }
-
-    if (e.key === 'F3' && !e.shiftKey) {
-        if (searchQuery.value.trim()) {
-            e.preventDefault();
-            navigateToNextResult();
-        }
-    }
-
-    if (e.key === 'F3' && e.shiftKey) {
-        if (searchQuery.value.trim()) {
-            e.preventDefault();
-            navigateToPrevResult();
-        }
     }
 };
 
-watch([searchQuery, isFilterDownloaded], () => {
-    currentSearchIndex.value = -1;
+watch(isFilterDownloaded, () => {
+    resetAndLoad();
+});
+
+// 监听 loading 变化，在数据加载完成后挂载滚动监听
+watch(loading, (newVal, oldVal) => {
+    if (oldVal && !newVal) {
+        attachScrollListener();
+    }
 });
 
 onMounted(() => {
@@ -325,14 +322,17 @@ onMounted(() => {
 onUnmounted(() => {
     window.removeEventListener('resize', updateLayout);
     document.removeEventListener('keydown', handleKeyDown);
-    if (pulseTimer.value !== null) {
-        window.clearTimeout(pulseTimer.value);
-    }
+    detachScrollListener();
+    if (searchTimeout.value) clearTimeout(searchTimeout.value);
 });
 
+// 加载元信息
 getFavDetail(id).then((result) => {
-    favorite.value = result;
+    favMeta.value = result;
 });
+
+// 加载视频列表（分页）
+loadVideos(true);
 </script>
 <style scoped>
 .fav-scroller {
@@ -357,41 +357,10 @@ getFavDetail(id).then((result) => {
 }
 </style>
 <style>
-.search-highlight {
-    border-radius: 12px;
-    animation: search-focus-ring 2200ms cubic-bezier(0.22, 1, 0.36, 1) 1;
-}
-
-.search-current {
-    border-radius: 12px;
-    background: linear-gradient(180deg, rgba(59, 130, 246, 0.14), rgba(59, 130, 246, 0.06));
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.52);
-}
-
 .fav-search-mark {
     background: #ff9632;
     color: #111827;
     padding: 0 2px;
     border-radius: 3px;
-}
-
-@keyframes search-focus-ring {
-    0% {
-        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7), 0 0 0 0 rgba(59, 130, 246, 0.25);
-        background: linear-gradient(180deg, rgba(59, 130, 246, 0.24), rgba(59, 130, 246, 0.12));
-        transform: translateY(0) scale(1);
-    }
-
-    35% {
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.82), 0 0 0 10px rgba(59, 130, 246, 0.2);
-        background: linear-gradient(180deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.08));
-        transform: translateY(-2px) scale(1.005);
-    }
-
-    100% {
-        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0), 0 0 0 0 rgba(59, 130, 246, 0);
-        background: linear-gradient(180deg, rgba(59, 130, 246, 0.14), rgba(59, 130, 246, 0.06));
-        transform: translateY(0) scale(1);
-    }
 }
 </style>

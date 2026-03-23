@@ -29,6 +29,7 @@ class VideoController extends Controller
             'multi_part' => 'nullable|string',
             'fav_id'     => 'nullable|integer',
             'page_size'  => 'nullable|integer|min:1',
+            'sort'       => 'nullable|string|in:fav_time,created_at',
         ]);
         $page    = $data['page'] ?? 1;
         $perPage = 30;
@@ -38,6 +39,7 @@ class VideoController extends Controller
             'downloaded' => $data['downloaded'] ?? '',
             'multi_part' => $data['multi_part'] ?? '',
             'fav_id'     => $data['fav_id'] ?? '',
+            'sort'       => $data['sort'] ?? '',
         ], $page, intval($data['page_size'] ?? $perPage));
         return response()->json([
             'stat'  => $result['stat'],

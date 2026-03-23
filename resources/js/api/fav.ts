@@ -11,7 +11,7 @@ export interface Favorite {
     ctime: number;
     mtime: number;
     media_count: number;
-    videos: Video[]| null;
+    videos?: Video[]| null;
     cover_info: Cover|null;
 }
 

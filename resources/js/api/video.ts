@@ -18,6 +18,7 @@ export interface VideoListParams {
     downloaded?: string;
     multi_part?: string;
     fav_id?: string;
+    sort?: string;
 }
 
 export async function getVideoList(data: VideoListParams): Promise<VideoListResponse> {
