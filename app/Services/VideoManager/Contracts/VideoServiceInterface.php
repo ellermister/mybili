@@ -26,4 +26,7 @@ interface VideoServiceInterface
     public function getVideosCache(): array;
     public function updateVideosCache(?array $videos = null): void;
 
+    public function getFavVideosLightweight(int $favId): array;
+    public function getSubVideosLightweight(int $subId): array;
+
 }

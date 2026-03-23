@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SystemController;
 
 Route::apiResource('/fav', FavController::class)->only(['show', 'index']);
+Route::get('/fav/{id}/videos', [FavController::class, 'videos']);
 Route::get('/videos/{id}', [VideoController::class, 'show']);
 Route::get('/videos', [VideoController::class, 'index']);
 Route::delete('/videos/{id}', [VideoController::class, 'destroy']);
