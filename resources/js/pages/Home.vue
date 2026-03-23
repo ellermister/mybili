@@ -19,7 +19,7 @@
                     <span>{{ t('home.created') }}: {{ formatTimestamp(item.ctime, "yyyy.mm.dd") }}</span>
                     <span>{{ t('home.updated') }}: {{ formatTimestamp(item.mtime, "yyyy.mm.dd") }}</span>
                 </div>
-                <span class="text-sm text-white bg-gray-600 rounded-lg w-10 text-center  absolute top-2 right-2">{{
+                <span class="text-sm text-white bg-gray-600 rounded-lg min-w-10 px-1.5 text-center absolute top-2 right-2">{{
                     item.media_count }}</span>
             </div>
         </div>

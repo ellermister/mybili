@@ -26,7 +26,7 @@ class DownloadQueueController extends Controller
             ->when(! empty($statuses), fn ($q) => $q->whereIn('status', $statuses))
             ->orderByRaw("CASE status WHEN 'running' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END")
             ->orderByDesc('priority')
-            ->orderBy('id');
+            ->orderByDesc('id');
 
         $total = (clone $query)->count();
         $items = $query->offset(($page - 1) * $perPage)->limit($perPage)->get();

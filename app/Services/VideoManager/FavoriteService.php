@@ -14,8 +14,8 @@ class FavoriteService implements FavoriteServiceInterface
      */
     public function getUnifiedContentList(): array
     {
-        $favList       = FavoriteList::query()->get()->toArray();
-        $subscriptions = Subscription::query()->get()->toArray();
+        $favList       = FavoriteList::query()->with('coverImage')->get()->toArray();
+        $subscriptions = Subscription::query()->with('coverImage')->get()->toArray();
 
         // 将订阅转换为负数ID，并统一格式
         $unifiedList = [];
