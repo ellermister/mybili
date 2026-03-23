@@ -24,7 +24,7 @@
                 <span>{{ t('favorites.published') }}: {{ formatTimestamp(item.pubtime, "yyyy.mm.dd") }}</span>
             </div>
             <span v-if="item.page > 1"
-                class="text-sm text-white bg-gray-600 rounded-lg w-10 text-center  absolute top-2 right-2">{{
+                class="text-sm text-white bg-gray-600 rounded-lg min-w-10 px-1.5 text-center absolute top-2 right-2">{{
                     item.page }}</span>
         </div>
     </div>

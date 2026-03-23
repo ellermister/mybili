@@ -43,6 +43,11 @@ class Subscription extends Model
      */
     public function getCoverInfoAttribute()
     {
+        if ($this->relationLoaded('coverImage')) {
+            $coverImages = $this->getRelation('coverImage');
+            return $coverImages ? $coverImages->first() : null;
+        }
+
         return $this->coverImage()->first();
     }
 }
