@@ -231,7 +231,7 @@ class VideoService implements VideoServiceInterface
             ->join('favorite_list_videos', 'videos.id', '=', 'favorite_list_videos.video_id')
             ->leftJoin('coverables', function ($join) {
                 $join->on('coverables.coverable_id', '=', 'videos.id')
-                     ->where('coverables.coverable_type', '=', 'App\\Models\\Video');
+                     ->where('coverables.coverable_type', '=', Video::class);
             })
             ->leftJoin('covers', 'covers.id', '=', 'coverables.cover_id')
             ->where('favorite_list_videos.favorite_list_id', $favId)
@@ -256,7 +256,7 @@ class VideoService implements VideoServiceInterface
             ->join('subscription_videos', 'videos.id', '=', 'subscription_videos.video_id')
             ->leftJoin('coverables', function ($join) {
                 $join->on('coverables.coverable_id', '=', 'videos.id')
-                     ->where('coverables.coverable_type', '=', 'App\\Models\\Video');
+                     ->where('coverables.coverable_type', '=', Video::class);
             })
             ->leftJoin('covers', 'covers.id', '=', 'coverables.cover_id')
             ->where('subscription_videos.subscription_id', $subId)
