@@ -31,7 +31,15 @@
         />
         <div v-if="showSearchPanel" class="search-panel-divider" aria-hidden="true"></div>
 
+        <div v-if="loading" class="fav-scroller flex items-center justify-center">
+            <div class="text-center">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                <p class="mt-4 text-gray-600">{{ t('common.loading') }}</p>
+            </div>
+        </div>
+
         <VirtualGroupedList
+            v-else
             ref="virtualListRef"
             :items="visibleVideoList"
             :columns="columns"
@@ -54,7 +62,7 @@
                         <RouterLink :to="{ name: 'favlist-video-id', params: { id: id, video_id: item.id } }">
                             <Image
                                 :class="[favImageClass, { 'grayscale-image': item.video_downloaded_num == 0 && item.audio_downloaded_num == 0 }]"
-                                :src="item.cover_info?.image_url ?? item.cover ?? '/assets/images/notfound.webp'"
+                                :src="item.cover_image_url ?? item.cover ?? '/assets/images/notfound.webp'"
                                 :title="item.title"
                             />
                         </RouterLink>
@@ -92,13 +100,21 @@ import SearchBar from '@/components/SearchBar.vue';
 import VirtualGroupedList from '@/components/VirtualGroupedList.vue';
 import { FAV_IMAGE_CLASS } from '@/constants/videoImageClasses';
 
-import { formatTimestamp } from "../lib/helper"
-import { getFavDetail, type Favorite, type Video } from '@/api/fav';
+import { formatTimestamp as _formatTimestamp } from "../lib/helper"
+
+const formatTimestamp = (value: number | string | null, format: string) => {
+    if (!value) return '';
+    const ts = typeof value === 'number' ? value : Math.floor(new Date(value).getTime() / 1000);
+    return _formatTimestamp(ts, format);
+};
+import { getFavDetail, getFavVideos, type Favorite, type FavVideo } from '@/api/fav';
 
 const { t } = useI18n();
 const route = useRoute();
 const id = Number(route.params.id);
 const favorite = ref<Favorite | null>(null);
+const videoList = ref<FavVideo[]>([]);
+const loading = ref(true);
 const isFilterDownloaded = ref(false);
 
 const showSearchPanel = ref(false);
@@ -130,7 +146,7 @@ const breadcrumbItems = computed(() => {
 });
 
 const visibleVideoList = computed(() => {
-    return (favorite.value?.videos ?? []).filter((value: Video) => {
+    return videoList.value.filter((value: FavVideo) => {
         if (isFilterDownloaded.value) {
             return value.video_downloaded_num > 0 || value.audio_downloaded_num > 0;
         }
@@ -221,7 +237,7 @@ const escapeHtml = (value: string) => {
         .replace(/'/g, '&#39;');
 };
 
-const renderTitleWithHighlight = (video: Video) => {
+const renderTitleWithHighlight = (video: FavVideo) => {
     const title = video.title ?? '';
     const safeTitle = escapeHtml(title);
     const keyword = searchQuery.value.trim();
@@ -332,6 +348,12 @@ onUnmounted(() => {
 
 getFavDetail(id).then((result) => {
     favorite.value = result;
+});
+
+getFavVideos(id).then((result) => {
+    videoList.value = result;
+}).finally(() => {
+    loading.value = false;
 });
 </script>
 <style scoped>

@@ -8,6 +8,8 @@ use App\Models\VideoPart;
 use App\Services\DownloadVideoService;
 use App\Services\VideoManager\Contracts\VideoServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Log;
 
 class VideoService implements VideoServiceInterface
@@ -189,6 +191,100 @@ class VideoService implements VideoServiceInterface
         // 删除视频弹幕
         Danmaku::query()->whereIn('video_id', $deletedIds)->delete();
         return $deletedIds;
+    }
+
+    public function getFavVideosLightweight(int $favId): array
+    {
+        $cacheKey = "fav_videos:{$favId}";
+        $cached = redis()->get($cacheKey);
+        if ($cached) {
+            return json_decode($cached, true);
+        }
+
+        $videos = $this->queryFavVideosLightweight($favId);
+
+        redis()->set($cacheKey, json_encode($videos));
+        redis()->expire($cacheKey, 600);
+
+        return $videos;
+    }
+
+    public function getSubVideosLightweight(int $subId): array
+    {
+        $cacheKey = "sub_videos:{$subId}";
+        $cached = redis()->get($cacheKey);
+        if ($cached) {
+            return json_decode($cached, true);
+        }
+
+        $videos = $this->querySubVideosLightweight($subId);
+
+        redis()->set($cacheKey, json_encode($videos));
+        redis()->expire($cacheKey, 600);
+
+        return $videos;
+    }
+
+    private function queryFavVideosLightweight(int $favId): array
+    {
+        $rows = DB::table('videos')
+            ->join('favorite_list_videos', 'videos.id', '=', 'favorite_list_videos.video_id')
+            ->leftJoin('coverables', function ($join) {
+                $join->on('coverables.coverable_id', '=', 'videos.id')
+                     ->where('coverables.coverable_type', '=', Video::class);
+            })
+            ->leftJoin('covers', 'covers.id', '=', 'coverables.cover_id')
+            ->where('favorite_list_videos.favorite_list_id', $favId)
+            ->select([
+                'videos.id', 'videos.title', 'videos.bvid',
+                'videos.pubtime', 'videos.fav_time', 'videos.page',
+                'videos.video_downloaded_num', 'videos.audio_downloaded_num',
+                'videos.frozen', 'videos.invalid', 'videos.cover',
+                'videos.created_at',
+                'covers.path as cover_path',
+            ])
+            ->orderByDesc('videos.fav_time')
+            ->orderByDesc('videos.created_at')
+            ->get();
+
+        return $rows->map(fn ($row) => $this->transformLightweightVideo($row))->toArray();
+    }
+
+    private function querySubVideosLightweight(int $subId): array
+    {
+        $rows = DB::table('videos')
+            ->join('subscription_videos', 'videos.id', '=', 'subscription_videos.video_id')
+            ->leftJoin('coverables', function ($join) {
+                $join->on('coverables.coverable_id', '=', 'videos.id')
+                     ->where('coverables.coverable_type', '=', Video::class);
+            })
+            ->leftJoin('covers', 'covers.id', '=', 'coverables.cover_id')
+            ->where('subscription_videos.subscription_id', $subId)
+            ->select([
+                'videos.id', 'videos.title', 'videos.bvid',
+                'videos.pubtime', 'videos.fav_time', 'videos.page',
+                'videos.video_downloaded_num', 'videos.audio_downloaded_num',
+                'videos.frozen', 'videos.invalid', 'videos.cover',
+                'videos.created_at',
+                'covers.path as cover_path',
+            ])
+            ->orderByDesc('videos.pubtime')
+            ->orderByDesc('videos.created_at')
+            ->get();
+
+        return $rows->map(fn ($row) => $this->transformLightweightVideo($row))->toArray();
+    }
+
+    private function transformLightweightVideo(object $row): array
+    {
+        $item = (array) $row;
+        $item['cover_image_url'] = $item['cover_path']
+            ? Storage::url($item['cover_path'])
+            : null;
+        unset($item['cover_path']);
+        $item['pubtime'] = $item['pubtime'] ? strtotime($item['pubtime']) : null;
+        $item['fav_time'] = $item['fav_time'] ? strtotime($item['fav_time']) : null;
+        return $item;
     }
 
     public function updateVideosCache(?array $videos = null): void
