@@ -20,6 +20,12 @@ export interface VideoListParams {
     fav_id?: string;
 }
 
+export interface DeleteVideoOptions {
+    extend_ids?: number[];
+    permanent?: boolean;
+    requeue?: boolean;
+}
+
 export async function getVideoList(data: VideoListParams): Promise<VideoListResponse> {
     // 过滤掉空值，然后转换为 URL 查询字符串
     const filteredData = Object.fromEntries(
@@ -37,13 +43,17 @@ export async function getVideoList(data: VideoListParams): Promise<VideoListResp
     return response.json();
 }
 
-export async function deleteVideo(id: number, extend_ids?: number[]): Promise<boolean> {
+export async function deleteVideo(id: number, extend_ids?: number[], options?: Omit<DeleteVideoOptions, 'extend_ids'>): Promise<boolean> {
     const response = await fetch(`/api/videos/${id}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ extend_ids: extend_ids }),
+        body: JSON.stringify({
+            extend_ids: extend_ids,
+            permanent: options?.permanent ?? true,
+            requeue: options?.requeue ?? false,
+        }),
     });
     return response.json();
 }

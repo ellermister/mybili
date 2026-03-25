@@ -50,15 +50,24 @@ class VideoController extends Controller
         if (config('services.bilibili.setting_read_only')) {
             abort(403);
         }
+        $validated = $request->validate([
+            'extend_ids' => 'nullable|array',
+            'extend_ids.*' => 'integer',
+            'permanent' => 'nullable|boolean',
+            'requeue' => 'nullable|boolean',
+        ]);
         // 补充其他ID
-        $extend_ids = $request->input('extend_ids');
+        $extend_ids = $validated['extend_ids'] ?? null;
         if ($extend_ids && is_array($extend_ids)) {
             $ids = array_merge([$id], $extend_ids);
         } else {
             $ids = [$id];
         }
         $ids        = array_map('intval', $ids);
-        $deletedIds = $this->videoService->deleteVideos($ids);
+        $deletedIds = $this->videoService->deleteVideos($ids, [
+            'permanent' => (bool) ($validated['permanent'] ?? true),
+            'requeue' => (bool) ($validated['requeue'] ?? false),
+        ]);
         if ($deletedIds) {
             return response()->json([
                 'code'        => 0,

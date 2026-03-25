@@ -5,11 +5,13 @@ use App\Events\VideoUpdated;
 use App\Models\Danmaku;
 use App\Models\Video;
 use App\Models\VideoPart;
+use App\Services\DownloadQueueService;
 use App\Services\DownloadVideoService;
 use App\Services\VideoManager\Contracts\VideoServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Log;
 
 class VideoService implements VideoServiceInterface
@@ -172,25 +174,87 @@ class VideoService implements VideoServiceInterface
         return 0;
     }
 
-    public function deleteVideos(array $ids): array
+    public function deleteVideos(array $ids, array $options = []): array
     {
+        $permanentDelete = (bool) ($options['permanent'] ?? true);
+        $requeueAfterDelete = (bool) ($options['requeue'] ?? false);
         $deletedIds = [];
         $videos     = Video::query()->whereIn('id', $ids)->get();
 
         foreach ($videos as $video) {
-            $video->parts->each(function (VideoPart $videoPart) {
-                app(DownloadVideoService::class)->deleteVideoPartFile($videoPart);
-            });
-            if ($video->delete()) {
-                $deletedIds[] = $video->id;
-                event(new VideoUpdated($video->getAttributes(), []));
-            }
-        }
-        Log::info(sprintf('Delete %d videos', count($deletedIds)), ['ids' => $ids, 'deleted_ids' => $deletedIds]);
+            // 统一先删除本地文件，并清空分P下载状态
+            $this->removeVideoFilesAndResetState($video);
 
-        // 删除视频弹幕
-        Danmaku::query()->whereIn('video_id', $deletedIds)->delete();
+            if ($permanentDelete) {
+                if ($video->delete()) {
+                    $deletedIds[] = $video->id;
+                    // 永久删除模式下同步移除弹幕（保留封面和元信息）
+                    Danmaku::query()->where('video_id', $video->id)->delete();
+                    event(new VideoUpdated($video->getAttributes(), []));
+                }
+                continue;
+            }
+
+            // 临时删除：保留视频记录，允许后续自动检查或立即重新下载
+            $video->video_downloaded_num = 0;
+            $video->video_downloaded_at = null;
+            $video->save();
+
+            if ($requeueAfterDelete) {
+                if($video->trashed()){
+                    $video->restore();
+                }
+                $this->enqueueVideoDownloadTasks($video);
+            }
+            $deletedIds[] = $video->id;
+            event(new VideoUpdated($video->getAttributes(), []));
+        }
+
+        Log::info('Delete videos completed', [
+            'ids' => $ids,
+            'deleted_ids' => $deletedIds,
+            'permanent' => $permanentDelete,
+            'requeue' => $requeueAfterDelete,
+        ]);
         return $deletedIds;
+    }
+
+    private function removeVideoFilesAndResetState(Video $video): void
+    {
+        $video->parts->each(function (VideoPart $videoPart) {
+            app(DownloadVideoService::class)->deleteVideoPartFile($videoPart);
+            $videoPart->video_download_path = null;
+            $videoPart->video_downloaded_at = null;
+            $videoPart->save();
+        });
+
+        if ($video->audioPart) {
+            $audioPart = $video->audioPart;
+            if ($audioPart->audio_download_path) {
+                $relativePath = Str::startsWith($audioPart->audio_download_path, '/storage/')
+                    ? Str::after($audioPart->audio_download_path, '/storage/')
+                    : ltrim($audioPart->audio_download_path, '/');
+                Storage::disk('public')->delete($relativePath);
+            }
+            $audioPart->audio_download_path = null;
+            $audioPart->audio_downloaded_at = null;
+            $audioPart->save();
+        }
+    }
+
+    private function enqueueVideoDownloadTasks(Video $video): void
+    {
+        /** @var DownloadQueueService $queueService */
+        $queueService = app(DownloadQueueService::class);
+
+        if ($video->isAudio() && $video->audioPart) {
+            $queueService->enqueueAudio($video->audioPart);
+            return;
+        }
+
+        foreach ($video->parts as $videoPart) {
+            $queueService->enqueueVideo($videoPart);
+        }
     }
 
     public function getFavVideosLightweight(int $favId): array

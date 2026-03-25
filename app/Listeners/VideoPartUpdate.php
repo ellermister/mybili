@@ -25,7 +25,7 @@ class VideoPartUpdate implements ShouldQueue
      */
     public function handle(VideoUpdated $event): void
     {
-        if (isset($event->newVideo)) {
+        if (isset($event->newVideo) && !empty($event->newVideo)) {
             if ($event->newVideo['invalid']) {
                 Log::info('Video is invalid, skip update video parts', ['id' => $event->newVideo['id'], 'bvid' => $event->newVideo['bvid'], 'title' => $event->newVideo['title']]);
                 return;

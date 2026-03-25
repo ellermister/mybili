@@ -139,7 +139,7 @@
                     </div>
 
                     <!-- Download Actions -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t border-gray-200/50">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 pt-4 border-t border-gray-200/50">
                         <!-- Download Video Button -->
                         <button @click="downloadVideo"
                             class="flex flex-col items-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200/50 rounded-xl hover:from-blue-100 hover:to-blue-150 hover:border-blue-300/50 transition-all duration-300 group hover:shadow-md">
@@ -172,6 +172,15 @@
                             <span class="text-sm font-medium text-pink-700 group-hover:text-pink-800">{{
                                 t('video.downloadCover') }}</span>
                         </button>
+
+                        <button @click="openDeleteModal"
+                            class="flex flex-col items-center p-4 bg-gradient-to-br from-red-50 to-rose-100 border border-red-200/50 rounded-xl hover:from-red-100 hover:to-rose-150 hover:border-red-300/50 transition-all duration-300 group hover:shadow-md">
+                            <div
+                                class="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                                <span class="text-xl text-white">🗑️</span>
+                            </div>
+                            <span class="text-sm font-medium text-red-700 group-hover:text-red-800">删除视频</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -187,17 +196,59 @@
                 {{ t('video.backToHome') }}
             </RouterLink>
         </div>
+
+        <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+            <div class="w-full max-w-md rounded-xl bg-white shadow-2xl border border-gray-200 p-5">
+                <h3 class="text-lg font-semibold text-gray-900">删除视频确认</h3>
+                <p class="text-sm text-gray-600 mt-2">
+                    你可以选择临时删除（仅删除本地文件）或永久删除（软删除并删除弹幕）。永久删除后不会再自动下载。
+                </p>
+
+                <div class="mt-4 space-y-3">
+                    <label class="flex items-start gap-2 cursor-pointer">
+                        <input type="checkbox" class="mt-0.5" v-model="deletePermanent" @change="onPermanentChange" />
+                        <span class="text-sm text-gray-700">
+                            永久删除（软删除视频记录、删除弹幕和本地视频文件）
+                        </span>
+                    </label>
+
+                    <label class="flex items-start gap-2 cursor-pointer">
+                        <input type="checkbox" class="mt-0.5" v-model="deleteAndRequeue" :disabled="deletePermanent" />
+                        <span class="text-sm text-gray-700" :class="{ 'opacity-50': deletePermanent }">
+                            删除后立即重新下载（仅临时删除可用）
+                        </span>
+                    </label>
+                </div>
+
+                <div class="mt-5 flex justify-end gap-2">
+                    <button
+                        class="px-3 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+                        :disabled="deletingVideo"
+                        @click="closeDeleteModal"
+                    >
+                        取消
+                    </button>
+                    <button
+                        class="px-3 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                        :disabled="deletingVideo"
+                        @click="confirmDeleteVideo"
+                    >
+                        {{ deletingVideo ? '处理中...' : '确认删除' }}
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 <script lang="ts" setup>
 import { computed, onMounted, ref, nextTick, onUnmounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { formatTimestamp } from '../lib/helper';
 import Player from '../components/Player.vue';
 import Breadcrumbs from '../components/Breadcrumbs.vue';
 import type { Video, VideoPartType } from '@/api/fav';
-import { getVideoDanmaku, getVideoInfo } from '@/api/video';
+import { deleteVideo, getVideoDanmaku, getVideoInfo } from '@/api/video';
 
 const { t } = useI18n();
 const playerRef = ref()
@@ -205,6 +256,7 @@ const playerContainer = ref<HTMLDivElement | null>(null)
 const sidebarHeight = ref('auto')
 
 const route = useRoute()
+const router = useRouter()
 
 const videoId = ref(route.params.id)
 
@@ -307,18 +359,14 @@ const downloadDanmaku = () => {
         for (let i in parts) {
             const part = parts[i]
             const partId = part.id
-            fetch(`/api/danmaku/v3/?id=${partId}`).then(async (rsp) => {
-                if (rsp.ok) {
-                    const jsonData = await rsp.json()
-                    const danmaku = jsonData.data
-                    if (danmaku) {
-                        // 按照第一个元素排序,时间
-                        danmaku.sort((a: any, b: any) => a[0] - b[0])
-                        const json = JSON.stringify(danmaku)
-                        const file = new File([json], part.title + ".json", { type: "application/json" })
-                        const url = URL.createObjectURL(file)
-                        downloadFile(url, part.title + ".json")
-                    }
+            getVideoDanmaku(partId).then((danmaku: any[]) => {
+                if (danmaku) {
+                    // 按照第一个元素排序,时间
+                    danmaku.sort((a: any, b: any) => a.time - b.time)
+                    const json = JSON.stringify(danmaku)
+                    const file = new File([json], part.title + ".json", { type: "application/json" })
+                    const url = URL.createObjectURL(file)
+                    downloadFile(url, part.title + ".json")
                 }
             })
         }
@@ -341,6 +389,10 @@ const notfound = ref(false)
 const currentPart = ref<VideoPartType | null>(null)
 
 const danmaku = ref<any[]>([])
+const showDeleteModal = ref(false)
+const deletePermanent = ref(false)
+const deleteAndRequeue = ref(false)
+const deletingVideo = ref(false)
 
 // Player 准备就绪时的回调
 const onPlayerReady = () => {
@@ -364,6 +416,36 @@ const playPart = (partId: number) => {
             })
         })
         currentPart.value = part as VideoPartType
+    }
+}
+
+const openDeleteModal = () => {
+    showDeleteModal.value = true
+}
+
+const closeDeleteModal = () => {
+    if (deletingVideo.value) return
+    showDeleteModal.value = false
+}
+
+const onPermanentChange = () => {
+    if (deletePermanent.value) {
+        deleteAndRequeue.value = false
+    }
+}
+
+const confirmDeleteVideo = async () => {
+    if (!videoInfo.value) return
+    deletingVideo.value = true
+    try {
+        await deleteVideo(Number(videoInfo.value.id), undefined, {
+            permanent: deletePermanent.value,
+            requeue: deleteAndRequeue.value,
+        })
+        showDeleteModal.value = false
+        router.push('/videos')
+    } finally {
+        deletingVideo.value = false
     }
 }
 

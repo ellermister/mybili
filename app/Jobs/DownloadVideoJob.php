@@ -28,6 +28,13 @@ class DownloadVideoJob extends BaseScheduledRateLimitedJob
     public function process(): void
     {
         try{
+            // 如果视频被删除，则不下载
+            if($this->videoPart->video->trashed()){
+                Log::info('video deleted, skip download', ['video_id' => $this->videoPart->video_id, 'part' => $this->videoPart->part]);
+                app(DownloadQueueService::class)->markFailedByVideoPart($this->videoPart->id, 'video deleted');
+                return;
+            }
+
             app(DownloadVideoPartFileAction::class)->execute($this->videoPart);
         } catch (\App\Exceptions\ApiGetVideoStatusException $e) {
             // 稿件状态异常，跳过下载
@@ -55,6 +62,9 @@ class DownloadVideoJob extends BaseScheduledRateLimitedJob
 
     public function displayName(): string
     {
+        if($this->videoPart->video && $this->videoPart->video->trashed()){
+            return sprintf('DownloadVideoJob %s-%s (deleted)', $this->videoPart->video_id, $this->videoPart->page);
+        }
         if ($this->videoPart->video->title && $this->videoPart->video->title != $this->videoPart->part) {
             return sprintf('DownloadVideoJob %s-%s %s-%s', $this->videoPart->video_id, $this->videoPart->page, $this->videoPart->video->title, $this->videoPart->part);
         } else {
