@@ -159,10 +159,21 @@
               <p>{{ t('about.favoriteLists') }}：{{ systemInfo.database_usage.favorite_lists }} {{ t('about.units.count') }}</p>
               <p>{{ t('about.videos') }}：{{ systemInfo.database_usage.videos }} {{ t('about.units.count') }}</p>
               <p>{{ t('about.videoParts') }}：{{ systemInfo.database_usage.video_parts }} {{ t('about.units.count') }}</p>
-              <p>{{ t('about.danmaku') }}：{{ systemInfo.database_usage.danmaku.toLocaleString() }} {{ t('about.units.danmaku') }}</p>
               <p>{{ t('about.databaseSize') }}：{{ (systemInfo.database_usage.db_size / 1024 / 1024).toFixed(2) }} {{ t('about.units.mb') }}</p>
-              <p>{{ t('about.mediaVideosUsage') }}：{{ systemInfo.media_usage.videos_size }}</p>
-              <p>{{ t('about.mediaImagesUsage') }}：{{ systemInfo.media_usage.images_size }}</p>
+              <template v-if="mediaLoading">
+                <p class="flex items-center gap-2">
+                  {{ t('about.mediaVideosUsage') }}：
+                  <span class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></span>
+                </p>
+                <p class="flex items-center gap-2">
+                  {{ t('about.mediaImagesUsage') }}：
+                  <span class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></span>
+                </p>
+              </template>
+              <template v-else>
+                <p>{{ t('about.mediaVideosUsage') }}：{{ mediaUsage.videos_size }}</p>
+                <p>{{ t('about.mediaImagesUsage') }}：{{ mediaUsage.images_size }}</p>
+              </template>
             </div>
           </div>
         </div>
@@ -174,7 +185,7 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getSystemInfo } from '@/api/system'
+import { getSystemInfo, getMediaUsage as fetchMediaUsage } from '@/api/system'
 
 const { t } = useI18n();
 
@@ -182,7 +193,6 @@ interface DatabaseUsage {
   favorite_lists: number
   videos: number
   video_parts: number
-  danmaku: number
   db_size: number
 }
 
@@ -203,6 +213,11 @@ interface SystemInfo {
 }
 
 const loading = ref(true)
+const mediaLoading = ref(true)
+const mediaUsage = ref<MediaUsage>({
+  videos_size: '',
+  images_size: ''
+})
 const systemInfo = ref<SystemInfo>({
   app_version: '',
   php_version: '',
@@ -214,7 +229,6 @@ const systemInfo = ref<SystemInfo>({
     favorite_lists: 0,
     videos: 0,
     video_parts: 0,
-    danmaku: 0,
     db_size: 0
   },
   media_usage:{
@@ -241,15 +255,18 @@ const copyToClipboard = async (text: string) => {
   }
 }
 
-onMounted(async () => {
-  try {
-    const res = await getSystemInfo()
-    systemInfo.value = res
-  } catch (error) {
-    console.error('获取系统信息失败:', error)
-  } finally {
-    loading.value = false
-  }
+onMounted(() => {
+  // 系统信息（即时返回）
+  getSystemInfo()
+    .then((res) => { systemInfo.value = res })
+    .catch((error) => { console.error('获取系统信息失败:', error) })
+    .finally(() => { loading.value = false })
+
+  // 媒体占用（du -sh 较慢，异步加载）
+  fetchMediaUsage()
+    .then((res) => { mediaUsage.value = res })
+    .catch((error) => { console.error('获取媒体占用失败:', error) })
+    .finally(() => { mediaLoading.value = false })
 })
 </script>
 

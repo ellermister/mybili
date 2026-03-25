@@ -14,4 +14,9 @@ class SystemController extends Controller
     {
         return response()->json($this->systemService->getSystemInfo());
     }
+
+    public function getMediaUsage()
+    {
+        return response()->json($this->systemService->getMediaUsage());
+    }
 }

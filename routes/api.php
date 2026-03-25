@@ -27,6 +27,7 @@ Route::apiResource('/subscription', SubscriptionController::class)->only(['index
 
 // 显示系统校准信息
 Route::get('/system/info', [SystemController::class, 'getSystemInfo']);
+Route::get('/system/media-usage', [SystemController::class, 'getMediaUsage']);
 
 // 下载队列管理
 Route::get('/download-queue', [DownloadQueueController::class, 'index']);

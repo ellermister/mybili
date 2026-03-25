@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Danmaku;
 use App\Models\FavoriteList;
 use App\Models\Video;
 use App\Models\VideoPart;
@@ -14,7 +13,7 @@ class SystemService
 {
     public function getSystemInfo(): array
     {
-        $info = [
+        return [
             'app_version'      => config('app.version'),
             'php_version'      => phpversion(),
             'laravel_version'  => app()->version(),
@@ -27,22 +26,28 @@ class SystemService
                 'favorite_lists' => FavoriteList::count(),
                 'videos'         => Video::count(),
                 'video_parts'    => VideoPart::count(),
-                'danmaku'        => Danmaku::count(),
                 'db_size'        => $this->getDatabaseSize(),
             ],
-            'media_usage'      => [
-                'videos_size' => $this->getMediaSize('videos'),
-                'images_size' => $this->getMediaSize('images'),
-            ],
+            'media_usage'      => null,
         ];
-        return $info;
+    }
+
+    public function getMediaUsage(): array
+    {
+        return [
+            'videos_size' => $this->getMediaSize('videos'),
+            'images_size' => $this->getMediaSize('images'),
+        ];
     }
 
     public function getDatabaseSize(): int
     {
-        // 如果是sqlite
-        if (DB::connection()->getPdo()->getAttribute(PDO::ATTR_DRIVER_NAME) == 'sqlite') {
-            return DB::table('sqlite_master')->where('type', 'table')->sum('rootpage') * 1024;
+        $driver = DB::connection()->getPdo()->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver == 'sqlite') {
+            $path = DB::connection()->getDatabaseName();
+            if ($path && file_exists($path)) {
+                return filesize($path);
+            }
         }
         return 0;
     }
