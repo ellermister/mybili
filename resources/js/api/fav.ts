@@ -61,7 +61,7 @@ export async function getFavDetail(id: number): Promise<Favorite> {
     return response.json();
 }
 
-export interface FavVideo {
+export interface VideoLite {
     id: number;
     title: string;
     bvid: string;
@@ -74,8 +74,13 @@ export interface FavVideo {
     invalid: number;
     cover: string;
     cover_image_url: string | null;
+    // 兼容后端历史拼写与新拼写
+    cover_image_thumb_url?: string | null;
     created_at: string;
 }
+
+export type FavVideo = VideoLite;
+export type ProgressVideo = VideoLite;
 
 export async function getFavVideos(id: number): Promise<FavVideo[]> {
     const response = await fetch(`/api/fav/${id}/videos`);

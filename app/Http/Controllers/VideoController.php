@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Services\DanmakuConverterService;
@@ -9,39 +10,37 @@ use Illuminate\Http\Request;
 
 class VideoController extends Controller
 {
-
     public function __construct(
         public VideoServiceInterface $videoService,
         public FavoriteServiceInterface $favoriteService,
         public DanmakuServiceInterface $danmakuService,
         public DanmakuConverterService $danmakuConverterService
-    ) {
-
-    }
+    ) {}
 
     public function index(Request $request)
     {
         $data = $request->validate([
-            'query'      => 'nullable|string',
-            'page'       => 'nullable|integer|min:1',
-            'status'     => 'nullable|string',
+            'query' => 'nullable|string',
+            'page' => 'nullable|integer|min:1',
+            'status' => 'nullable|string',
             'downloaded' => 'nullable|string',
             'multi_part' => 'nullable|string',
-            'fav_id'     => 'nullable|integer',
-            'page_size'  => 'nullable|integer|min:1',
+            'fav_id' => 'nullable|integer',
+            'page_size' => 'nullable|integer|min:1',
         ]);
-        $page    = $data['page'] ?? 1;
+        $page = $data['page'] ?? 1;
         $perPage = 30;
-        $result  = $this->videoService->getVideosByPage([
-            'query'      => $data['query'] ?? '',
-            'status'     => $data['status'] ?? '',
+        $result = $this->videoService->getVideosByPage([
+            'query' => $data['query'] ?? '',
+            'status' => $data['status'] ?? '',
             'downloaded' => $data['downloaded'] ?? '',
             'multi_part' => $data['multi_part'] ?? '',
-            'fav_id'     => $data['fav_id'] ?? '',
+            'fav_id' => $data['fav_id'] ?? '',
         ], $page, intval($data['page_size'] ?? $perPage));
+
         return response()->json([
-            'stat'  => $result['stat'],
-            'list'  => $result['list'],
+            'stat' => $result['stat'],
+            'list' => $result['list'],
         ]);
     }
 
@@ -63,20 +62,20 @@ class VideoController extends Controller
         } else {
             $ids = [$id];
         }
-        $ids        = array_map('intval', $ids);
+        $ids = array_map('intval', $ids);
         $deletedIds = $this->videoService->deleteVideos($ids, [
             'permanent' => (bool) ($validated['permanent'] ?? true),
             'requeue' => (bool) ($validated['requeue'] ?? false),
         ]);
         if ($deletedIds) {
             return response()->json([
-                'code'        => 0,
-                'message'     => 'Video deleted successfully',
+                'code' => 0,
+                'message' => 'Video deleted successfully',
                 'deleted_ids' => $deletedIds,
             ]);
         } else {
             return response()->json([
-                'code'    => 1,
+                'code' => 1,
                 'message' => 'Video deletion failed',
             ]);
         }
@@ -87,7 +86,7 @@ class VideoController extends Controller
         $video = $this->videoService->getVideoInfo($id, true);
         if ($video) {
             $video->load(['favorite', 'subscriptions', 'upper', 'audioPart']);
-            $video->video_parts   = $this->videoService->getAllPartsVideoForUser($video);
+            $video->video_parts = $this->videoService->getAllPartsVideoForUser($video);
             $video->danmaku_count = $this->danmakuService->getVideoDanmakuCount($video);
 
             return response()->json($video);
@@ -102,33 +101,33 @@ class VideoController extends Controller
             'data' => $list,
             'stat' => $this->videoService->getVideosStat([]),
         ];
+
         return response()->json($data, 200, []);
     }
 
     /**
      * 获取指定 CID 的弹幕数据（新格式）
-     * 
-     * @param Request $request
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function danmaku(Request $request)
     {
         $cid = $request->input('id');
-        
-        if (!$cid) {
+
+        if (! $cid) {
             return response()->json([
-                'code'    => 1,
+                'code' => 1,
                 'message' => 'CID 参数不能为空',
-                'data'    => [],
+                'data' => [],
             ]);
         }
 
         // 获取原始弹幕数据
         $danmakuList = $this->danmakuService->getDanmaku($cid);
-        
+
         // 转换为新格式
         $convertedData = $this->danmakuConverterService->convert($danmakuList);
-        
+
         return response()->json([
             'code' => 0,
             'data' => $convertedData,

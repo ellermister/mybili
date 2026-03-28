@@ -5,8 +5,9 @@
                 <div class="image-container rounded-lg overflow-hidden" :style="{
                     aspectRatio: '4/3'
                 }">
-                    <Image :class="[imageClass, { 'grayscale-image': video.video_downloaded_num == 0 && video.audio_downloaded_num == 0 }]"
-                        :src="video.cover_info?.image_url ?? '/assets/images/notfound.webp'"
+                    <ImagePreload  :class="[imageClass, { 'grayscale-image': video.video_downloaded_num == 0 && video.audio_downloaded_num == 0 }]"
+                        :src="resolveCoverUrl(video)"
+                        :thumbSrc="resolveCoverUrl(video, true)"
                         :title="video.title" />
                 </div>
             </RouterLink>
@@ -27,15 +28,31 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { formatTimestamp } from "../lib/helper"
-import Image from './Image.vue';
+import ImagePreload from './ImagePreload.vue';
 import { PROGRESS_IMAGE_CLASS } from '../constants/videoImageClasses';
+import type { ProgressVideo } from '../api/fav';
+
+interface ProgressVideoRowData {
+    id: string;
+    videos: ProgressVideo[];
+}
+
 const props = defineProps<{
-    source: any
+    source: ProgressVideoRowData
     imageClass?: string
 }>()
 // console.log(props.source);
 const { t } = useI18n();
 const imageClass = props.imageClass ?? PROGRESS_IMAGE_CLASS;
+
+const resolveCoverUrl = (video: ProgressVideo, isThumb = false) => {
+    const origin = video.cover_image_url ?? video.cover ?? '/assets/images/notfound.webp';
+    if (!origin || origin.includes('notfound')) {
+        return '/assets/images/notfound.webp';
+    }
+    const url = isThumb ? video.cover_image_thumb_url : origin;
+    return url;
+}
 </script>
 <style scoped>
 

@@ -1,15 +1,14 @@
 <?php
 namespace App\Services;
 
+use App\Events\CoverImageStored;
+use App\Jobs\DownloadCoverImageJob;
 use App\Models\Cover;
 use App\Models\Coverables;
 use Illuminate\Database\Eloquent\Model;
-use App\Jobs\DownloadCoverImageJob;
 
 class CoverService extends DownloadImageService
 {
-    
-
     public function downloadCoverImageJob(string $url, string $type, Model $model): void
     {
         dispatch(new DownloadCoverImageJob($url, $type, $model));
@@ -17,31 +16,31 @@ class CoverService extends DownloadImageService
 
     /**
      * 下载封面并创建关联关系
-     * 
-     * @param string $url 图片URL
-     * @param string $type 封面类型 (video, avatar, favorite)
-     * @param Model $model 关联的模型实例（Video、FavoriteList、Upper等）
-     * @return Cover
+     *
+     * @param  string  $url  图片URL
+     * @param  string  $type  封面类型 (video, avatar, favorite)
+     * @param  Model  $model  关联的模型实例（Video、FavoriteList、Upper等）
+     *
      * @throws \Exception
      */
     public function downloadCover(string $url, string $type, Model $model): Cover
     {
         // 1. 检查是否已存在该封面
         $filename = $this->convertToFilename($url);
-        $cover = Cover::where('filename', $filename)->first();
-        
+        $cover    = Cover::where('filename', $filename)->first();
+
         // 2. 如果封面不存在，下载并创建记录
-        if (!$cover) {
+        if (! $cover) {
             $localPath = $this->getImageLocalPath($url);
-            
+
             // 下载图片
-            if (!is_file($localPath)) {
+            if (! is_file($localPath)) {
                 $this->downloadImage($url, $localPath);
             }
-            
+
             // 获取图片信息
             $imageInfo = $this->getImageInfo($localPath);
-            
+
             // 创建封面记录
             try {
                 $cover = Cover::create([
@@ -57,52 +56,54 @@ class CoverService extends DownloadImageService
             } catch (\Exception $e) {
                 // 如果是并发写入导致唯一键冲突，重新查询
                 $cover = Cover::where('filename', $filename)->first();
-                if (!$cover) {
+                if (! $cover) {
                     throw $e;
                 }
             }
         }
-        
+
         // 3. 创建或更新关联关系（一个模型只能有一个封面）
         // 使用 updateOrCreate 避免唯一约束冲突，如果封面变更会自动更新
         Coverables::updateOrCreate(
             [
-                'coverable_id'    => $model->id,
-                'coverable_type'  => get_class($model),
+                'coverable_id'   => $model->id,
+                'coverable_type' => get_class($model),
             ],
             [
-                'cover_id'        => $cover->id,
+                'cover_id' => $cover->id,
             ]
         );
-        
+
+        event(new CoverImageStored($cover));
+
         return $cover;
     }
-    
+
     /**
      * 获取图片详细信息
-     * 
-     * @param string $filePath 图片本地路径
-     * @return array
+     *
+     * @param  string  $filePath  图片本地路径
+     *
      * @throws \Exception
      */
     protected function getImageInfo(string $filePath): array
     {
-        if (!is_file($filePath)) {
+        if (! is_file($filePath)) {
             throw new \Exception("Image file not found: {$filePath}");
         }
-        
+
         // 获取图片尺寸和类型信息
         $imageSize = @getimagesize($filePath);
         if ($imageSize === false) {
             throw new \Exception("Failed to get image size for: {$filePath}");
         }
-        
+
         // 获取文件大小（字节）
         $fileSize = filesize($filePath);
         if ($fileSize === false) {
             throw new \Exception("Failed to get file size for: {$filePath}");
         }
-        
+
         return [
             'width'     => $imageSize[0] ?? 0,
             'height'    => $imageSize[1] ?? 0,
@@ -114,16 +115,18 @@ class CoverService extends DownloadImageService
     public function isDownloaded(string $url): bool
     {
         $filename = $this->convertToFilename($url);
+
         return Cover::where('filename', $filename)->exists();
     }
 
     public function isCoverable(string $url, Model $model): bool
     {
         $filename = $this->convertToFilename($url);
-        $cover = Cover::where('filename', $filename)->first();
-        if (!$cover) {
+        $cover    = Cover::where('filename', $filename)->first();
+        if (! $cover) {
             return false;
         }
+
         return Coverables::where('cover_id', $cover->id)->where('coverable_id', $model->id)->where('coverable_type', get_class($model))->exists();
     }
 }

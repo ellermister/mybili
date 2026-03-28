@@ -5,6 +5,7 @@ use App\Events\VideoUpdated;
 use App\Models\Danmaku;
 use App\Models\Video;
 use App\Models\VideoPart;
+use App\Services\CoverThumbnailService;
 use App\Services\DownloadQueueService;
 use App\Services\DownloadVideoService;
 use App\Services\VideoManager\Contracts\VideoServiceInterface;
@@ -16,8 +17,11 @@ use Log;
 
 class VideoService implements VideoServiceInterface
 {
-
     public $ttl = 86400; // 1 day
+
+    public function __construct(private CoverThumbnailService $coverThumbnailService)
+    {
+    }
 
     public function count(): int
     {
@@ -31,6 +35,7 @@ class VideoService implements VideoServiceInterface
         if ($video && $withParts) {
             $video->load('parts');
         }
+
         return $video;
     }
 
@@ -45,6 +50,7 @@ class VideoService implements VideoServiceInterface
         }
         // 默认按时间逆序排列：优先使用 fav_time，如果不存在或为 null 则使用 created_at
         $query->orderByRaw('COALESCE(fav_time, created_at) DESC');
+
         return $query->get();
     }
 
@@ -54,7 +60,7 @@ class VideoService implements VideoServiceInterface
         if (isset($conditions['query'])) {
             if (str_starts_with(strtolower($conditions['query']), 'bv')) {
                 $query->where('bvid', $conditions['query']);
-            } else if (preg_match('/^\d+$/', $conditions['query'])) {
+            } elseif (preg_match('/^\d+$/', $conditions['query'])) {
                 $query->where('id', $conditions['query']);
             } else {
                 $query->where('title', 'like', '%' . $conditions['query'] . '%');
@@ -64,9 +70,9 @@ class VideoService implements VideoServiceInterface
         if (isset($conditions['status'])) {
             if ($conditions['status'] == 'valid') {
                 $query->where('invalid', 0);
-            } else if ($conditions['status'] == 'invalid') {
+            } elseif ($conditions['status'] == 'invalid') {
                 $query->where('invalid', 1);
-            } else if ($conditions['status'] == 'frozen') {
+            } elseif ($conditions['status'] == 'frozen') {
                 $query->where('frozen', 1);
             }
         }
@@ -74,7 +80,7 @@ class VideoService implements VideoServiceInterface
         if (isset($conditions['downloaded'])) {
             if ($conditions['downloaded'] == 'yes') {
                 $query->where('video_downloaded_num', '>', 0);
-            } else if ($conditions['downloaded'] == 'no') {
+            } elseif ($conditions['downloaded'] == 'no') {
                 $query->where('video_downloaded_num', 0);
             }
         }
@@ -84,7 +90,7 @@ class VideoService implements VideoServiceInterface
                 $query->whereHas('parts', function ($query) {
                     $query->where('page', '>', 1);
                 });
-            } else if ($conditions['multi_part'] == 'no') {
+            } elseif ($conditions['multi_part'] == 'no') {
                 $query->whereDoesntHave('parts', function ($query) {
                     $query->where('page', 1);
                 });
@@ -96,7 +102,7 @@ class VideoService implements VideoServiceInterface
                 $query->whereHas('favorite', function ($query) use ($conditions) {
                     $query->where('id', $conditions['fav_id']);
                 });
-            } else if (intval($conditions['fav_id']) < 0) {
+            } elseif (intval($conditions['fav_id']) < 0) {
                 $query->whereHas('subscriptions', function ($query) use ($conditions) {
                     $query->where('id', abs($conditions['fav_id']));
                 });
@@ -110,6 +116,7 @@ class VideoService implements VideoServiceInterface
             'valid'      => (clone $query)->where('invalid', 0)->count(),
             'frozen'     => (clone $query)->where('frozen', 1)->count(),
         ];
+
         return [
             'list' => $query->offset(($page - 1) * $perPage)->limit($perPage)->get(),
             'stat' => $stat,
@@ -123,6 +130,7 @@ class VideoService implements VideoServiceInterface
             if (! $audioPart) {
                 return [];
             }
+
             return [[
                 'id'         => $audioPart->sid,
                 'part'       => 1,
@@ -142,6 +150,7 @@ class VideoService implements VideoServiceInterface
                 'downloaded' => (bool) $videoPart['video_download_path'],
             ];
         }
+
         return $list;
     }
 
@@ -171,15 +180,16 @@ class VideoService implements VideoServiceInterface
         if ($filePath) {
             return filesize($filePath);
         }
+
         return 0;
     }
 
     public function deleteVideos(array $ids, array $options = []): array
     {
-        $permanentDelete = (bool) ($options['permanent'] ?? true);
+        $permanentDelete    = (bool) ($options['permanent'] ?? true);
         $requeueAfterDelete = (bool) ($options['requeue'] ?? false);
-        $deletedIds = [];
-        $videos     = Video::query()->whereIn('id', $ids)->get();
+        $deletedIds         = [];
+        $videos             = Video::query()->whereIn('id', $ids)->get();
 
         foreach ($videos as $video) {
             // 统一先删除本地文件，并清空分P下载状态
@@ -192,16 +202,17 @@ class VideoService implements VideoServiceInterface
                     Danmaku::query()->where('video_id', $video->id)->delete();
                     event(new VideoUpdated($video->getAttributes(), []));
                 }
+
                 continue;
             }
 
             // 临时删除：保留视频记录，允许后续自动检查或立即重新下载
             $video->video_downloaded_num = 0;
-            $video->video_downloaded_at = null;
+            $video->video_downloaded_at  = null;
             $video->save();
 
             if ($requeueAfterDelete) {
-                if($video->trashed()){
+                if ($video->trashed()) {
                     $video->restore();
                 }
                 $this->enqueueVideoDownloadTasks($video);
@@ -211,11 +222,12 @@ class VideoService implements VideoServiceInterface
         }
 
         Log::info('Delete videos completed', [
-            'ids' => $ids,
+            'ids'         => $ids,
             'deleted_ids' => $deletedIds,
-            'permanent' => $permanentDelete,
-            'requeue' => $requeueAfterDelete,
+            'permanent'   => $permanentDelete,
+            'requeue'     => $requeueAfterDelete,
         ]);
+
         return $deletedIds;
     }
 
@@ -249,6 +261,7 @@ class VideoService implements VideoServiceInterface
 
         if ($video->isAudio() && $video->audioPart) {
             $queueService->enqueueAudio($video->audioPart);
+
             return;
         }
 
@@ -260,7 +273,7 @@ class VideoService implements VideoServiceInterface
     public function getFavVideosLightweight(int $favId): array
     {
         $cacheKey = "fav_videos:{$favId}";
-        $cached = redis()->get($cacheKey);
+        $cached   = redis()->get($cacheKey);
         if ($cached) {
             return json_decode($cached, true);
         }
@@ -276,7 +289,7 @@ class VideoService implements VideoServiceInterface
     public function getSubVideosLightweight(int $subId): array
     {
         $cacheKey = "sub_videos:{$subId}";
-        $cached = redis()->get($cacheKey);
+        $cached   = redis()->get($cacheKey);
         if ($cached) {
             return json_decode($cached, true);
         }
@@ -295,7 +308,7 @@ class VideoService implements VideoServiceInterface
             ->join('favorite_list_videos', 'videos.id', '=', 'favorite_list_videos.video_id')
             ->leftJoin('coverables', function ($join) {
                 $join->on('coverables.coverable_id', '=', 'videos.id')
-                     ->where('coverables.coverable_type', '=', Video::class);
+                    ->where('coverables.coverable_type', '=', Video::class);
             })
             ->leftJoin('covers', 'covers.id', '=', 'coverables.cover_id')
             ->where('favorite_list_videos.favorite_list_id', $favId)
@@ -311,7 +324,7 @@ class VideoService implements VideoServiceInterface
             ->orderByDesc('videos.created_at')
             ->get();
 
-        return $rows->map(fn ($row) => $this->transformLightweightVideo($row))->toArray();
+        return $rows->map(fn($row) => $this->transformLightweightVideo($row))->toArray();
     }
 
     private function querySubVideosLightweight(int $subId): array
@@ -320,7 +333,7 @@ class VideoService implements VideoServiceInterface
             ->join('subscription_videos', 'videos.id', '=', 'subscription_videos.video_id')
             ->leftJoin('coverables', function ($join) {
                 $join->on('coverables.coverable_id', '=', 'videos.id')
-                     ->where('coverables.coverable_type', '=', Video::class);
+                    ->where('coverables.coverable_type', '=', Video::class);
             })
             ->leftJoin('covers', 'covers.id', '=', 'coverables.cover_id')
             ->where('subscription_videos.subscription_id', $subId)
@@ -336,19 +349,47 @@ class VideoService implements VideoServiceInterface
             ->orderByDesc('videos.created_at')
             ->get();
 
-        return $rows->map(fn ($row) => $this->transformLightweightVideo($row))->toArray();
+        return $rows->map(fn($row) => $this->transformLightweightVideo($row))->toArray();
     }
 
     private function transformLightweightVideo(object $row): array
     {
-        $item = (array) $row;
+        $item                    = (array) $row;
         $item['cover_image_url'] = $item['cover_path']
             ? Storage::url($item['cover_path'])
             : null;
         unset($item['cover_path']);
-        $item['pubtime'] = $item['pubtime'] ? strtotime($item['pubtime']) : null;
+        $item['pubtime']  = $item['pubtime'] ? strtotime($item['pubtime']) : null;
         $item['fav_time'] = $item['fav_time'] ? strtotime($item['fav_time']) : null;
+
         return $item;
+    }
+
+    private function getAllVideosLightweight(): array
+    {
+        $videos = $this->getVideos()->values()->toArray();
+        $list   = array_map(function ($item) {
+            $thumbnailURL = $item['cover_info']['thumbnail_generated_at'] ? Storage::url($this->coverThumbnailService->thumbRelativePathForCoverPath($item['cover_info']['path'])) : null;
+            $newItem      = [
+                'id'                    => $item['id'],
+                'title'                 => $item['title'],
+                'bvid'                  => $item['bvid'],
+                'pubtime'               => $item['pubtime'],
+                'fav_time'              => $item['fav_time'],
+                'page'                  => $item['page'],
+                'video_downloaded_num'  => $item['video_downloaded_num'],
+                'audio_downloaded_num'  => $item['audio_downloaded_num'],
+                'frozen'                => $item['frozen'],
+                'invalid'               => $item['invalid'],
+                'cover_image_url'       => $item['cover_info']['image_url'],
+                'cover_image_thumb_url' => $thumbnailURL,
+                'created_at'            => $item['created_at'],
+            ];
+
+            return $newItem;
+        }, $videos);
+
+        return $list;
     }
 
     public function updateVideosCache(?array $videos = null): void
@@ -356,10 +397,9 @@ class VideoService implements VideoServiceInterface
         if ($videos && is_array($videos) && count($videos) > 0) {
             $list = $videos;
         } else {
-            $list = $this->getVideos()->toArray();
+            $list = $this->getAllVideosLightweight();
         }
-        redis()->set('video_list', json_encode($list));
-        redis()->expire('video_list', $this->ttl);
+        redis()->set('video_list', json_encode($list), ['EX' => $this->ttl]);
         Log::info('Update videos cache success', ['count' => count($list)]);
     }
 
@@ -369,8 +409,9 @@ class VideoService implements VideoServiceInterface
         if ($list) {
             return json_decode($list, true);
         }
-        $videos = $this->getVideos()->values()->toArray();
-        $this->updateVideosCache($videos);
-        return $videos;
+        $list = $this->getAllVideosLightweight();
+        $this->updateVideosCache($list);
+
+        return $list;
     }
 }

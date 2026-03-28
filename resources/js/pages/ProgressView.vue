@@ -239,7 +239,7 @@
 import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import type { Cover } from '../api/cover';
+import type { ProgressVideo } from '../api/fav';
 import ProgressVideoRow from '../components/ProgressVideoRow.vue';
 import SearchBar from '../components/SearchBar.vue';
 import VirtualGroupedList from '../components/VirtualGroupedList.vue';
@@ -250,7 +250,7 @@ const route = useRoute();
 const router = useRouter();
 
 
-const videoList = ref<VideoType[]>([])
+const videoList = ref<ProgressVideo[]>([])
 const progress = ref(0)
 const showCachedOnly = ref(false)
 const isScrolled = ref(false) // 是否已滚动
@@ -265,6 +265,8 @@ const mobileSearchBarRef = ref<any>(null) // 移动端搜索组件引用
 const currentSearchIndex = ref(-1) // 当前搜索结果索引
 const progressColumns = 4
 const progressImageClass = PROGRESS_IMAGE_CLASS
+const scrollMemory = ref<Record<string, number>>({})
+const currentScrollMemoryKey = ref('')
 
 const stat = ref({
     count: 0,
@@ -280,20 +282,6 @@ const filter = ref<{
     class: null
 })
 
-interface VideoType {
-    id: string
-    title: string
-    video_downloaded_at: string
-    invalid: boolean
-    frozen: boolean
-    pubtime: number
-    fav_time: number
-    page: number
-    video_downloaded_num: number
-    audio_downloaded_num: number
-    cover_info: Cover | null
-}
-
 // 从URL参数初始化过滤器状态
 const initFilterFromUrl = () => {
     const filterParam = route.query.filter as string;
@@ -306,6 +294,7 @@ const initFilterFromUrl = () => {
 
 // 设置过滤器并更新URL
 const setFilter = (filterValue: string | null) => {
+    saveCurrentScrollPosition();
     filter.value.class = filterValue;
 
     // 更新URL参数
@@ -317,6 +306,9 @@ const setFilter = (filterValue: string | null) => {
     }
 
     router.replace({ query });
+    nextTick(() => {
+        restoreScrollPositionByCurrentState();
+    });
 }
 
 
@@ -364,10 +356,48 @@ const dataList = computed(() => {
     return list
 })
 
+const getScrollContainer = (): HTMLElement | null => {
+    return document.querySelector('.scroller-container') as HTMLElement | null
+}
+
+const buildScrollMemoryKey = (): string => {
+    const filterKey = filter.value.class ?? 'all'
+    const cachedKey = showCachedOnly.value ? 'cached=1' : 'cached=0'
+    return `${filterKey}|${cachedKey}`
+}
+
+const saveCurrentScrollPosition = () => {
+    const container = getScrollContainer()
+    if (!container) return
+    const key = currentScrollMemoryKey.value || buildScrollMemoryKey()
+    scrollMemory.value[key] = container.scrollTop
+}
+
+const restoreScrollPositionByCurrentState = () => {
+    const container = getScrollContainer()
+    if (!container) return
+
+    const key = buildScrollMemoryKey()
+    currentScrollMemoryKey.value = key
+    const savedTop = scrollMemory.value[key] ?? 0
+    const maxTop = Math.max(0, container.scrollHeight - container.clientHeight)
+    container.scrollTop = Math.min(savedTop, maxTop)
+}
+
 // 监听路由变化，更新过滤器状态
 watch(() => route.query.filter, () => {
     initFilterFromUrl();
+    nextTick(() => {
+        restoreScrollPositionByCurrentState();
+    });
 }, { immediate: true });
+
+watch(showCachedOnly, () => {
+    saveCurrentScrollPosition();
+    nextTick(() => {
+        restoreScrollPositionByCurrentState();
+    });
+});
 
 // 使用 IntersectionObserver 监测筛选器是否离开可视区（仅移动端）
 let filterObserver: IntersectionObserver | null = null;
@@ -416,9 +446,14 @@ onMounted(() => {
     document.addEventListener('keydown', handleKeyDown);
     // 初始同步一次（避免首次闪烁）
     nextTick(setupFilterObserver);
+    nextTick(() => {
+        currentScrollMemoryKey.value = buildScrollMemoryKey();
+        restoreScrollPositionByCurrentState();
+    });
 });
 
 onUnmounted(() => {
+    saveCurrentScrollPosition();
     // 断开 Observer
     if (filterObserver) {
         filterObserver.disconnect();

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Listeners;
 
 use App\Events\SubscriptionUpdated;
@@ -6,14 +7,15 @@ use App\Models\Subscription;
 use App\Services\CoverService;
 use Log;
 
+/**
+ * 封面文件落地与缩略图：DownloadCoverImageJob → CoverService::downloadCover 会派发 CoverImageStored，由 GenerateCoverThumbnailListener 队列生成缩略图。
+ */
 class SubscriptionImageDownload
 {
     /**
      * Create the event listener.
      */
-    public function __construct(public CoverService $coverService)
-    {
-    }
+    public function __construct(public CoverService $coverService) {}
 
     /**
      * Handle the event.
@@ -23,11 +25,12 @@ class SubscriptionImageDownload
         $oldSubscription = $event->oldSubscription;
         $newSubscription = $event->newSubscription;
 
-        $oldCover   = $oldSubscription['cover'] ?? '';
-        $newCover   = $newSubscription['cover'] ?? '';
+        $oldCover = $oldSubscription['cover'] ?? '';
+        $newCover = $newSubscription['cover'] ?? '';
         $resourceId = $newSubscription['id'] ?? '';
         if (! $resourceId) {
             Log::info('Subscription ID is empty, skip download', ['newSubscription' => $newSubscription]);
+
             return;
         }
         $resource = Subscription::find($resourceId);
@@ -35,6 +38,7 @@ class SubscriptionImageDownload
             Log::info('Download subscription image', ['cover' => $newCover, 'resourceId' => $resourceId]);
             if ($this->coverService->isCoverable($newCover, $resource)) {
                 Log::info('Cover is already coverable, skip download', ['cover' => $newCover, 'resourceId' => $resourceId]);
+
                 return;
             }
 

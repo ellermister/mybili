@@ -7,9 +7,13 @@ use Storage;
 
 class Cover extends Model
 {
-    protected $fillable = ['url', 'type', 'filename', 'path', 'mime_type', 'size', 'width', 'height'];
+    protected $fillable = ['url', 'type', 'filename', 'path', 'mime_type', 'size', 'width', 'height', 'thumbnail_generated_at'];
 
     const UPDATED_AT = null;
+
+    protected $casts = [
+        'thumbnail_generated_at' => 'datetime',
+    ];
 
     protected $appends = [
         'image_url',
@@ -50,5 +54,10 @@ class Cover extends Model
     public function getImageUrlAttribute()
     {
         return $this->path ? Storage::url($this->path) : null;
+    }
+
+    public function getThumbnailUrlAttribute()
+    {
+        return $this->thumbnail_generated_at ? Storage::url('thumbs/' . $this->path) : null;
     }
 }

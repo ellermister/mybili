@@ -131,7 +131,7 @@ const messages = {
             viewTasks: '查看任务',
             cacheRate: '缓存的视频率',
             cacheRateDescription: '如果你的收藏夹中出现了无效视频那么就会低于100%',
-            showCachedOnly: '只显示本地缓存的视频',
+            showCachedOnly: '已下载',
             allVideos: '所有视频',
             allVideosDescription: '你所有收藏的视频数',
             validVideos: '有效视频',

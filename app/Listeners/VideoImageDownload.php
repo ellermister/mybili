@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Listeners;
 
 use App\Events\VideoUpdated;
@@ -6,14 +7,15 @@ use App\Models\Video;
 use App\Services\CoverService;
 use Log;
 
+/**
+ * 封面文件落地与缩略图：DownloadCoverImageJob → CoverService::downloadCover 会派发 CoverImageStored，由 GenerateCoverThumbnailListener 队列生成缩略图。
+ */
 class VideoImageDownload
 {
     /**
      * Create the event listener.
      */
-    public function __construct(public CoverService $coverService)
-    {
-    }
+    public function __construct(public CoverService $coverService) {}
 
     /**
      * Handle the event.
@@ -23,7 +25,7 @@ class VideoImageDownload
         $oldVideo = $event->oldVideo;
         $newVideo = $event->newVideo;
 
-        if(empty($newVideo)){
+        if (empty($newVideo)) {
             return;
         }
 
@@ -32,12 +34,14 @@ class VideoImageDownload
 
         if ($newVideo['invalid']) {
             Log::info('Video is invalid, skip download video image', ['id' => $newVideo['id'], 'bvid' => $newVideo['bvid'], 'title' => $newVideo['title']]);
+
             return;
         }
 
         $resourceId = $newVideo['id'] ?? '';
         if (! $resourceId) {
             Log::info('Video ID is empty, skip download', ['newVideo' => $newVideo]);
+
             return;
         }
         $resource = Video::find($resourceId);
@@ -45,6 +49,7 @@ class VideoImageDownload
             Log::info('Download video image', ['cover' => $newCover, 'resourceId' => $resourceId]);
             if ($this->coverService->isCoverable($newCover, $resource)) {
                 Log::info('Cover is already coverable, skip download', ['cover' => $newCover, 'resourceId' => $resourceId]);
+
                 return;
             }
 
