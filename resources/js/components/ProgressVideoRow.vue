@@ -6,8 +6,7 @@
                     aspectRatio: '4/3'
                 }">
                     <ImagePreload  :class="[imageClass, { 'grayscale-image': video.video_downloaded_num == 0 && video.audio_downloaded_num == 0 }]"
-                        :src="resolveCoverUrl(video)"
-                        :thumbSrc="resolveCoverUrl(video, true)"
+                        :src=" video.cover_image_url ?? video.cover ?? '/assets/images/notfound.webp'"
                         :title="video.title" />
                 </div>
             </RouterLink>
@@ -29,6 +28,7 @@
 import { useI18n } from 'vue-i18n';
 import { formatTimestamp } from "../lib/helper"
 import ImagePreload from './ImagePreload.vue';
+import ImageDirect from './ImageDirect.vue';
 import { PROGRESS_IMAGE_CLASS } from '../constants/videoImageClasses';
 import type { ProgressVideo } from '../api/fav';
 

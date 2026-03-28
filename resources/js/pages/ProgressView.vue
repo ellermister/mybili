@@ -222,7 +222,7 @@
                     class="scroller-container md:px-4 md:-mx-4 md:py-2 py-4 px-2"
                     :items="dataList"
                     :columns="progressColumns"
-                    :keeps="60"
+                    :keeps="100"
                     :size="340"
                     :container-class="'scroller-container'"
                 >
