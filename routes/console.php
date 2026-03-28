@@ -81,9 +81,6 @@ Schedule::call(function () {
 
 Schedule::command('app:update-no-parts-valid-video')->hourly();
 
-// 每小时补全封面缩略图缓存（covers 表中尚未标记的条目）
-Schedule::job(new SyncCoverThumbnailsJob)->hourly()->withoutOverlapping();
-
 // 每分钟从下载队列取出任务并派发 Job
 Schedule::command('app:process-download-queue')
     ->everyMinute()

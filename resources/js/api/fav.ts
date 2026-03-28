@@ -74,8 +74,6 @@ export interface VideoLite {
     invalid: number;
     cover: string;
     cover_image_url: string | null;
-    // 兼容后端历史拼写与新拼写
-    cover_image_thumb_url?: string | null;
     created_at: string;
 }
 

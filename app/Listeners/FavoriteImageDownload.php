@@ -7,9 +7,6 @@ use App\Models\FavoriteList;
 use App\Services\CoverService;
 use Log;
 
-/**
- * 封面文件落地与缩略图：DownloadCoverImageJob → CoverService::downloadCover 会派发 CoverImageStored，由 GenerateCoverThumbnailListener 队列生成缩略图。
- */
 class FavoriteImageDownload
 {
     /**

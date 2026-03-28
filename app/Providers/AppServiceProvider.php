@@ -4,8 +4,6 @@ namespace App\Providers;
 
 use App\Contracts\DownloadImageServiceInterface;
 use App\Contracts\TelegramBotServiceInterface;
-use App\Events\CoverImageStored;
-use App\Listeners\GenerateCoverThumbnailListener;
 use App\Services\ColorExtractionService;
 use App\Services\DownloadImageService;
 use App\Services\TelegramBotService;
@@ -48,8 +46,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Event::listen(CoverImageStored::class, GenerateCoverThumbnailListener::class);
-
         // SQLite WAL模式优化
         if (config('database.default') === 'sqlite') {
             try {

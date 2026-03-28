@@ -5,7 +5,6 @@ use App\Events\VideoUpdated;
 use App\Models\Danmaku;
 use App\Models\Video;
 use App\Models\VideoPart;
-use App\Services\CoverThumbnailService;
 use App\Services\DownloadQueueService;
 use App\Services\DownloadVideoService;
 use App\Services\VideoManager\Contracts\VideoServiceInterface;
@@ -18,10 +17,6 @@ use Log;
 class VideoService implements VideoServiceInterface
 {
     public $ttl = 86400; // 1 day
-
-    public function __construct(private CoverThumbnailService $coverThumbnailService)
-    {
-    }
 
     public function count(): int
     {
@@ -369,7 +364,6 @@ class VideoService implements VideoServiceInterface
     {
         $videos = $this->getVideos()->values()->toArray();
         $list   = array_map(function ($item) {
-            $thumbnailURL = $item['cover_info']['thumbnail_generated_at'] ? Storage::url($this->coverThumbnailService->thumbRelativePathForCoverPath($item['cover_info']['path'])) : null;
             $newItem      = [
                 'id'                    => $item['id'],
                 'title'                 => $item['title'],
@@ -382,7 +376,6 @@ class VideoService implements VideoServiceInterface
                 'frozen'                => $item['frozen'],
                 'invalid'               => $item['invalid'],
                 'cover_image_url'       => $item['cover_info']['image_url'],
-                'cover_image_thumb_url' => $thumbnailURL,
                 'created_at'            => $item['created_at'],
             ];
 

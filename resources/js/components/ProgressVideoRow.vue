@@ -44,15 +44,6 @@ const props = defineProps<{
 // console.log(props.source);
 const { t } = useI18n();
 const imageClass = props.imageClass ?? PROGRESS_IMAGE_CLASS;
-
-const resolveCoverUrl = (video: ProgressVideo, isThumb = false) => {
-    const origin = video.cover_image_url ?? video.cover ?? '/assets/images/notfound.webp';
-    if (!origin || origin.includes('notfound')) {
-        return '/assets/images/notfound.webp';
-    }
-    const url = isThumb ? video.cover_image_thumb_url : origin;
-    return url;
-}
 </script>
 <style scoped>
 
