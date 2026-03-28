@@ -86,12 +86,12 @@
 
       <!-- Drawer Overlay -->
       <transition name="fade">
-        <div v-if="isDrawerOpen" @click="isDrawerOpen = false" class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"></div>
+        <div v-if="isDrawerOpen" @click="isDrawerOpen = false" class="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden"></div>
       </transition>
 
       <!-- Drawer Menu -->
       <transition name="slide">
-        <div v-if="isDrawerOpen" class="fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg p-6 md:hidden">
+        <div v-if="isDrawerOpen" class="fixed top-0 left-0 h-full w-64 bg-white z-[60] shadow-lg p-6 md:hidden">
           <h2 class="text-xl font-bold mb-6">{{ t('navigation.menu') }}</h2>
           <nav class="flex flex-col space-y-4">
             <router-link

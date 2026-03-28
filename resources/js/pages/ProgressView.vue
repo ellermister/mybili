@@ -180,7 +180,7 @@
 
                 <!-- 最小模式：Tab样式筛选器 - 固定在顶部 -->
                 <div v-if="isScrolled"
-                    class="md:hidden bg-white border-b border-gray-300 shadow-md fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out"
+                    class="md:hidden bg-white border-b border-gray-300 shadow-md fixed top-0 left-0 right-0 z-40 transition-all duration-300 ease-in-out"
                     :style="{ opacity: showMiniFilter ? 1 : 0, transform: showMiniFilter ? 'translateY(0)' : 'translateY(-10px)' }">
                     <div class="grid grid-cols-4 divide-x divide-gray-300">
                         <button
