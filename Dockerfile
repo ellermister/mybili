@@ -1,6 +1,6 @@
 ARG NODE_VERSION=22
 
-FROM node:${NODE_VERSION}-bullseye-slim AS build
+FROM docker.io/library/node:${NODE_VERSION}-bullseye-slim AS build
 
 WORKDIR /app
 
@@ -94,7 +94,7 @@ RUN npm install -g pnpm
 RUN pnpm install
 RUN pnpm build
 
-FROM phpswoole/swoole:php8.3-alpine
+FROM docker.io/phpswoole/swoole:php8.3-alpine
 
 # 重新声明 ARG，确保能从构建参数接收版本号
 ARG APP_VERSION=1.0.0
@@ -107,7 +107,7 @@ ENV PHPRC=/etc/php.ini
 
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
-COPY --from=composer/composer:2-bin /composer /usr/bin/composer
+COPY --from=docker.io/composer/composer:2-bin /composer /usr/bin/composer
 
 COPY --from=build /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=build /usr/local/bin/ffprobe /usr/local/bin/ffprobe
