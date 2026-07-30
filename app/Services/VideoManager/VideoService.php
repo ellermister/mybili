@@ -375,7 +375,7 @@ class VideoService implements VideoServiceInterface
                 'audio_downloaded_num'  => $item['audio_downloaded_num'],
                 'frozen'                => $item['frozen'],
                 'invalid'               => $item['invalid'],
-                'cover_image_url'       => $item['cover_info']['image_url'],
+                'cover_image_url'       => data_get($item, 'cover_info.image_url') ?? '',
                 'created_at'            => $item['created_at'],
             ];
 
