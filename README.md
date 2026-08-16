@@ -175,4 +175,4 @@ tail -f /app/storage/logs/laravel.log
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ellermister/mybili&type=Date)](https://www.star-history.com/#ellermister/mybili&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=ellermister/mybili&type=Date)](https://star-history.dera.page/#ellermister/mybili&Date)
