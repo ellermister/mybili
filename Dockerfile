@@ -51,25 +51,6 @@ RUN PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
     chmod 775 /usr/local/bin/yt-dlp_linux && \
     chown root:root /usr/local/bin/yt-dlp_linux
 
-# 根据目标平台下载对应的 frankenphp
-# 如果 TARGETPLATFORM 为空（非 buildx 环境），则使用 uname 检测当前架构
-RUN PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
-    case "${PLATFORM}" in \
-        "linux/amd64"|"linux/x86_64") \
-            FRANKENPHP_ARCH="frankenphp-linux-x86_64" \
-            ;; \
-        "linux/arm64"|"linux/aarch64") \
-            FRANKENPHP_ARCH="frankenphp-linux-aarch64" \
-            ;; \
-        *) \
-            echo "Unsupported platform: ${PLATFORM}" && exit 1 \
-            ;; \
-    esac && \
-    wget -O /usr/local/bin/frankenphp \
-        "https://github.com/dunglas/frankenphp/releases/download/v1.2.5/${FRANKENPHP_ARCH}" && \
-    chmod 775 /usr/local/bin/frankenphp && \
-    chown root:root /usr/local/bin/frankenphp
-
 # 根据目标平台下载对应的 supervisord
 # 如果 TARGETPLATFORM 为空（非 buildx 环境），则使用 uname 检测当前架构
 RUN PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}" && \
@@ -94,7 +75,9 @@ RUN npm install -g pnpm@latest-11
 RUN pnpm install
 RUN pnpm build
 
-FROM phpswoole/swoole:php8.3-alpine
+# 网页由 FrankenPHP 处理，不能只升 Swoole 镜像里的 CLI PHP。
+# 官方静态二进制从 1.13.2 起只带 PHP 8.5；这份镜像把 FrankenPHP 1.13.4 链到 PHP 8.3.36。
+FROM dunglas/frankenphp:1.13.4-php8.3.36-alpine
 
 # 重新声明 ARG，确保能从构建参数接收版本号
 ARG APP_VERSION=1.0.0
@@ -112,10 +95,10 @@ COPY --from=composer/composer:2-bin /composer /usr/bin/composer
 COPY --from=build /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=build /usr/local/bin/ffprobe /usr/local/bin/ffprobe
 COPY --from=build /usr/local/bin/yt-dlp_linux /usr/local/bin/yt-dlp_linux
-COPY --from=build /usr/local/bin/frankenphp /usr/local/bin/frankenphp
 COPY --from=build /usr/local/bin/supervisord /usr/local/bin/supervisord
 
-RUN docker-php-ext-install pcntl
+# pcntl：队列和定时任务；redis：Horizon（phpredis）；gd：封面主色；pdo_mysql：可选 MySQL 连接
+RUN install-php-extensions pcntl redis gd pdo_mysql
 
 COPY . .
 
