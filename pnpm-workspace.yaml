@@ -1,4 +1,0 @@
-# pnpm 11：strictDepBuilds 下须在 allowBuilds 中放行，否则 install 失败（ERR_PNPM_IGNORED_BUILDS）
-allowBuilds:
-  esbuild: true
-

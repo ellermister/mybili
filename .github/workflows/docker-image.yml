@@ -24,24 +24,23 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    
+
     - name: Set version
       id: version
       run: |
         if [[ $GITHUB_REF == refs/tags/* ]]; then
-          # 从tag获取版本号，去掉v前缀
           VERSION=${GITHUB_REF#refs/tags/}
           VERSION=${VERSION#v}
           echo "is_tag=true" >> $GITHUB_OUTPUT
         else
-          # main分支使用dev版本号
           VERSION="dev-$(date +%Y%m%d)-$(git rev-parse --short HEAD)"
           echo "is_tag=false" >> $GITHUB_OUTPUT
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Using version: $VERSION"
-        
+
     - name: Login to Docker Hub
+      if: github.event_name != 'pull_request'
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -57,13 +56,12 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         context: .
-        push: true
+        push: ${{ github.event_name != 'pull_request' }}
         platforms: linux/amd64,linux/arm64
         build-args: |
           APP_VERSION=${{ steps.version.outputs.version }}
-          WEBSITE_ID=${{ secrets.WEBSITE_ID }}
         tags: ${{ steps.version.outputs.is_tag == 'true' && format('ellermister/mybili:latest,ellermister/mybili:{0}', steps.version.outputs.version) || 'ellermister/mybili:latest' }}
         cache-from: type=registry,ref=ellermister/mybili:buildcache
-        cache-to: type=registry,ref=ellermister/mybili:buildcache,mode=max
+        cache-to: ${{ github.event_name != 'pull_request' && 'type=registry,ref=ellermister/mybili:buildcache,mode=max' || '' }}
         provenance: false
         sbom: false

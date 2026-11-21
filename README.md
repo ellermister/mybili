@@ -50,7 +50,7 @@ mkdir /mnt/user/mybili/data -p
 
 创建文件 `/mnt/user/mybili/docker-compose.yml`
 
-- 🔌 容器内部端口 80(http) 和 443(https) 都可以使用
+- 🔌 容器内部端口 80(http) 可以使用
 - ⚙️ 下列 env 环境变量均可以参考 .env.example 文件内有的项进行覆盖，但默认只建议修改示例中内容
 
 ```yml
@@ -66,7 +66,6 @@ services:
         environment:
             REDIS_HOST: redis
             REDIS_DB: 3
-            DB_CONNECTION: sqlite
             DB_DATABASE: /data/database.sqlite
     redis:
         image: redis
@@ -136,17 +135,38 @@ https://github.com/ellermister/mybili-cookie
 
 ### 📝 4. 日志排查
 
-在容器内部，存储了多份日志，来源于不同的服务产生的文件。
+程序把日志写到标准输出，不写日志文件。网页打不开、同步失败或下载失败时，看容器日志。
+
 ```bash
-/app # ls /var/log
-queue.log.0        schedule.log.0     supervisord.log.0  web.log.0
+docker logs -f mybili
 ```
 
-#### 🌐 Web 服务日志
-网页不通或者异常报错，可以查看 laravel 的日志
+用上面的 compose 启动时，也可以：
+
 ```bash
-tail -f /app/storage/logs/laravel.log
+docker compose logs -f mybili
 ```
+
+本机直接 `go run` 时，日志就在这个命令所在的终端里。
+
+日常保持 `APP_DEBUG` 关闭。需要更详细的程序日志时再打开。它不控制 SQL，避免一开详细日志就被语句刷屏。
+
+SQL 用 `SQL_LOG_LEVEL` 单独设置，默认 `warn`：
+
+| 值 | 输出 |
+| --- | --- |
+| `silent` | 不输出 SQL |
+| `error` | 只输出执行失败的语句 |
+| `warn` | 执行失败，以及较慢的语句（默认） |
+| `info` | 每一条 SQL |
+
+```yml
+environment:
+    APP_DEBUG: "false"
+    SQL_LOG_LEVEL: "warn"
+```
+
+改完后重新创建容器。排查 SQL 时再临时改成 `info`，结束后改回 `warn`。
 
 ## 🔄 更新说明
 
