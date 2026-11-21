@@ -230,7 +230,10 @@ func TestEnqueueDanmakuSkipsFreshAndRepeats(t *testing.T) {
 	now := time.Date(2026, 10, 31, 9, 0, 0, 0, dbtime.Location())
 	stamp := dbtime.DateTime{Time: now}
 	on := `"on"`
-	if err := conn.Create(&model.Setting{Name: "danmaku_download_enabled", Value: &on, CreatedAt: &stamp}).Error; err != nil {
+	if err := conn.Create(&[]model.Setting{
+		{Name: "danmaku_download_enabled", Value: &on, CreatedAt: &stamp},
+		{Name: "multi_partition_download_enabled", Value: &on, CreatedAt: &stamp},
+	}).Error; err != nil {
 		t.Fatal(err)
 	}
 	video := model.Video{
@@ -270,6 +273,55 @@ func TestEnqueueDanmakuSkipsFreshAndRepeats(t *testing.T) {
 	}
 	if again != 0 {
 		t.Fatalf("pending danmaku reopened = %d", again)
+	}
+}
+
+func TestEnqueueDanmakuFollowsMultiPartition(t *testing.T) {
+	conn := openDownloadDB(t)
+	now := time.Date(2026, 10, 31, 9, 0, 0, 0, dbtime.Location())
+	stamp := dbtime.DateTime{Time: now}
+	on := `"on"`
+	off := `"off"`
+	if err := conn.Create(&[]model.Setting{
+		{Name: "danmaku_download_enabled", Value: &on, CreatedAt: &stamp},
+		{Name: "multi_partition_download_enabled", Value: &off, CreatedAt: &stamp},
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	video := model.Video{
+		Link: "https://www.bilibili.com/video/BV1", Title: "标题", Intro: "", Cover: "",
+		Bvid: "BV1", Pubtime: stamp, Type: 2, CreatedAt: &stamp,
+	}
+	if err := conn.Create(&video).Error; err != nil {
+		t.Fatal(err)
+	}
+	parts := []model.VideoPart{
+		{VideoID: video.ID, Cid: 1, Page: 1, From: "vupload", Part: "P1", Duration: 3, Vid: "", Weblink: "", CreatedAt: &stamp},
+		{VideoID: video.ID, Cid: 2, Page: 2, From: "vupload", Part: "P2", Duration: 3, Vid: "", Weblink: "", CreatedAt: &stamp},
+	}
+	if err := conn.Create(&parts).Error; err != nil {
+		t.Fatal(err)
+	}
+	count, err := EnqueueDanmaku(context.Background(), conn, video.ID, now, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != 1 {
+		t.Fatalf("enqueued = %d", count)
+	}
+	refreshed, err := RefreshDanmaku(context.Background(), conn, video.ID, now, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if refreshed != 1 {
+		t.Fatalf("refreshed = %d", refreshed)
+	}
+	var jobs int64
+	if err := conn.Model(&model.Job{}).Where("type = ?", TypeDanmaku).Count(&jobs).Error; err != nil {
+		t.Fatal(err)
+	}
+	if jobs != 1 {
+		t.Fatalf("tasks = %d", jobs)
 	}
 }
 
@@ -344,6 +396,57 @@ func TestEnqueuePartsSkipsWhenEverySourceDeclines(t *testing.T) {
 	}
 	if skipped != 0 {
 		t.Fatalf("all skip enqueued = %d", skipped)
+	}
+}
+
+func TestEnqueuePartsSkipsLaterPagesWhenMultiOff(t *testing.T) {
+	conn := openDownloadDB(t)
+	dir := t.TempDir()
+	now := time.Date(2026, 10, 31, 9, 0, 0, 0, dbtime.Location())
+	stamp := dbtime.DateTime{Time: now}
+	on := `"on"`
+	off := `"off"`
+	if err := conn.Create(&[]model.Setting{
+		{Name: "video_download_enabled", Value: &on, CreatedAt: &stamp},
+		{Name: "multi_partition_download_enabled", Value: &off, CreatedAt: &stamp},
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	video := model.Video{
+		Link: "https://www.bilibili.com/video/BV1", Title: "标题", Intro: "", Cover: "",
+		Bvid: "BV1", Pubtime: stamp, Type: 2, CreatedAt: &stamp,
+	}
+	if err := conn.Create(&video).Error; err != nil {
+		t.Fatal(err)
+	}
+	parts := []model.VideoPart{
+		{VideoID: video.ID, Cid: 5, Page: 1, From: "vupload", Part: "P1", Duration: 12, Vid: "", Weblink: "", CreatedAt: &stamp},
+		{VideoID: video.ID, Cid: 6, Page: 2, From: "vupload", Part: "P2", Duration: 8, Vid: "", Weblink: "", CreatedAt: &stamp},
+		{VideoID: video.ID, Cid: 7, Page: 3, From: "vupload", Part: "P3", Duration: 8, Vid: "", Weblink: "", CreatedAt: &stamp},
+	}
+	if err := conn.Create(&parts).Error; err != nil {
+		t.Fatal(err)
+	}
+	count, err := EnqueueParts(context.Background(), conn, dir, video.ID, now, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != 1 {
+		t.Fatalf("enqueued = %d", count)
+	}
+	var jobs []model.Job
+	if err := conn.Find(&jobs).Error; err != nil {
+		t.Fatal(err)
+	}
+	if len(jobs) != 1 {
+		t.Fatalf("tasks = %d", len(jobs))
+	}
+	var body partPayload
+	if err := json.Unmarshal([]byte(jobs[0].Payload), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.Page != 1 || body.Cid != 5 {
+		t.Fatalf("payload = %s", jobs[0].Payload)
 	}
 }
 

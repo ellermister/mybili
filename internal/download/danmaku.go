@@ -28,6 +28,14 @@ func (r Runner) Danmaku(ctx context.Context, taskID int64, payload partPayload) 
 	if err := r.DB.WithContext(ctx).First(&part, payload.PartID).Error; err != nil {
 		return err
 	}
+	multi, err := multiPartOn(r.DB)
+	if err != nil {
+		return err
+	}
+	if !multi && part.Page > 1 {
+		r.log(ctx, taskID, "未开启多分P下载，跳过弹幕")
+		return errSkipDownload
+	}
 	var video model.Video
 	if err := r.DB.WithContext(ctx).First(&video, part.VideoID).Error; err != nil {
 		return err

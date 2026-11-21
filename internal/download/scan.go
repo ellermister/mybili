@@ -45,6 +45,15 @@ func settingOn(db *gorm.DB, name string) (bool, error) {
 	return text == "on", nil
 }
 
+// multiPartOn 读取多分 P 下载开关。关掉时视频和弹幕都只处理第 1 P。
+func multiPartOn(db *gorm.DB) (bool, error) {
+	text, err := readSettingString(db, "multi_partition_download_enabled")
+	if err != nil {
+		return false, err
+	}
+	return text == "on", nil
+}
+
 type storedPart struct {
 	Candidate
 	DownloadPath *string
@@ -495,13 +504,18 @@ func partDraft(taskType string, row Candidate) (schedule.Draft, error) {
 const danmakuFreshFor = 7 * 24 * time.Hour
 
 // EnqueueDanmaku 给一个稿件里需要弹幕的分 P 写下载任务。
-// 开关关掉时不写。7 天内下过的跳过。没下过的不把已经结束的任务重新打开。
+// 弹幕开关关掉时不写。多分 P 下载关掉时只写第 1 P。
+// 7 天内下过的跳过。没下过的不把已经结束的任务重新打开。
 func EnqueueDanmaku(ctx context.Context, db *gorm.DB, videoID int64, now time.Time, wake func(context.Context, string) error) (int, error) {
 	if videoID <= 0 {
 		return 0, nil
 	}
 	on, err := settingOn(db, "danmaku_download_enabled")
 	if err != nil || !on {
+		return 0, err
+	}
+	multi, err := multiPartOn(db)
+	if err != nil {
 		return 0, err
 	}
 	var video model.Video
@@ -516,7 +530,7 @@ func EnqueueDanmaku(ctx context.Context, db *gorm.DB, videoID int64, now time.Ti
 	store := jobs.Store{DB: db}
 	opened := 0
 	for _, part := range parts {
-		if part.Cid == 0 {
+		if part.Cid == 0 || (!multi && part.Page > 1) {
 			continue
 		}
 		opt := jobs.SaveOptions{ReopenAfter: time.Unix(1, 0)}
@@ -553,8 +567,13 @@ func EnqueueDanmaku(ctx context.Context, db *gorm.DB, videoID int64, now time.Ti
 	return opened, nil
 }
 
-// RefreshDanmaku 给一个视频的每个分 P 写弹幕任务。已经结束的行会重新打开。
+// RefreshDanmaku 给一个视频的分 P 写弹幕任务。已经结束的行会重新打开。
+// 多分 P 下载关掉时只写第 1 P。
 func RefreshDanmaku(ctx context.Context, db *gorm.DB, videoID int64, now time.Time, wake func(context.Context, string) error) (int, error) {
+	multi, err := multiPartOn(db)
+	if err != nil {
+		return 0, err
+	}
 	var parts []model.VideoPart
 	if err := db.WithContext(ctx).Where("video_id = ?", videoID).Order("page").Find(&parts).Error; err != nil {
 		return 0, err
@@ -562,6 +581,9 @@ func RefreshDanmaku(ctx context.Context, db *gorm.DB, videoID int64, now time.Ti
 	store := jobs.Store{DB: db}
 	queued := 0
 	for _, part := range parts {
+		if !multi && part.Page > 1 {
+			continue
+		}
 		draft, err := partDraft(TypeDanmaku, Candidate{
 			ID:      part.ID,
 			VideoID: part.VideoID,

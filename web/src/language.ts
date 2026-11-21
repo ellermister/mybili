@@ -306,7 +306,7 @@ const messages = {
                 qualityHighAudioShort: '最低画面，最高音频',
                 followDefault: '跟随默认',
                 doNotDownload: '不下载',
-                multiPartitionHelp: '关闭后只下载第 1 P。',
+                multiPartitionHelp: '关闭后只下载第 1 P 的视频和弹幕。',
                 readableHelp: '按标题另外放一份文件名，原来的视频文件不动。'
             },
             
@@ -836,7 +836,7 @@ const messages = {
                 qualityHighAudioShort: 'Lowest video, highest audio',
                 followDefault: 'Use default',
                 doNotDownload: 'Do not download',
-                multiPartitionHelp: 'When off, only part 1 is downloaded.',
+                multiPartitionHelp: 'When off, only part 1 video and danmaku are downloaded.',
                 readableHelp: 'Adds a title-based filename. The original video file stays as it is.'
             },
             
