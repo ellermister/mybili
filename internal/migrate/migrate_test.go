@@ -96,3 +96,54 @@ func TestAutoSettlesAfterTinyintColumns(t *testing.T) {
 		t.Fatal("invalid is still tinyint(1)")
 	}
 }
+
+func TestAutoAddsDanmakuVideoIndexWithoutRebuild(t *testing.T) {
+	conn, err := db.Open(filepath.Join(t.TempDir(), "danmaku.sqlite"), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := conn.Exec(`CREATE TABLE "danmaku" (
+		"id" integer primary key autoincrement not null,
+		"video_id" integer not null,
+		"cid" integer not null,
+		` + "`progress`" + ` integer NOT NULL DEFAULT 0,
+		` + "`mode`" + ` integer NOT NULL DEFAULT 1,
+		"color" integer,
+		"content" varchar not null,
+		"created_at" datetime not null
+	)`).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := conn.Exec(`CREATE INDEX danmaku_cid_index ON danmaku(cid)`).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := conn.Exec(`INSERT INTO danmaku (id, video_id, cid, content, created_at) VALUES (9, 3, 5, '留下', '2026-01-01 00:00:00')`).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := Auto(conn); err != nil {
+		t.Fatal(err)
+	}
+	var indexes, content string
+	if err := conn.Raw(`SELECT name FROM sqlite_master WHERE type='index' AND name='danmaku_video_id_index'`).Scan(&indexes).Error; err != nil {
+		t.Fatal(err)
+	}
+	if indexes != "danmaku_video_id_index" {
+		t.Fatalf("index = %q", indexes)
+	}
+	if err := conn.Raw(`SELECT content FROM danmaku WHERE id = 9`).Scan(&content).Error; err != nil {
+		t.Fatal(err)
+	}
+	if content != "留下" {
+		t.Fatalf("content = %q", content)
+	}
+	if err := Auto(conn); err != nil {
+		t.Fatal(err)
+	}
+	content = ""
+	if err := conn.Raw(`SELECT content FROM danmaku WHERE id = 9`).Scan(&content).Error; err != nil {
+		t.Fatal(err)
+	}
+	if content != "留下" {
+		t.Fatal("second startup rebuilt danmaku")
+	}
+}

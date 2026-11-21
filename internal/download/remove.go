@@ -43,31 +43,15 @@ func DeleteVideos(ctx context.Context, db *gorm.DB, dataDir string, ids []int64,
 		if video.ID == 0 {
 			continue
 		}
-		if err := removeVideoFiles(ctx, db, dataDir, video, stamp); err != nil {
+		// 库提交成功后再删文件。写库失败时文件还在，避免记录还在、文件已经没了。
+		paths, err := clearDownloaded(ctx, db, video, stamp, opt.Permanent)
+		if err != nil {
 			return deleted, err
 		}
-		if opt.Permanent {
-			if err := db.WithContext(ctx).Model(&video).Updates(map[string]any{
-				"deleted_at": stamp,
-				"updated_at": stamp,
-			}).Error; err != nil {
-				return deleted, err
-			}
-			if err := db.WithContext(ctx).Where("video_id = ?", video.ID).Delete(&model.Danmaku{}).Error; err != nil {
-				return deleted, err
-			}
-			deleted = append(deleted, video.ID)
-			continue
+		for _, stored := range paths {
+			removeUnderPublic(dataDir, stored)
 		}
-		if err := db.WithContext(ctx).Model(&video).Updates(map[string]any{
-			"video_downloaded_num": 0,
-			"audio_downloaded_num": 0,
-			"video_downloaded_at":  nil,
-			"updated_at":           stamp,
-		}).Error; err != nil {
-			return deleted, err
-		}
-		if opt.Requeue {
+		if !opt.Permanent && opt.Requeue {
 			if video.IsAudio() {
 				_, err = RequeueAudio(ctx, db, dataDir, video.ID, now, wake)
 			} else {
@@ -82,47 +66,81 @@ func DeleteVideos(ctx context.Context, db *gorm.DB, dataDir string, ids []int64,
 	return deleted, nil
 }
 
-// removeVideoFiles 删掉分 P 和音频文件，并清掉下载路径和时间。
-func removeVideoFiles(ctx context.Context, db *gorm.DB, dataDir string, video model.Video, stamp dbtime.DateTime) error {
-	var parts []model.VideoPart
-	if err := db.WithContext(ctx).Where("video_id = ?", video.ID).Find(&parts).Error; err != nil {
-		return err
-	}
-	for _, part := range parts {
-		if part.VideoDownloadPath != nil {
-			removeUnderPublic(dataDir, *part.VideoDownloadPath)
+// clearDownloaded 清掉下载路径。永久删除同时软删除视频并删掉弹幕。文件路径先收集，提交成功后由调用方删除。
+func clearDownloaded(ctx context.Context, db *gorm.DB, video model.Video, stamp dbtime.DateTime, permanent bool) ([]string, error) {
+	var paths []string
+	err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var parts []model.VideoPart
+		if err := tx.Where("video_id = ?", video.ID).Find(&parts).Error; err != nil {
+			return err
 		}
-		removeUnderPublic(dataDir, storageVideoPath(video.ID, part.Cid))
-		removeUnderPublic(dataDir, legacyVideoPath(video.ID, int64(part.Page)))
-		if int64(part.Page) != part.Cid {
-			removeUnderPublic(dataDir, legacyVideoPath(video.ID, part.Cid))
+		for _, part := range parts {
+			paths = append(paths, partFiles(video.ID, part)...)
+			if err := tx.Model(&part).Updates(map[string]any{
+				"video_download_path": nil,
+				"video_downloaded_at": nil,
+				"updated_at":          stamp,
+			}).Error; err != nil {
+				return err
+			}
 		}
-		if err := db.WithContext(ctx).Model(&part).Updates(map[string]any{
-			"video_download_path": nil,
-			"video_downloaded_at": nil,
-			"updated_at":          stamp,
+		var audio model.AudioPart
+		if err := tx.Where("video_id = ?", video.ID).Limit(1).Find(&audio).Error; err != nil {
+			return err
+		}
+		if audio.ID != 0 {
+			paths = append(paths, audioFiles(audio)...)
+			if err := tx.Model(&audio).Updates(map[string]any{
+				"audio_download_path": nil,
+				"audio_downloaded_at": nil,
+				"updated_at":          stamp,
+			}).Error; err != nil {
+				return err
+			}
+		}
+		if !permanent {
+			return tx.Model(&video).Updates(map[string]any{
+				"video_downloaded_num": 0,
+				"audio_downloaded_num": 0,
+				"video_downloaded_at":  nil,
+				"updated_at":           stamp,
+			}).Error
+		}
+		if err := tx.Model(&video).Updates(map[string]any{
+			"deleted_at": stamp,
+			"updated_at": stamp,
 		}).Error; err != nil {
 			return err
 		}
-	}
-	var audio model.AudioPart
-	err := db.WithContext(ctx).Where("video_id = ?", video.ID).Limit(1).Find(&audio).Error
+		return tx.Where("video_id = ?", video.ID).Delete(&model.Danmaku{}).Error
+	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if audio.ID == 0 {
-		return nil
+	return paths, nil
+}
+
+func partFiles(videoID int64, part model.VideoPart) []string {
+	paths := make([]string, 0, 4)
+	if part.VideoDownloadPath != nil {
+		paths = append(paths, *part.VideoDownloadPath)
 	}
+	paths = append(paths,
+		storageVideoPath(videoID, part.Cid),
+		legacyVideoPath(videoID, int64(part.Page)),
+	)
+	if int64(part.Page) != part.Cid {
+		paths = append(paths, legacyVideoPath(videoID, part.Cid))
+	}
+	return paths
+}
+
+func audioFiles(audio model.AudioPart) []string {
+	paths := make([]string, 0, 3)
 	if audio.AudioDownloadPath != nil {
-		removeUnderPublic(dataDir, *audio.AudioDownloadPath)
+		paths = append(paths, *audio.AudioDownloadPath)
 	}
-	removeUnderPublic(dataDir, storageAudioPath(audio.Sid))
-	removeUnderPublic(dataDir, legacyStorageAudioPath(audio.Sid))
-	return db.WithContext(ctx).Model(&audio).Updates(map[string]any{
-		"audio_download_path": nil,
-		"audio_downloaded_at": nil,
-		"updated_at":          stamp,
-	}).Error
+	return append(paths, storageAudioPath(audio.Sid), legacyStorageAudioPath(audio.Sid))
 }
 
 // legacyVideoPath 是旧程序按页码或 cid 拼出来的文件。第一段不带 part。
