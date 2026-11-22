@@ -69,11 +69,16 @@ export async function deleteVideo(
 }
 
 export async function getVideoDanmaku(id: number): Promise<any[]> {
+    try {
     const response = await fetch(`/api/danmaku?id=${id}`, {
-        method: 'GET',
-    });
-    const data = await response.json()
-    return data.data;
+            method: 'GET',
+        });
+        const data = await response.json()
+        return data.data;
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
 }
 
 export async function getVideoInfo(id: number): Promise<Video> {

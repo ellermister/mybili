@@ -1,0 +1,135 @@
+diff --git a/dist/artplayer-plugin-danmuku.mjs b/dist/artplayer-plugin-danmuku.mjs
+index fac426cd821bbde03114f0bbc509d68ea403d7a4..4e705ea6a29660a82ba5e33312328c96f6b944ef 100644
+--- a/dist/artplayer-plugin-danmuku.mjs
++++ b/dist/artplayer-plugin-danmuku.mjs
+@@ -115,6 +115,7 @@ class Danmuku {
+     this.art = art;
+     this.queue = [];
+     this.$refs = [];
++    this.loadToken = 0;
+     this.isStop = false;
+     this.isHide = false;
+     this.timer = null;
+@@ -304,13 +305,43 @@ class Danmuku {
+     const { currentTime } = this.art;
+     const result = [];
+     this.filter("ready", (danmu) => result.push(danmu));
+-    this.filter("wait", (danmu) => {
+-      if (currentTime + 0.1 >= danmu.time && danmu.time >= currentTime - 0.1) {
++    const from = currentTime - 0.1;
++    const until = currentTime + 0.1;
++    let index = this.lowerBound(from);
++    const queue = this.queue;
++    for (; index < queue.length; index++) {
++      const danmu = queue[index];
++      if ((danmu.time ?? 0) > until)
++        break;
++      if (danmu.$state === "wait")
+         result.push(danmu);
+-      }
+-    });
++    }
+     return result;
+   }
++  // 队列按时间升序，找出第一个不早于 time 的下标
++  lowerBound(time) {
++    let lo = 0;
++    let hi = this.queue.length;
++    while (lo < hi) {
++      const mid = lo + hi >> 1;
++      if ((this.queue[mid].time ?? 0) < time) {
++        lo = mid + 1;
++      } else {
++        hi = mid;
++      }
++    }
++    return lo;
++  }
++  // 保持队列按时间升序。已经排好序的整表装入只会追加
++  pushQueue(item) {
++    const queue = this.queue;
++    const last = queue[queue.length - 1];
++    if (!last || (item.time ?? 0) >= (last.time ?? 0)) {
++      queue.push(item);
++      return;
++    }
++    queue.splice(this.lowerBound(item.time ?? 0), 0, item);
++  }
+   // 可见的弹幕的数据，用于计算下一个弹幕的top值
+   get visibles() {
+     const result = [];
+@@ -358,6 +389,7 @@ class Danmuku {
+         danmus = target;
+       }
+       errorHandle(Array.isArray(danmus), "Danmuku need return an array as result");
++      const token = ++this.loadToken;
+       if (danmuku === void 0) {
+         this.reset();
+         this.queue = [];
+@@ -365,10 +397,17 @@ class Danmuku {
+         this.$refs = [];
+         this.$danmuku.textContent = "";
+       }
++      const batch = 300;
+       for (let index = 0; index < danmus.length; index++) {
+-        const danmu = danmus[index];
+-        await this.emit(danmu);
++        if (token !== this.loadToken)
++          return this;
++        await this.emit(danmus[index]);
++        if (index > 0 && index % batch === 0) {
++          await new Promise((resolve) => setTimeout(resolve, 0));
++        }
+       }
++      if (token !== this.loadToken)
++        return this;
+       this.art.emit("artplayerPluginDanmuku:loaded", this.queue);
+     } catch (error) {
+       this.art.emit("artplayerPluginDanmuku:error", error);
+@@ -429,7 +468,7 @@ class Danmuku {
+       // 弹幕上次开始时间
+     };
+     this.setState(item, "wait");
+-    this.queue.push(item);
++    this.pushQueue(item);
+     return this;
+   }
+   // 动态配置
+@@ -480,20 +519,32 @@ class Danmuku {
+   }
+   // 根据状态获取弹幕
+   filter(state, callback) {
+-    const danmus = this.states[state] || [];
++    const danmus = (this.states[state] || []).slice();
+     for (let index = 0; index < danmus.length; index++) {
+       callback(danmus[index]);
+     }
+-    return danmus;
++    return this.states[state] || [];
+   }
+-  // 设置弹幕状态
++  // 设置弹幕状态。换状态时用下标交换删除，避免每条都复制整队
+   setState(danmu, state) {
+-    this.states[danmu.$state] = this.states[danmu.$state].filter((item) => item !== danmu);
++    if (danmu.$state === state && danmu.$stateIndex !== void 0)
++      return;
++    const prevList = this.states[danmu.$state];
++    const prevIndex = danmu.$stateIndex;
++    if (prevList && prevIndex !== void 0) {
++      const last = prevList.pop();
++      if (last !== danmu) {
++        prevList[prevIndex] = last;
++        last.$stateIndex = prevIndex;
++      }
++    }
+     danmu.$state = state;
++    const nextList = this.states[state];
++    danmu.$stateIndex = nextList.length;
++    nextList.push(danmu);
+     if (danmu.$ref) {
+       danmu.$ref.dataset.state = state;
+     }
+-    this.states[state].push(danmu);
+   }
+   // 重置弹幕到wait状态，回收弹幕DOM节点
+   makeWait(danmu) {

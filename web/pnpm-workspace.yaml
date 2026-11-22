@@ -3,3 +3,6 @@ packages:
 
 allowBuilds:
   esbuild: true
+
+patchedDependencies:
+  artplayer-plugin-danmuku@5.3.0: patches/artplayer-plugin-danmuku@5.3.0.patch

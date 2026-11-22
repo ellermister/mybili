@@ -59,15 +59,50 @@ const saveDanmakuConfig = (config: DanmakuOption) => {
     }
 }
 
-const switchVideo = (param: { url: string, danmaku: any[] }) => {
-    if (art.value) {
-        (art.value.plugins as any).artplayerPluginDanmuku.config({
-            danmuku: param.danmaku
-        });
-        (art.value.plugins as any).artplayerPluginDanmuku.load()
-        art.value.url = param.url
-        art.value.play()
+let danmakuToken = 0
+
+const danmakuPlugin = () => (art.value?.plugins as any)?.artplayerPluginDanmuku
+
+const sortDanmaku = (list: any[]) => {
+    return list.slice().sort((prev, next) => (prev.time ?? 0) - (next.time ?? 0))
+}
+
+const playUrl = (url: string) => {
+    if (!art.value || !url) {
+        return
     }
+    danmakuToken++
+    art.value.url = url
+    const played = art.value.play() as Promise<void> | void
+    if (played && typeof played.catch === 'function') {
+        played.catch(() => {})
+    }
+    const plugin = danmakuPlugin()
+    if (plugin) {
+        plugin.option.danmuku = []
+        plugin.load()
+    }
+}
+
+const setDanmaku = (list: any[]) => {
+    const plugin = danmakuPlugin()
+    if (!plugin) {
+        return
+    }
+    const token = ++danmakuToken
+    const comments = Array.isArray(list) ? list : []
+    window.setTimeout(() => {
+        if (token !== danmakuToken || !art.value) {
+            return
+        }
+        plugin.option.danmuku = sortDanmaku(comments)
+        plugin.load()
+    }, 0)
+}
+
+const switchVideo = (param: { url: string, danmaku: any[] }) => {
+    playUrl(param.url)
+    setDanmaku(param.danmaku)
 }
 
 onMounted(async () => {
@@ -130,6 +165,8 @@ onBeforeUnmount(() => {
 })
 defineExpose({
     switchVideo,
+    playUrl,
+    setDanmaku,
 })
 </script>
 <style scoped>

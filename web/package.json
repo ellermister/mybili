@@ -26,5 +26,10 @@
         "vue-i18n": "^11.1.7",
         "vue-router": "^4.0.13",
         "vue-virtual-sortable": "^3.1.2"
+    },
+    "pnpm": {
+        "patchedDependencies": {
+            "artplayer-plugin-danmuku@5.3.0": "patches/artplayer-plugin-danmuku@5.3.0.patch"
+        }
     }
 }

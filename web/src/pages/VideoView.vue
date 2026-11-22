@@ -454,21 +454,16 @@ const onPlayerReady = () => {
 
 
 const playPart = (partId: number) => {
-    console.log('playPart', partId)
     const part = videoInfo.value?.video_parts?.find(part => part.id === partId)
     if (part && playerRef.value) {
-        console.log('playPart switchVideo', part.id)
-        getVideoDanmaku(part.id).then(danmaku => {
-            console.log('playPart switchVideo', {
-                url: part.url,
-                danmaku: danmaku,
-            })
-            playerRef.value?.switchVideo({
-                url: part.url,
-                danmaku: danmaku,
-            })
-        })
         currentPart.value = part as VideoPartType
+        playerRef.value.playUrl(part.url)
+        getVideoDanmaku(part.id).then(list => {
+            if (currentPart.value?.id !== part.id) {
+                return
+            }
+            playerRef.value?.setDanmaku(Array.isArray(list) ? list : [])
+        })
     }
 }
 
