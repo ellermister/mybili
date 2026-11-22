@@ -307,6 +307,170 @@ func TestSyncPageEnqueuesVideosWithoutParts(t *testing.T) {
 	}
 }
 
+func TestSyncVideosStoresDecodedAid(t *testing.T) {
+	conn := openTestDB(t)
+	folder := model.FavoriteList{
+		ID: 7, Title: "动画", Cover: "c", MediaCount: 1, CacheImage: "",
+		Ctime: stamp(1), Mtime: stamp(2),
+	}
+	if err := conn.Create(&folder).Error; err != nil {
+		t.Fatal(err)
+	}
+	aid, ok := bilibili.BvToAv("BV1134y1g7Vq")
+	if !ok || aid != 832246077 {
+		t.Fatalf("aid = %d ok=%v", aid, ok)
+	}
+	upperID := int64(42)
+	ready := sampleVideo(aid, "铃芽之旅")
+	ready.Bvid = "BV1134y1g7Vq"
+	ready.Page = 1
+	ready.UpperID = &upperID
+	ready.VideoDownloadedNum = 1
+	if err := conn.Create(&ready).Error; err != nil {
+		t.Fatal(err)
+	}
+	part := model.VideoPart{
+		VideoID: aid, Cid: 8, Page: 1, From: "v", Part: "正片", Duration: 3,
+		Vid: "", Weblink: "", FirstFrame: "",
+	}
+	if err := conn.Create(&part).Error; err != nil {
+		t.Fatal(err)
+	}
+	stub := sampleVideo(780019, "空壳")
+	stub.Bvid = "BV1134y1g7Vq"
+	stub.Type = 24
+	if err := conn.Create(&stub).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := conn.Create(&model.FavoriteListVideo{FavoriteListID: 7, VideoID: stub.ID}).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	body := `{"id":780019,"type":24,"title":"铃芽之旅","cover":"c","intro":"原版","page":0,"duration":7283,"upper":{"mid":0},"attr":0,"link":"https://www.bilibili.com/bangumi/play/ep780019","bvid":"BV1134y1g7Vq","pubtime":1697853602,"fav_time":1795367267}`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"code":0,"data":{"medias":[` + body + `],"has_more":false}}`))
+	}))
+	defer server.Close()
+	client := &bilibili.Client{BaseURL: server.URL, HTTP: server.Client()}
+	if _, err := newTestSync(conn, client, nil, time.Now(), 20).FavoriteVideos(context.Background(), 7, 0); err != nil {
+		t.Fatal(err)
+	}
+
+	var saved model.Video
+	if err := conn.First(&saved, aid).Error; err != nil {
+		t.Fatal(err)
+	}
+	if saved.Title != "铃芽之旅" || saved.Page != 1 || saved.UpperID == nil || *saved.UpperID != 42 || saved.VideoDownloadedNum != 1 {
+		t.Fatalf("saved = %+v", saved)
+	}
+	var stillStub model.Video
+	if err := conn.First(&stillStub, 780019).Error; err != nil {
+		t.Fatal(err)
+	}
+	var links []model.FavoriteListVideo
+	if err := conn.Where("favorite_list_id = ?", 7).Find(&links).Error; err != nil {
+		t.Fatal(err)
+	}
+	if len(links) != 1 || links[0].VideoID != aid {
+		t.Fatalf("links = %+v", links)
+	}
+	var jobs int64
+	if err := conn.Model(&model.Job{}).Where("type = ?", TypeSyncVideo).Count(&jobs).Error; err != nil {
+		t.Fatal(err)
+	}
+	if jobs != 0 {
+		t.Fatalf("detail jobs = %d", jobs)
+	}
+}
+
+func TestSyncVideosSkipsAudioWhenAidTaken(t *testing.T) {
+	conn := openTestDB(t)
+	folder := model.FavoriteList{
+		ID: 7, Title: "夹", Cover: "c", MediaCount: 2, CacheImage: "",
+		Ctime: stamp(1), Mtime: stamp(2),
+	}
+	if err := conn.Create(&folder).Error; err != nil {
+		t.Fatal(err)
+	}
+	aid, ok := bilibili.BvToAv("BV19x411F7m7")
+	if !ok || aid != 457094 {
+		t.Fatalf("aid = %d ok=%v", aid, ok)
+	}
+	video := sampleVideo(aid, "《车姬》")
+	video.Bvid = "BV19x411F7m7"
+	video.VideoDownloadedNum = 1
+	if err := conn.Create(&video).Error; err != nil {
+		t.Fatal(err)
+	}
+	videoJSON := `{"id":457094,"type":2,"title":"《车姬》","cover":"c","intro":"i","page":1,"duration":175,"upper":{"mid":9},"attr":0,"bvid":"BV19x411F7m7","pubtime":1359640344,"fav_time":1795370533}`
+	audioJSON := `{"id":457094,"type":12,"title":"Kawaii Time","cover":"a","intro":"歌","page":1,"duration":239,"upper":{"mid":8},"attr":0,"bvid":"BV19x411F7m7","pubtime":1534218133,"fav_time":1795370509}`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"code":0,"data":{"medias":[` + audioJSON + `,` + videoJSON + `],"has_more":false}}`))
+	}))
+	defer server.Close()
+	client := &bilibili.Client{BaseURL: server.URL, HTTP: server.Client()}
+	result, err := newTestSync(conn, client, nil, time.Now(), 20).FavoriteVideos(context.Background(), 7, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Videos != 1 {
+		t.Fatalf("result = %+v", result)
+	}
+	var saved model.Video
+	if err := conn.First(&saved, aid).Error; err != nil {
+		t.Fatal(err)
+	}
+	if saved.Title != "《车姬》" || saved.Type != 2 || saved.VideoDownloadedNum != 1 {
+		t.Fatalf("saved = %+v", saved)
+	}
+	var audioJobs int64
+	if err := conn.Model(&model.Job{}).Where("type = ?", TypeSyncAudio).Count(&audioJobs).Error; err != nil {
+		t.Fatal(err)
+	}
+	if audioJobs != 0 {
+		t.Fatalf("audio jobs = %d", audioJobs)
+	}
+}
+
+func TestSyncVideosKeepsEarlierFavoriteWhenAidCollides(t *testing.T) {
+	conn := openTestDB(t)
+	folder := model.FavoriteList{
+		ID: 7, Title: "夹", Cover: "c", MediaCount: 2, CacheImage: "",
+		Ctime: stamp(1), Mtime: stamp(2),
+	}
+	if err := conn.Create(&folder).Error; err != nil {
+		t.Fatal(err)
+	}
+	videoJSON := `{"id":457094,"type":2,"title":"《车姬》","cover":"c","intro":"i","page":1,"duration":175,"upper":{"mid":9},"attr":0,"bvid":"BV19x411F7m7","pubtime":1359640344,"fav_time":1795370533}`
+	audioJSON := `{"id":457094,"type":12,"title":"Kawaii Time","cover":"a","intro":"歌","page":1,"duration":239,"upper":{"mid":8},"attr":0,"bvid":"BV19x411F7m7","pubtime":1534218133,"fav_time":1795370509}`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"code":0,"data":{"medias":[` + videoJSON + `,` + audioJSON + `],"has_more":false}}`))
+	}))
+	defer server.Close()
+	client := &bilibili.Client{BaseURL: server.URL, HTTP: server.Client()}
+	result, err := newTestSync(conn, client, nil, time.Now(), 20).FavoriteVideos(context.Background(), 7, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Videos != 1 {
+		t.Fatalf("result = %+v", result)
+	}
+	var saved model.Video
+	if err := conn.First(&saved, 457094).Error; err != nil {
+		t.Fatal(err)
+	}
+	if saved.Title != "Kawaii Time" || saved.Type != 12 {
+		t.Fatalf("saved = %+v", saved)
+	}
+	var videoJobs int64
+	if err := conn.Model(&model.Job{}).Where("type = ?", TypeSyncVideo).Count(&videoJobs).Error; err != nil {
+		t.Fatal(err)
+	}
+	if videoJobs != 0 {
+		t.Fatalf("video jobs = %d", videoJobs)
+	}
+}
+
 func sampleVideo(id int64, title string) model.Video {
 	return model.Video{
 		ID: id, Link: "old", Title: title, Intro: "i", Cover: "c", Bvid: "BV",

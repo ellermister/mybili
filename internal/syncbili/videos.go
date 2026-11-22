@@ -82,24 +82,48 @@ func (s Sync) syncFolderVideos(ctx context.Context, folder model.FavoriteList, p
 	if err != nil {
 		return 0, err
 	}
-	existing, err := videosByID(s.DB, mediaIDs(medias))
+	ids := make([]int64, 0, len(medias))
+	for _, media := range medias {
+		ids = append(ids, favoriteVideoID(media))
+	}
+	existing, err := videosByID(s.DB, ids)
 	if err != nil {
 		return 0, err
 	}
 	var kept []model.Video
 	keptIDs := map[int64]struct{}{}
+	keptTypes := map[int64]int{}
+	keptFav := map[int64]int64{}
 	for _, media := range medias {
-		current, ok := existing[media.ID]
+		videoID := favoriteVideoID(media)
+		// 同一次更新里音频和视频算出同一个 ID：留下收藏时间更早的，后收藏的跳过。
+		replace := false
+		if prev, seen := keptTypes[videoID]; seen && audioConflict(prev, media.Type) {
+			if media.FavTime <= 0 || media.FavTime >= keptFav[videoID] {
+				continue
+			}
+			replace = true
+		}
+		current, ok := existing[videoID]
 		var currentPtr *model.Video
 		if ok {
+			// 库里已有另一类资源时不覆盖，避免把已经下载的视频或音频盖掉。
+			if audioConflict(current.Type, media.Type) {
+				continue
+			}
 			currentPtr = &current
 		}
-		row, include := prepareVideo(currentPtr, media, now)
+		row, include := prepareVideo(currentPtr, media, videoID, now)
 		if !include {
 			continue
 		}
+		if replace {
+			kept = dropKept(kept, videoID)
+		}
 		kept = append(kept, row)
 		keptIDs[row.ID] = struct{}{}
+		keptTypes[row.ID] = row.Type
+		keptFav[row.ID] = media.FavTime
 	}
 	if len(kept) == 0 {
 		return 0, nil
@@ -234,8 +258,38 @@ func (s Sync) enqueueMissingPartDetails(ctx context.Context, folderID int64, kep
 	return nil
 }
 
+// favoriteVideoID 是这条收藏要写入的 videos.id。
+// 音频的 bvid 只是 auid 再编码，主键仍用 auid。
+// 普通视频和电影用 bvid 解出的 aid。解不出时用收藏接口自己的 id。
+func favoriteVideoID(media bilibili.FavoriteMedia) int64 {
+	if media.Type == 12 {
+		return media.ID
+	}
+	if aid, ok := bilibili.BvToAv(media.Bvid); ok {
+		return aid
+	}
+	return media.ID
+}
+
+// audioConflict 在一边是音频、另一边不是时为 true。电影和普通视频的 type 不同不算冲突。
+func audioConflict(left, right int) bool {
+	return (left == 12) != (right == 12)
+}
+
+// dropKept 去掉本页里刚才暂留的那条，改留收藏时间更早的资源。
+func dropKept(kept []model.Video, id int64) []model.Video {
+	next := make([]model.Video, 0, len(kept))
+	for _, row := range kept {
+		if row.ID != id {
+			next = append(next, row)
+		}
+	}
+	return next
+}
+
 // prepareVideo 把远端视频收成一行。已删除、两端都无效、已下载且远端无效的不写入。
-func prepareVideo(existing *model.Video, media bilibili.FavoriteMedia, now time.Time) (model.Video, bool) {
+// videoID 是 favoriteVideoID 算出来的主键。收藏夹没给 UP 主或分 P 数时，不覆盖本地已有值。
+func prepareVideo(existing *model.Video, media bilibili.FavoriteMedia, videoID int64, now time.Time) (model.Video, bool) {
 	remoteInvalid := media.Attr > 0 || media.Title == "已失效视频"
 	// 本地手动删除的不写入
 	if existing != nil && existing.DeletedAt != nil && !existing.DeletedAt.Time.IsZero() {
@@ -251,7 +305,7 @@ func prepareVideo(existing *model.Video, media bilibili.FavoriteMedia, now time.
 		return model.Video{}, false
 	}
 
-	row := model.Video{ID: media.ID, CacheImage: ""}
+	row := model.Video{ID: videoID, CacheImage: ""}
 	if existing != nil {
 		row = *existing
 	} else {
@@ -274,16 +328,14 @@ func prepareVideo(existing *model.Video, media bilibili.FavoriteMedia, now time.
 		row.Invalid = 1
 	}
 	row.Frozen = 0
-	row.Page = media.Page
+	if media.Page > 0 {
+		row.Page = media.Page
+	}
 	favTime := unixDateTime(media.FavTime)
 	row.FavTime = &favTime
-	if media.Upper != nil {
-		if media.Upper.Mid == 0 {
-			row.UpperID = nil
-		} else {
-			mid := media.Upper.Mid
-			row.UpperID = &mid
-		}
+	if media.Upper != nil && media.Upper.Mid > 0 {
+		mid := media.Upper.Mid
+		row.UpperID = &mid
 	}
 	row.Type = media.Type
 	updated := dbtime.DateTime{Time: now}
@@ -321,13 +373,4 @@ func favoriteVideoIDs(db *gorm.DB, favID int64) (map[int64]struct{}, error) {
 		ids[link.VideoID] = struct{}{}
 	}
 	return ids, nil
-}
-
-// mediaIDs 取出这一页远端视频的 ID。
-func mediaIDs(medias []bilibili.FavoriteMedia) []int64 {
-	ids := make([]int64, 0, len(medias))
-	for _, media := range medias {
-		ids = append(ids, media.ID)
-	}
-	return ids
 }
