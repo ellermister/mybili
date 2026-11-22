@@ -7,7 +7,7 @@ FROM node:${NODE_VERSION}-bookworm-slim AS web
 
 WORKDIR /src/web
 
-RUN npm install -g pnpm@9.15.9
+RUN npm install -g pnpm@12.9.1
 
 COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
 COPY web/patches ./patches
