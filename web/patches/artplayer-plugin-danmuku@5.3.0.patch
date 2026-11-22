@@ -1,5 +1,5 @@
 diff --git a/dist/artplayer-plugin-danmuku.mjs b/dist/artplayer-plugin-danmuku.mjs
-index fac426cd821bbde03114f0bbc509d68ea403d7a4..4e705ea6a29660a82ba5e33312328c96f6b944ef 100644
+index fac426cd821bbde03114f0bbc509d68ea403d7a4..3c146faa5abf7ebe7d6a103b78a4cee98ccefa1b 100644
 --- a/dist/artplayer-plugin-danmuku.mjs
 +++ b/dist/artplayer-plugin-danmuku.mjs
 @@ -115,6 +115,7 @@ class Danmuku {
@@ -10,7 +10,22 @@ index fac426cd821bbde03114f0bbc509d68ea403d7a4..4e705ea6a29660a82ba5e33312328c96
      this.isStop = false;
      this.isHide = false;
      this.timer = null;
-@@ -304,13 +305,43 @@ class Danmuku {
+@@ -128,10 +129,14 @@ class Danmuku {
+     this.reset = this.reset.bind(this);
+     this.resize = this.resize.bind(this);
+     this.destroy = this.destroy.bind(this);
++    this.restoreAt = this.restoreAt.bind(this);
++    this.notePlayedTime = this.notePlayedTime.bind(this);
+     art.on("video:play", this.start);
+     art.on("video:playing", this.start);
+     art.on("video:pause", this.stop);
+     art.on("video:waiting", this.stop);
++    art.on("video:timeupdate", this.notePlayedTime);
++    art.on("video:seeked", this.restoreAt);
+     art.on("destroy", this.destroy);
+     art.on("resize", this.resize);
+     this.load();
+@@ -304,13 +309,194 @@ class Danmuku {
      const { currentTime } = this.art;
      const result = [];
      this.filter("ready", (danmu) => result.push(danmu));
@@ -55,10 +70,161 @@ index fac426cd821bbde03114f0bbc509d68ea403d7a4..4e705ea6a29660a82ba5e33312328c96
 +    }
 +    queue.splice(this.lowerBound(item.time ?? 0), 0, item);
 +  }
++  notePlayedTime() {
++    if (this.restoring)
++      return;
++    const current = this.art.currentTime || 0;
++    if (this.playedTime !== void 0 && Math.abs(current - this.playedTime) > 0.4)
++      return;
++    this.playedTime = current;
++  }
++  measureWidth(text, fontSize) {
++    if (!this.measureCtx) {
++      this.measureCtx = document.createElement("canvas").getContext("2d");
++    }
++    this.measureCtx.font = `${fontSize}px SimHei, "Microsoft JhengHei", Arial, Helvetica, sans-serif`;
++    return this.measureCtx.measureText(text).width;
++  }
++  // 拖动进度后，按当前时间摆回这一轮还没走完的弹幕
++  restoreAt() {
++    const currentTime = this.art.currentTime || 0;
++    const previous = this.playedTime;
++    this.playedTime = currentTime;
++    if (this.isHide || previous === void 0 || Math.abs(currentTime - previous) < 0.4)
++      return;
++    this.restoring = true;
++    this.filter("ready", (danmu) => this.makeWait(danmu));
++    this.filter("emit", (danmu) => this.makeWait(danmu));
++    this.filter("stop", (danmu) => this.makeWait(danmu));
++    const duration = this.speed;
++    const from = currentTime - duration;
++    const modes = this.option.modes || [];
++    const list = [];
++    let index = this.lowerBound(from);
++    const queue = this.queue;
++    for (; index < queue.length; index++) {
++      const danmu = queue[index];
++      const time = danmu.time ?? 0;
++      if (time > currentTime)
++        break;
++      if (danmu.$state !== "wait" || !modes.includes(danmu.mode))
++        continue;
++      list.push(danmu);
++    }
++    const { clientWidth, clientHeight } = this.$player;
++    const { setStyles } = this.utils;
++    const playing = !!this.art.playing && !this.isStop;
++    const fontSize = this.fontSize;
++    const height = fontSize * 1.125;
++    const maxTop = clientHeight - this.marginBottom;
++    const marginTop = this.marginTop;
++    const gap = Math.max(8, fontSize * 0.35);
++    const lanes = { 0: [], 1: [], 2: [] };
++    const fitsScroll = (items, box) => {
++      for (let n = 0; n < items.length; n++) {
++        const item = items[n];
++        if (box.left < item.right + gap && box.right + gap > item.left)
++          return false;
++        const leader = box.left > item.left ? item : box;
++        const trailer = box.left > item.left ? box : item;
++        if (trailer.speed <= leader.speed)
++          continue;
++        if ((trailer.left - leader.right) / (trailer.speed - leader.speed) < leader.rest)
++          return false;
++      }
++      return true;
++    };
++    const takeTop = (mode, box) => {
++      const list = lanes[mode];
++      if (!list)
++        return;
++      if (mode === 0) {
++        for (let n = 0; n < list.length; n++) {
++          if (fitsScroll(list[n].items, box)) {
++            list[n].items.push(box);
++            return list[n].top;
++          }
++        }
++      }
++      let top = marginTop;
++      if (mode === 2) {
++        top = list.length ? list[list.length - 1].top - height : maxTop - height;
++        if (top < marginTop)
++          return;
++      } else {
++        top = list.length ? list[list.length - 1].top + height : marginTop;
++        if (top + height > maxTop)
++          return;
++      }
++      list.push({ top, items: [box] });
++      return top;
++    };
++    for (let i = 0; i < list.length; i++) {
++      const danmu = list[i];
++      const elapsed = currentTime - (danmu.time ?? 0);
++      if (elapsed < 0 || elapsed >= duration)
++        continue;
++      if (this.option.beforeVisible(danmu) !== true)
++        continue;
++      const rest = duration - elapsed;
++      const width = Math.max(1, this.measureWidth(danmu.text, fontSize));
++      const fullDistance = clientWidth + width;
++      const progress = elapsed / duration;
++      const offset = progress * fullDistance;
++      const visualLeft = clientWidth - offset;
++      if (visualLeft + width <= 0)
++        continue;
++      const speedPx = fullDistance / duration;
++      const top = takeTop(danmu.mode, {
++        left: visualLeft,
++        right: visualLeft + width,
++        speed: speedPx,
++        rest
++      });
++      if (top === void 0)
++        continue;
++      const ref = this.$ref;
++      ref.textContent = danmu.text;
++      this.$danmuku.appendChild(ref);
++      ref.style.opacity = this.option.opacity;
++      ref.style.fontSize = `${fontSize}px`;
++      ref.style.color = danmu.color;
++      ref.style.border = danmu.border ? `1px solid ${danmu.color}` : null;
++      ref.style.backgroundColor = danmu.border ? "rgb(0 0 0 / 50%)" : null;
++      setStyles(ref, danmu.style || {});
++      ref.style.top = `${top}px`;
++      ref.style.visibility = "visible";
++      ref.dataset.mode = danmu.mode;
++      ref.dataset.id = danmu.id || "";
++      danmu.$ref = ref;
++      danmu.$restTime = rest;
++      danmu.$lastStartTime = Date.now();
++      this.setState(danmu, playing ? "emit" : "stop");
++      if (danmu.mode === 0) {
++        ref.style.left = `${clientWidth}px`;
++        ref.style.marginLeft = "0px";
++        ref.style.transition = "transform 0s linear 0s";
++        ref.style.transform = `translateX(${-offset}px)`;
++        if (playing) {
++          requestAnimationFrame(() => {
++            if (danmu.$ref !== ref)
++              return;
++            ref.style.transition = `transform ${rest}s linear 0s`;
++            ref.style.transform = `translateX(${-fullDistance}px)`;
++          });
++        }
++      } else {
++        ref.style.left = "50%";
++        ref.style.marginLeft = `-${width / 2}px`;
++      }
++      this.art.emit("artplayerPluginDanmuku:visible", danmu);
++    }
++    this.restoring = false;
++  }
    // 可见的弹幕的数据，用于计算下一个弹幕的top值
    get visibles() {
      const result = [];
-@@ -358,6 +389,7 @@ class Danmuku {
+@@ -358,6 +544,7 @@ class Danmuku {
          danmus = target;
        }
        errorHandle(Array.isArray(danmus), "Danmuku need return an array as result");
@@ -66,7 +232,7 @@ index fac426cd821bbde03114f0bbc509d68ea403d7a4..4e705ea6a29660a82ba5e33312328c96
        if (danmuku === void 0) {
          this.reset();
          this.queue = [];
-@@ -365,10 +397,17 @@ class Danmuku {
+@@ -365,10 +552,17 @@ class Danmuku {
          this.$refs = [];
          this.$danmuku.textContent = "";
        }
@@ -86,7 +252,7 @@ index fac426cd821bbde03114f0bbc509d68ea403d7a4..4e705ea6a29660a82ba5e33312328c96
        this.art.emit("artplayerPluginDanmuku:loaded", this.queue);
      } catch (error) {
        this.art.emit("artplayerPluginDanmuku:error", error);
-@@ -429,7 +468,7 @@ class Danmuku {
+@@ -429,7 +623,7 @@ class Danmuku {
        // 弹幕上次开始时间
      };
      this.setState(item, "wait");
@@ -95,7 +261,7 @@ index fac426cd821bbde03114f0bbc509d68ea403d7a4..4e705ea6a29660a82ba5e33312328c96
      return this;
    }
    // 动态配置
-@@ -480,20 +519,32 @@ class Danmuku {
+@@ -480,20 +674,32 @@ class Danmuku {
    }
    // 根据状态获取弹幕
    filter(state, callback) {
