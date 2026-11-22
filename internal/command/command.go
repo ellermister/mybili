@@ -309,6 +309,33 @@ func Run(ctx context.Context, cfg config.Config, args []string) error {
 				},
 			},
 			{
+				Name:  "reconcile-downloads",
+				Usage: "按磁盘上已有的视频和音频补下载路径，并重算已下载数量",
+				Flags: []cli.Flag{
+					&cli.Int64Flag{Name: "video", Usage: "只检查这个视频"},
+				},
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					if cmd.Args().Present() {
+						return fmt.Errorf("视频 ID 请用 --video")
+					}
+					videoID := cmd.Int64("video")
+					if cmd.IsSet("video") && videoID <= 0 {
+						return fmt.Errorf("--video 必须大于 0")
+					}
+					conn, err := db.Open(cfg.DBPath, cfg.SQLLogLevel)
+					if err != nil {
+						return err
+					}
+					result, err := download.ReconcileDownloads(ctx, conn, cfg.DataDir, videoID, dbtime.Now())
+					if err != nil {
+						return err
+					}
+					fmt.Printf("已有文件已记下 %d 条\n", result.Noted)
+					fmt.Printf("下载数量已修正 %d 条\n", result.Recounted)
+					return nil
+				},
+			},
+			{
 				Name:  "sync-covers",
 				Usage: "检查还没有本地封面的记录并写入任务",
 				Flags: []cli.Flag{
