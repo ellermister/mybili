@@ -204,6 +204,9 @@
                     </div>
                 </div>
             </div>
+
+            <DanmakuList v-if="currentPart" :key="currentPart.id" :items="danmakuItems" :loading="danmakuLoading"
+                @seek="seekDanmaku" />
         </div>
 
         <!-- Not Found State -->
@@ -288,12 +291,13 @@
     </div>
 </template>
 <script lang="ts" setup>
-import { computed, onMounted, ref, nextTick, onUnmounted } from 'vue';
+import { computed, onMounted, ref, shallowRef, nextTick, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useToast } from '@/composables/toast';
 import { useI18n } from 'vue-i18n';
 import { formatTimestamp } from '../lib/helper';
 import Player from '../components/Player.vue';
+import DanmakuList from '../components/DanmakuList.vue';
 import Breadcrumbs from '../components/Breadcrumbs.vue';
 import type { Video, VideoPartType } from '@/api/fav';
 import { deleteVideo, getVideoDanmaku, getVideoInfo, refreshVideoDanmaku } from '@/api/video';
@@ -439,6 +443,8 @@ const notfound = ref(false)
 const currentPart = ref<VideoPartType | null>(null)
 
 const danmaku = ref<any[]>([])
+const danmakuItems = shallowRef<any[]>([])
+const danmakuLoading = ref(false)
 const showDeleteModal = ref(false)
 const deletePermanent = ref(false)
 const deleteAndRequeue = ref(false)
@@ -457,14 +463,23 @@ const playPart = (partId: number) => {
     const part = videoInfo.value?.video_parts?.find(part => part.id === partId)
     if (part && playerRef.value) {
         currentPart.value = part as VideoPartType
+        danmakuItems.value = []
+        danmakuLoading.value = true
         playerRef.value.playUrl(part.url)
         getVideoDanmaku(part.id).then(list => {
             if (currentPart.value?.id !== part.id) {
                 return
             }
-            playerRef.value?.setDanmaku(Array.isArray(list) ? list : [])
+            const rows = Array.isArray(list) ? list : []
+            danmakuItems.value = rows
+            danmakuLoading.value = false
+            playerRef.value?.setDanmaku(rows)
         })
     }
+}
+
+const seekDanmaku = (time: number) => {
+    playerRef.value?.seek(time)
 }
 
 const openDeleteModal = () => {

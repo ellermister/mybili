@@ -84,6 +84,13 @@ const playUrl = (url: string) => {
     }
 }
 
+const seek = (time: number) => {
+    if (!art.value || !Number.isFinite(time)) {
+        return
+    }
+    art.value.currentTime = Math.max(0, time)
+}
+
 const setDanmaku = (list: any[]) => {
     const plugin = danmakuPlugin()
     if (!plugin) {
@@ -167,6 +174,7 @@ defineExpose({
     switchVideo,
     playUrl,
     setDanmaku,
+    seek,
 })
 </script>
 <style scoped>
