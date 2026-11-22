@@ -65,7 +65,8 @@ const messages = {
             settings: '设置',
             about: '关于',
             menu: '菜单',
-            videoManagement: '视频管理'
+            videoManagement: '视频管理',
+            theme: '切换深浅色'
         },
 
         // 首页
@@ -595,7 +596,8 @@ const messages = {
             settings: 'Settings',
             about: 'About',
             menu: 'Menu',
-            videoManagement: 'Video Management'
+            videoManagement: 'Video Management',
+            theme: 'Toggle theme'
         },
 
         // 首页

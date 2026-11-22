@@ -48,6 +48,14 @@
                 </div>
               </div>
             </div>
+            <!-- Theme Toggle -->
+            <button
+              @click="toggleTheme"
+              :title="t('navigation.theme')"
+              class="nav-link px-3 py-2 rounded-md transition-all duration-300 hover:bg-white/20 flex items-center"
+            >
+              <span class="text-lg leading-none">{{ isDark ? '☀️' : '🌙' }}</span>
+            </button>
           </div>
 
           <!-- Mobile Menu Button -->
@@ -77,6 +85,15 @@
               </div>
             </div>
             
+            <!-- Theme Toggle -->
+            <button
+              @click="toggleTheme"
+              :title="t('navigation.theme')"
+              class="text-white p-2 rounded-md hover:bg-white/20 transition-all duration-300"
+            >
+              <span class="block text-lg leading-none">{{ isDark ? '☀️' : '🌙' }}</span>
+            </button>
+
             <button @click="isDrawerOpen = true">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
@@ -125,11 +142,13 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ToastContainer from './components/ToastContainer.vue';
+import { useTheme } from './composables/theme';
 
 const { t, locale } = useI18n();
 const isDrawerOpen = ref(false);
 const isLanguageDropdownOpen = ref(false);
 const isMobileLanguageDropdownOpen = ref(false);
+const { isDark, toggleTheme } = useTheme();
 
 const navLinks = [
   { key: 'home', path: '/' },

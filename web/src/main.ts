@@ -10,6 +10,7 @@ import App from "./App.vue";
 
 import './css/app.css';
 import './css/button.css';
+import './css/dark.css';
 
 const app = createApp(App);
 app.use(router);
